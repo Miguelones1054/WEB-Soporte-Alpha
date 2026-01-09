@@ -1,0 +1,11 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo Admin Alpha - Versión simplificada -->
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="#1f2937" stroke="#3b82f6" stroke-width="2"/>
+
+  <!-- Icono de usuario/admin -->
+  <circle cx="16" cy="12" r="4" fill="#3b82f6"/>
+  <path d="M8 24c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Texto "A" -->
+  <text x="16" y="18" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="6" font-weight="bold">A</text>
+</svg>
