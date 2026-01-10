@@ -110,6 +110,10 @@ export default function AdminPanel() {
     alert('La vista de Bancolombia estará disponible próximamente.');
   };
 
+  const handleOpenAdminGestion = () => {
+    router.push('/admin-panel/admin-gestion');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -334,7 +338,31 @@ export default function AdminPanel() {
 
             {/* Contenido del Drawer */}
             <div className="flex-1 overflow-y-auto">
-              {/* Drawer vacío por ahora */}
+              {adminInfo?.role === 'owner' && (
+                <button
+                  onClick={() => {
+                    toggleDrawer();
+                    handleOpenAdminGestion();
+                  }}
+                  className="w-full text-white py-3 px-6 rounded-none font-medium flex items-center space-x-3 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    />
+                  </svg>
+                  <span>Gestionar administradores</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
