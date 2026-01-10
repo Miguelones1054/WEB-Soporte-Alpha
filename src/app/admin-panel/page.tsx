@@ -37,6 +37,7 @@ export default function AdminPanel() {
 
     const fetchAdmin = async () => {
       try {
+        console.log('Verificando token en:', `${API_BASE_URL}/admin/me`);
         const response = await fetch(`${API_BASE_URL}/admin/me`, {
           method: 'GET',
           headers: {
@@ -58,9 +59,13 @@ export default function AdminPanel() {
           window.location.href = '/';
         }
       } catch (error) {
-        console.error('Error obteniendo datos del admin:', error);
-        localStorage.removeItem('admin_token');
-        window.location.href = '/';
+        console.error('Error de conexión con el servidor:', error);
+        console.error('Asegúrate de que el servidor backend esté corriendo en:', API_BASE_URL);
+        // Mostrar alerta en lugar de redirigir automáticamente
+        alert(`Error de conexión con el servidor. Asegúrate de que el backend esté corriendo en ${API_BASE_URL}`);
+        setLoading(false);
+        // No redirigir automáticamente, dar oportunidad de arreglar el problema
+        return;
       }
 
       setLoading(false);
