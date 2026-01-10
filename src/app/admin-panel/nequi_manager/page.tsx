@@ -273,6 +273,10 @@ function AdminPanelContent() {
     setShowProfile(!showProfile);
   };
 
+  const handleHome = () => {
+    router.push('/admin-panel');
+  };
+
   const toggleDrawer = () => {
     if (isDrawerOpen) {
       // Cerrando drawer
@@ -986,6 +990,27 @@ function AdminPanelContent() {
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 relative">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
+            {/* Botón de Inicio */}
+            <button
+              onClick={handleHome}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
+              title="Ir al inicio"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+            </button>
             {/* Botón de Menú Desplegable */}
             <button
               onClick={toggleDrawer}
@@ -1159,6 +1184,9 @@ function AdminPanelContent() {
                           setUserIdInput(value);
                         }
                       }}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="tel"
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="Número de usuario (10 dígitos)"
                     />

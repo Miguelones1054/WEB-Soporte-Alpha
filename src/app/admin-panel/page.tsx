@@ -24,6 +24,8 @@ export default function AdminPanel() {
   const [showProfile, setShowProfile] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isNavigatingNequi, setIsNavigatingNequi] = useState(false);
+  const [isNavigatingBancolombia, setIsNavigatingBancolombia] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -106,13 +108,23 @@ export default function AdminPanel() {
     }
   };
 
-  const handleOpenNequi = () => {
-    router.push('/admin-panel/nequi_manager');
+  const handleOpenNequi = async () => {
+    setIsNavigatingNequi(true);
+    try {
+      await router.push('/admin-panel/nequi_manager');
+    } catch (error) {
+      console.error('Error al navegar a Nequi Manager:', error);
+      setIsNavigatingNequi(false);
+    }
   };
 
   const handleOpenBancolombia = () => {
+    setIsNavigatingBancolombia(true);
     // Placeholder hasta que exista la vista de Bancolombia
-    alert('La vista de Bancolombia estará disponible próximamente.');
+    setTimeout(() => {
+      alert('La vista de Bancolombia estará disponible próximamente.');
+      setIsNavigatingBancolombia(false);
+    }, 100);
   };
 
   const handleOpenAdminGestion = () => {
@@ -228,36 +240,62 @@ export default function AdminPanel() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <button
               onClick={handleOpenNequi}
-              className="group relative bg-slate-800 hover:bg-slate-700 rounded-xl p-6 shadow-lg flex flex-col items-center justify-center space-y-4"
+              disabled={isNavigatingNequi}
+              className={`group relative bg-slate-800 hover:bg-slate-700 rounded-xl p-6 shadow-lg flex flex-col items-center justify-center space-y-4 transition-all duration-200 ${
+                isNavigatingNequi ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              <div className="w-16 h-16 flex items-center justify-center bg-slate-700 group-hover:bg-slate-600 rounded-full">
-                <img
-                  src="/nequi-logo.jpg"
-                  alt="Nequi Logo"
-                  className="w-full h-full object-cover rounded-full"
-                />
+              <div className="w-16 h-16 flex items-center justify-center bg-slate-700 group-hover:bg-slate-600 rounded-full relative">
+                {isNavigatingNequi ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <img
+                    src="/nequi-logo.jpg"
+                    alt="Nequi Logo"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                )}
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-white group-hover:text-gray-100">Nequi Alpha</h3>
+                <h3 className={`text-lg font-bold text-white transition-colors ${
+                  isNavigatingNequi ? 'text-gray-400' : 'group-hover:text-gray-100'
+                }`}>
+                  {isNavigatingNequi ? 'Cargando...' : 'Nequi Alpha'}
+                </h3>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl opacity-0 group-hover:opacity-100"></div>
+              <div className={`absolute inset-0 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl transition-opacity ${
+                isNavigatingNequi ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}></div>
             </button>
 
             <button
               onClick={handleOpenBancolombia}
-              className="group relative bg-slate-800 hover:bg-slate-700 rounded-xl p-6 shadow-lg flex flex-col items-center justify-center space-y-4"
+              disabled={isNavigatingBancolombia}
+              className={`group relative bg-slate-800 hover:bg-slate-700 rounded-xl p-6 shadow-lg flex flex-col items-center justify-center space-y-4 transition-all duration-200 ${
+                isNavigatingBancolombia ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              <div className="w-16 h-16 flex items-center justify-center bg-slate-700 group-hover:bg-slate-600 rounded-full">
-                <img
-                  src="/bancolombia-logo.png"
-                  alt="Bancolombia Logo"
-                  className="w-full h-full object-cover rounded-full"
-                />
+              <div className="w-16 h-16 flex items-center justify-center bg-slate-700 group-hover:bg-slate-600 rounded-full relative">
+                {isNavigatingBancolombia ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <img
+                    src="/bancolombia-logo.png"
+                    alt="Bancolombia Logo"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                )}
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-white group-hover:text-gray-100">Bancolombia Alpha</h3>
+                <h3 className={`text-lg font-bold text-white transition-colors ${
+                  isNavigatingBancolombia ? 'text-gray-400' : 'group-hover:text-gray-100'
+                }`}>
+                  {isNavigatingBancolombia ? 'Cargando...' : 'Bancolombia Alpha'}
+                </h3>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl opacity-0 group-hover:opacity-100"></div>
+              <div className={`absolute inset-0 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl transition-opacity ${
+                isNavigatingBancolombia ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}></div>
             </button>
           </div>
         </div>

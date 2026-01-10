@@ -122,6 +122,10 @@ export default function AdminGestionPage() {
     router.push('/admin-panel');
   };
 
+  const handleHome = () => {
+    router.push('/admin-panel');
+  };
+
   const handleEditAdmin = (admin: Admin) => {
     setSelectedAdmin(admin);
     setAmount('');
@@ -303,6 +307,26 @@ export default function AdminGestionPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
+              onClick={handleHome}
+              className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
+              title="Ir al inicio"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                />
+              </svg>
+            </button>
+            <button
               onClick={handleBack}
               className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
               title="Volver al panel principal"
@@ -322,7 +346,7 @@ export default function AdminGestionPage() {
                 />
               </svg>
             </button>
-            <h1 className="text-2xl font-bold text-white">Gestión de Administradores</h1>
+            <h1 className="text-2xl font-bold text-white truncate">Gestión de Administradores</h1>
           </div>
         </div>
       </header>
@@ -338,16 +362,16 @@ export default function AdminGestionPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-gray-300">
+                <table className="w-full text-sm text-gray-300 table-fixed">
                   <thead className="text-xs text-gray-400 uppercase bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left">ID</th>
-                      <th className="px-6 py-3 text-left">Nombre</th>
-                      <th className="px-6 py-3 text-left">Email</th>
-                      <th className="px-6 py-3 text-left">Rol</th>
-                      <th className="px-6 py-3 text-left">Estado</th>
-                      <th className="px-6 py-3 text-left">Saldo</th>
-                      <th className="px-6 py-3 text-left">Acciones</th>
+                      <th className="px-4 py-3 text-left w-16">ID</th>
+                      <th className="px-4 py-3 text-left w-32">Nombre</th>
+                      <th className="px-4 py-3 text-left w-40">Email</th>
+                      <th className="px-4 py-3 text-left w-20">Rol</th>
+                      <th className="px-4 py-3 text-left w-20">Estado</th>
+                      <th className="px-4 py-3 text-left w-28">Saldo</th>
+                      <th className="px-4 py-3 text-left w-24">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -357,22 +381,36 @@ export default function AdminGestionPage() {
                         className="border-b border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors"
                         onClick={() => handleViewOperations(admin)}
                       >
-                        <td className="px-6 py-4">{admin.id}</td>
-                        <td className="px-6 py-4">{admin.name}</td>
-                        <td className="px-6 py-4">{admin.email}</td>
-                        <td className="px-6 py-4 capitalize">{admin.role}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="px-4 py-4 text-center">{admin.id}</td>
+                        <td className="px-4 py-4">
+                          <span className="block truncate overflow-hidden text-ellipsis" title={admin.name}>
+                            {admin.name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="block truncate overflow-hidden text-ellipsis" title={admin.email}>
+                            {admin.email}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 capitalize">
+                          <span className="block truncate overflow-hidden text-ellipsis" title={admin.role}>
+                            {admin.role}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium block truncate overflow-hidden text-ellipsis ${
                             admin.active ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
-                          }`}>
+                          }`} title={admin.active ? 'Activo' : 'Inactivo'}>
                             {admin.active ? 'Activo' : 'Inactivo'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          COP {admin.balance?.toLocaleString('es-CO') || '0'}
+                        <td className="px-4 py-4">
+                          <span className="block truncate overflow-hidden text-ellipsis font-mono text-xs" title={`COP ${admin.balance?.toLocaleString('es-CO') || '0'}`}>
+                            COP {admin.balance?.toLocaleString('es-CO') || '0'}
+                          </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex space-x-2">
+                        <td className="px-4 py-4">
+                          <div className="flex space-x-1 justify-center">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -423,11 +461,11 @@ export default function AdminGestionPage() {
               {/* Información del admin */}
               <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                 <div className="text-sm text-gray-300 mb-1">Administrador</div>
-                <div className="font-medium text-white">{selectedAdmin.name}</div>
-                <div className="text-xs text-gray-400">{selectedAdmin.email}</div>
+                <div className="font-medium text-white truncate max-w-48" title={selectedAdmin.name}>{selectedAdmin.name}</div>
+                <div className="text-xs text-gray-400 truncate max-w-48" title={selectedAdmin.email}>{selectedAdmin.email}</div>
                 <div className="mt-2 pt-2 border-t border-gray-600">
                   <div className="text-sm text-gray-300">Saldo actual</div>
-                  <div className="text-xl font-bold text-white">
+                  <div className="text-xl font-bold text-white truncate max-w-48 overflow-hidden text-ellipsis" title={`COP ${selectedAdmin.balance?.toLocaleString('es-CO') || '0'}`}>
                     COP {selectedAdmin.balance?.toLocaleString('es-CO') || '0'}
                   </div>
                 </div>
@@ -627,7 +665,7 @@ export default function AdminGestionPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">¡Éxito!</h3>
-              <p className="text-gray-300 mb-6">{successMessage}</p>
+              <p className="text-gray-300 mb-6 break-words">{successMessage}</p>
               <button
                 onClick={() => setShowSuccessModal(false)}
                 className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
@@ -651,7 +689,7 @@ export default function AdminGestionPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">Error</h3>
-              <p className="text-gray-300 mb-6">{errorMessage}</p>
+              <p className="text-gray-300 mb-6 break-words">{errorMessage}</p>
               <button
                 onClick={() => setShowErrorModal(false)}
                 className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
@@ -665,44 +703,49 @@ export default function AdminGestionPage() {
 
       {/* Modal de Operaciones del Admin */}
       {showOperationsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
           <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" onClick={handleCloseOperationsModal} />
-          <div className="relative bg-gray-800 border border-gray-700 rounded-xl w-full max-w-4xl max-h-[90vh] shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Operaciones del Administrador</h3>
-                <p className="text-gray-400 text-sm">{adminOperations.length > 0 ? adminOperations[0]?.admin_email : 'Cargando...'}</p>
+          <div className="relative bg-gray-800 border border-gray-700 rounded-xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-b border-gray-700 gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-white truncate">Operaciones del Administrador</h3>
+                <p className="text-gray-400 text-sm truncate" title={adminOperations.length > 0 ? adminOperations[0]?.admin_email : 'Cargando...'}>
+                  {adminOperations.length > 0 ? adminOperations[0]?.admin_email : 'Cargando...'}
+                </p>
               </div>
               <button
                 onClick={handleCloseOperationsModal}
-                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-700 transition-colors"
+                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition-colors self-end sm:self-auto"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            {/* Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-140px)]">
               {operationsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500"></div>
-                  <span className="ml-3 text-gray-300">Cargando operaciones...</span>
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-600 border-t-blue-500"></div>
+                  <span className="ml-3 text-gray-300 text-lg">Cargando operaciones...</span>
                 </div>
               ) : adminOperations.length === 0 ? (
-                <div className="text-center py-8">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-center py-12">
+                  <svg className="w-20 h-20 mx-auto mb-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <p className="text-gray-400">No hay operaciones registradas para este administrador.</p>
+                  <p className="text-gray-400 text-lg">No hay operaciones registradas para este administrador.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {adminOperations.map((operation, index) => (
                     <div key={operation.id || index} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      {/* Header con tipo, monto y fecha */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                          <span className={`px-3 py-1 rounded text-xs font-medium self-start whitespace-nowrap ${
                             operation.operation_type === 'ADD_BALANCE' ? 'bg-green-900 text-green-300' :
                             operation.operation_type === 'SUBTRACT_BALANCE' ? 'bg-red-900 text-red-300' :
                             operation.operation_type === 'CREATE_USER' ? 'bg-blue-900 text-blue-300' :
@@ -712,31 +755,46 @@ export default function AdminGestionPage() {
                             {operation.operation_type}
                           </span>
                           {operation.amount > 0 && (
-                            <span className="text-sm text-gray-300">
+                            <span className="text-sm text-gray-300 font-mono truncate" title={`COP ${operation.amount.toLocaleString('es-CO')}`}>
                               COP {operation.amount.toLocaleString('es-CO')}
                             </span>
                           )}
                         </div>
-                        <span className="text-xs text-gray-500">
-                          {operation.timestamp ? new Date(operation.timestamp).toLocaleString('es-CO') : 'Fecha desconocida'}
-                        </span>
+                        <div className="flex justify-start sm:justify-end">
+                          <span className="text-xs text-gray-500 font-mono bg-gray-800 px-2 py-1 rounded truncate max-w-full" title={operation.timestamp ? new Date(operation.timestamp).toLocaleString('es-CO') : 'Fecha desconocida'}>
+                            {operation.timestamp ? new Date(operation.timestamp).toLocaleDateString('es-CO', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'Fecha desconocida'}
+                          </span>
+                        </div>
                       </div>
 
+                      {/* Razón */}
                       {operation.reason && (
-                        <p className="text-sm text-gray-300 mb-2">{operation.reason}</p>
-                      )}
-
-                      {operation.target_user && (
-                        <div className="text-xs text-gray-400">
-                          Usuario afectado: {operation.target_user}
+                        <div className="mb-3">
+                          <p className="text-sm text-gray-300 leading-relaxed" title={operation.reason}>
+                            {operation.reason}
+                          </p>
                         </div>
                       )}
 
-                      {(operation.previous_balance !== 0 || operation.new_balance !== 0) && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          Balance: {operation.previous_balance?.toLocaleString('es-CO')} → {operation.new_balance?.toLocaleString('es-CO')}
-                        </div>
-                      )}
+                      {/* Información adicional */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-400">
+                        {operation.target_user && (
+                          <div className="truncate" title={`Usuario afectado: ${operation.target_user}`}>
+                            <span className="font-medium">Usuario:</span> {operation.target_user}
+                          </div>
+                        )}
+                        {(operation.previous_balance !== 0 || operation.new_balance !== 0) && (
+                          <div className="truncate font-mono" title={`Balance anterior: ${operation.previous_balance?.toLocaleString('es-CO')} → Balance nuevo: ${operation.new_balance?.toLocaleString('es-CO')}`}>
+                            <span className="font-medium">Balance:</span> {operation.previous_balance?.toLocaleString('es-CO')} → {operation.new_balance?.toLocaleString('es-CO')}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
