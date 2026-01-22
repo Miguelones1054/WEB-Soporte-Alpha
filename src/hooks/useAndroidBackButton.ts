@@ -13,14 +13,23 @@ export function useAndroidBackButton() {
   const navigationHistoryRef = useRef<string[]>([]);
 
   useEffect(() => {
+    // Solo ejecutar en navegador (client-side)
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     // Importar Capacitor dinámicamente para evitar errores de compilación
     const setupCapacitorBackButton = async () => {
       try {
-        const { Capacitor } = await import('@capacitor/core');
-        const { App } = await import('@capacitor/app');
+        // Importar módulos con typing flexible para evitar errores de compilación
+        const capacitorCore = await import('@capacitor/core');
+        const capacitorApp = await import('@capacitor/app');
+
+        const Capacitor = capacitorCore.Capacitor as any;
+        const App = capacitorApp.App as any;
 
         // Solo funciona en plataformas nativas (Android/iOS)
-        if (!Capacitor.isNativePlatform()) {
+        if (!Capacitor?.isNativePlatform?.()) {
           return;
         }
 
@@ -35,10 +44,10 @@ export function useAndroidBackButton() {
         }
 
         // Listener para el botón back
-        const handler = await App.addListener('backButton', () => {
+        const handler = await App?.addListener?.('backButton', () => {
           // Si estamos en la página principal (login), cerrar la app
           if (pathname === '/' || pathname === '') {
-            App.exitApp();
+            App?.exitApp?.();
             return;
           }
 
@@ -56,10 +65,11 @@ export function useAndroidBackButton() {
 
         // Retornar función de limpieza
         return () => {
-          handler.remove();
+          handler?.remove?.();
         };
       } catch (error) {
-        console.warn('Error setting up back button handler:', error);
+        // Silenciar errores - este hook es opcional para apps móviles
+        console.warn('Capacitor back button setup failed (expected in web environment):', error);
         return () => {};
       }
     };
