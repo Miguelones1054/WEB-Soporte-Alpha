@@ -27,6 +27,8 @@ interface UserData {
   role: string;
   type: string;
   vip_status: string;
+  pwa_status: string;
+  is_pwa: boolean;
 }
 
 // Función para formatear números grandes
@@ -1384,6 +1386,10 @@ function AdminPanelContent() {
                     <div className={`text-lg font-semibold ${loading ? 'text-gray-400' : (userData.vip_status === 'VIP' ? 'text-yellow-400' : 'text-gray-400')}`}>
                       {loading ? <Shimmer className="h-5 w-16" /> : userData.vip_status}
                     </div>
+                    <div className="text-gray-400 text-sm mb-1 mt-2">Estado PWA</div>
+                    <div className={`text-lg font-semibold ${loading ? 'text-gray-400' : (userData.is_pwa ? 'text-green-400' : 'text-gray-400')}`}>
+                      {loading ? <Shimmer className="h-5 w-16" /> : userData.pwa_status}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1492,17 +1498,17 @@ function AdminPanelContent() {
                   <button
                     onClick={() => {
                       if (!userData) return;
-                      const action = userData.vip_status === 'VIP' ? 'cancel_pwa' : 'upgrade_pwa';
+                      const action = userData.is_pwa ? 'cancel_pwa' : 'upgrade_pwa';
                       handleUserAction(action, userData.numeroCel, userData.username);
                     }}
                     disabled={showProgressBar}
                     className={`px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      userData.vip_status === 'VIP'
+                      userData.is_pwa
                         ? 'bg-red-600 hover:bg-red-700 text-white border border-red-500'
                         : 'bg-green-600 hover:bg-green-700 text-white border border-green-500'
                     }`}
                   >
-                    {userData.vip_status === 'VIP' ? 'Quitar Usuario PWA' : 'Usuario PWA'}
+                    {userData.is_pwa ? 'Quitar Usuario PWA' : 'Usuario PWA'}
                   </button>
 
                   <button
