@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { App } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
 
 /**
  * Hook para manejar el botón back de Android
@@ -15,24 +13,28 @@ export function useAndroidBackButton() {
   const navigationHistoryRef = useRef<string[]>([]);
 
   useEffect(() => {
-    // Solo funciona en plataformas nativas (Android/iOS)
-    if (!Capacitor.isNativePlatform()) {
-      return;
-    }
-
-    // Registrar la ruta actual en el historial
-    if (navigationHistoryRef.current.length === 0 || 
-        navigationHistoryRef.current[navigationHistoryRef.current.length - 1] !== pathname) {
-      navigationHistoryRef.current.push(pathname);
-      // Mantener solo las últimas 50 rutas para evitar memoria excesiva
-      if (navigationHistoryRef.current.length > 50) {
-        navigationHistoryRef.current.shift();
-      }
-    }
-
-    // Listener para el botón back
-    const setupBackButton = async () => {
+    // Importar Capacitor dinámicamente para evitar errores de compilación
+    const setupCapacitorBackButton = async () => {
       try {
+        const { Capacitor } = await import('@capacitor/core');
+        const { App } = await import('@capacitor/app');
+
+        // Solo funciona en plataformas nativas (Android/iOS)
+        if (!Capacitor.isNativePlatform()) {
+          return;
+        }
+
+        // Registrar la ruta actual en el historial
+        if (navigationHistoryRef.current.length === 0 ||
+            navigationHistoryRef.current[navigationHistoryRef.current.length - 1] !== pathname) {
+          navigationHistoryRef.current.push(pathname);
+          // Mantener solo las últimas 50 rutas para evitar memoria excesiva
+          if (navigationHistoryRef.current.length > 50) {
+            navigationHistoryRef.current.shift();
+          }
+        }
+
+        // Listener para el botón back
         const handler = await App.addListener('backButton', () => {
           // Si estamos en la página principal (login), cerrar la app
           if (pathname === '/' || pathname === '') {
@@ -63,7 +65,7 @@ export function useAndroidBackButton() {
     };
 
     let cleanup: (() => void) | undefined;
-    setupBackButton().then(cleanupFn => {
+    setupCapacitorBackButton().then(cleanupFn => {
       cleanup = cleanupFn;
     });
 
