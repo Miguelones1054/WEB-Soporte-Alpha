@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { loginWithEmail, onAuthStateChange } from '../lib/firebase';
 
 interface AdminData {
@@ -20,6 +21,7 @@ interface LoginResponse {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -62,7 +64,7 @@ export default function Home() {
 
       // Redirigir al panel de admin
       setTimeout(() => {
-        window.location.href = '/admin-panel';
+        router.push('/admin-panel');
       }, 500);
 
     } catch (error: any) {

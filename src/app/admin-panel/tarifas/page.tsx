@@ -97,7 +97,7 @@ export default function TarifasPage() {
       const token = localStorage.getItem('admin_token');
 
       if (!token) {
-        window.location.href = '/';
+        router.push('/');
         return;
       }
 
@@ -122,12 +122,12 @@ export default function TarifasPage() {
         } else {
           // Token inválido o expirado
           localStorage.removeItem('admin_token');
-          window.location.href = '/';
+          router.push('/');
         }
       } catch (error) {
         console.error('Error obteniendo datos del admin:', error);
         localStorage.removeItem('admin_token');
-        window.location.href = '/';
+        router.push('/');
       }
 
       setLoading(false);
@@ -156,7 +156,7 @@ export default function TarifasPage() {
       localStorage.removeItem('admin_email');
       localStorage.removeItem('admin_password');
       localStorage.removeItem('admin_remember');
-      window.location.href = '/';
+      router.push('/');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }

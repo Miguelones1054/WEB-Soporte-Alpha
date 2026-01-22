@@ -10,16 +10,23 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
     "@capacitor/cli": "^8.0.0",
     "@capacitor/core": "^8.0.0",
+    "@react-navigation/native": "^7.1.26",
+    "@react-navigation/native-stack": "^7.9.0",
     "chart.js": "^4.5.1",
     "firebase": "^12.7.0",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-screens": "^4.19.0"
   },
   "devDependencies": {
+    "@bubblewrap/cli": "^1.24.1",
+    "@capacitor/assets": "^3.0.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

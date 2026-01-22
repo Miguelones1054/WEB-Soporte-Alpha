@@ -130,7 +130,7 @@ function AdminPanelContent() {
       const token = localStorage.getItem('admin_token');
 
       if (!token) {
-        window.location.href = '/';
+        router.push('/');
         return;
       }
 
@@ -158,12 +158,12 @@ function AdminPanelContent() {
         } else {
           // Token inválido o expirado
           localStorage.removeItem('admin_token');
-          window.location.href = '/';
+          router.push('/');
         }
       } catch (error) {
         console.error('Error obteniendo datos del admin:', error);
         localStorage.removeItem('admin_token');
-        window.location.href = '/';
+        router.push('/');
       }
 
       setLoading(false);
@@ -262,7 +262,7 @@ function AdminPanelContent() {
       localStorage.removeItem('admin_email');
       localStorage.removeItem('admin_password');
       localStorage.removeItem('admin_remember');
-      window.location.href = '/';
+      router.push('/');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
@@ -734,11 +734,11 @@ function AdminPanelContent() {
     openSubtractModal();
   };
 
-  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'upgrade_vip' | 'cancel_vip' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
+  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'upgrade_vip' | 'cancel_vip' | 'upgrade_pwa' | 'cancel_pwa' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
       alert('Sesión expirada. Por favor inicie sesión nuevamente.');
-      window.location.href = '/';
+      router.push('/');
       return;
     }
 
@@ -746,7 +746,7 @@ function AdminPanelContent() {
     setShowProgressBar(true);
 
     try {
-      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'upgrade_vip' ? 'upgrade-vip' : action === 'cancel_vip' ? 'cancel-vip' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : '';
+      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'upgrade_vip' ? 'upgrade-vip' : action === 'cancel_vip' ? 'cancel-vip' : action === 'upgrade_pwa' ? 'upgrade-pwa' : action === 'cancel_pwa' ? 'cancel-pwa' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : '';
 
       if (action === 'update_user' || action === 'add_sms' || action === 'subtract_sms') {
         endpoint = '';
@@ -1490,6 +1490,22 @@ function AdminPanelContent() {
                   </button>
 
                   <button
+                    onClick={() => {
+                      if (!userData) return;
+                      const action = userData.vip_status === 'VIP' ? 'cancel_pwa' : 'upgrade_pwa';
+                      handleUserAction(action, userData.numeroCel, userData.username);
+                    }}
+                    disabled={showProgressBar}
+                    className={`px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      userData.vip_status === 'VIP'
+                        ? 'bg-red-600 hover:bg-red-700 text-white border border-red-500'
+                        : 'bg-green-600 hover:bg-green-700 text-white border border-green-500'
+                    }`}
+                  >
+                    {userData.vip_status === 'VIP' ? 'Quitar Usuario PWA' : 'Usuario PWA'}
+                  </button>
+
+                  <button
                     onClick={() => setShowUserNotificationModal(true)}
                     disabled={showProgressBar}
                     className="px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-cyan-600 hover:bg-cyan-700 text-white border border-cyan-500"
@@ -1841,8 +1857,7 @@ function AdminPanelContent() {
 
       {/* Progress Bar */}
       {showProgressBar && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center">
-          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
           <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-sm w-full mx-4 border border-gray-700">
             <div className="p-6">
               <div className="flex flex-col items-center space-y-4">

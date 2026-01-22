@@ -1,9 +1,7 @@
 // Configuración global de la aplicación
 export const API_CONFIG = {
-  // URL base del backend - localhost para dev, API para producción
-  BASE_URL: process.env.NODE_ENV === 'development'
-    ? 'http://localhost:8000'
-    : 'https://apiadm.nequialpha.com',
+  // URL base del backend - usar siempre producción
+  BASE_URL: 'https://apiadm.nequialpha.com',
 
   // Endpoints principales
   ENDPOINTS: {

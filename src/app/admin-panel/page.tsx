@@ -33,7 +33,7 @@ export default function AdminPanel() {
 
     const token = localStorage.getItem('admin_token');
     if (!token) {
-      window.location.href = '/';
+      router.push('/');
       return;
     }
 
@@ -58,7 +58,7 @@ export default function AdminPanel() {
           setAdminInfo(adminData);
         } else {
           localStorage.removeItem('admin_token');
-          window.location.href = '/';
+          router.push('/');
         }
       } catch (error) {
         console.error('Error de conexión con el servidor:', error);

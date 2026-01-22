@@ -76,7 +76,7 @@ export default function AdminGestionPage() {
 
     const token = localStorage.getItem('admin_token');
     if (!token) {
-      window.location.href = '/';
+      router.push('/');
       return;
     }
 
@@ -101,13 +101,13 @@ export default function AdminGestionPage() {
           setUser(adminData);
         } else {
           localStorage.removeItem('admin_token');
-          window.location.href = '/';
+          router.push('/');
           return;
         }
       } catch (error) {
         console.error('Error obteniendo datos del admin:', error);
         localStorage.removeItem('admin_token');
-        window.location.href = '/';
+        router.push('/');
         return;
       }
     };
