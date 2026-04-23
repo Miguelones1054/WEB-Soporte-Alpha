@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { API_BASE_URL } from '../../lib/constants';
+import { API_BASE_URL, getTelegramRecargarPanelUrl } from '../../lib/constants';
 
 interface AdminInfo {
   id: number;
@@ -11,6 +12,16 @@ interface AdminInfo {
   role: string;
   active: boolean;
   balance: number;
+}
+
+/** Respuesta de GET /admin/operations */
+interface AdminOperationRow {
+  id?: string;
+  operation_type: string;
+  target_user: string;
+  amount?: number;
+  reason?: string;
+  timestamp?: string;
 }
 
 const Shimmer = ({ className = 'h-4 w-20' }: { className?: string }) => (
@@ -24,9 +35,21 @@ export default function AdminPanel() {
   const [showProfile, setShowProfile] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isNavigatingNequi, setIsNavigatingNequi] = useState(false);
-  const [isNavigatingBancolombia, setIsNavigatingBancolombia] = useState(false);
+  const [lastOperations, setLastOperations] = useState<AdminOperationRow[]>([]);
   const router = useRouter();
+
+  const formatOpDate = (ts?: string) => {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   useEffect(() => {
     document.title = 'Admin Apps';
@@ -56,6 +79,22 @@ export default function AdminPanel() {
             role: adminData.role
           });
           setAdminInfo(adminData);
+          try {
+            const opRes = await fetch(`${API_BASE_URL}/admin/operations?limit=5`, {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            if (opRes.ok) {
+              const opJson = await opRes.json();
+              const list = (opJson.operations as AdminOperationRow[] | undefined) || [];
+              setLastOperations(list.slice(0, 5));
+            }
+          } catch (e) {
+            console.error('Error cargando operaciones recientes:', e);
+          }
         } else {
           localStorage.removeItem('admin_token');
           router.push('/');
@@ -108,39 +147,16 @@ export default function AdminPanel() {
     }
   };
 
-  const handleOpenNequi = async () => {
-    setIsNavigatingNequi(true);
-    try {
-      await router.push('/admin-panel/nequi_manager');
-    } catch (error) {
-      console.error('Error al navegar a Nequi Manager:', error);
-      setIsNavigatingNequi(false);
-    }
-  };
-
-  const handleOpenBancolombia = () => {
-    setIsNavigatingBancolombia(true);
-    // Placeholder hasta que exista la vista de Bancolombia
-    setTimeout(() => {
-      alert('La vista de Bancolombia estará disponible próximamente.');
-      setIsNavigatingBancolombia(false);
-    }, 100);
-  };
-
-  const handleOpenAdminGestion = () => {
-    router.push('/admin-panel/admin-gestion');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen overflow-x-hidden bg-gray-900">
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 relative">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -212,7 +228,7 @@ export default function AdminPanel() {
         {showProfile && (
           <div className="profile-popup absolute right-6 top-16 bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-72 p-4 z-50">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">
                   {(user?.displayName || 'A')[0].toUpperCase()}
                 </span>
@@ -232,71 +248,152 @@ export default function AdminPanel() {
         )}
       </header>
 
-      <main className="p-6">
-        <div className="max-w-3xl mx-auto p-8">
-          <h2 className="text-2xl font-bold text-white text-center mb-2">Selecciona app para continuar</h2>
-          <p className="text-gray-400 text-center mb-8">Elige la aplicación que deseas gestionar.</p>
+      <main className="overflow-x-hidden p-3 sm:p-6">
+        <div className="mx-auto w-full min-w-0 max-w-3xl px-2 py-6 text-center sm:px-6 sm:py-8">
+          <div className="mb-6 flex w-full min-w-0 justify-center px-1 sm:mb-10 sm:px-0">
+            <h1 className="title-app-select max-w-full px-1 text-2xl font-extrabold tracking-tight sm:text-4xl">
+              Selecciona APP
+            </h1>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <button
-              onClick={handleOpenNequi}
-              disabled={isNavigatingNequi}
-              className={`group relative bg-slate-800 hover:bg-slate-700 rounded-xl p-6 shadow-lg flex flex-col items-center justify-center space-y-4 transition-all duration-200 ${
-                isNavigatingNequi ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+          {/* Dos columnas: sin scroll horizontal, tarjetas completas dentro del viewport */}
+          <div className="mx-auto grid w-full min-w-0 max-w-2xl grid-cols-2 gap-2 sm:gap-6">
+            <Link
+              href="/admin-panel/nequi_manager"
+              className="neon-border-nq group flex w-full min-w-0 max-w-full flex-col items-center justify-center gap-1.5 overflow-hidden px-1.5 py-2.5 min-[400px]:flex-row min-[400px]:gap-2 sm:gap-3 sm:px-4 sm:py-3"
             >
-              <div className="w-16 h-16 flex items-center justify-center bg-slate-700 group-hover:bg-slate-600 rounded-full relative">
-                {isNavigatingNequi ? (
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                ) : (
-                  <img
-                    src="/nequi-logo.jpg"
-                    alt="Nequi Logo"
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                )}
+              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/15 min-[400px]:h-10 min-[400px]:w-10 sm:h-12 sm:w-12 md:h-14 md:w-14">
+                <img
+                  src="/nequi-logo.jpg"
+                  alt="Nequi"
+                  className="h-full w-full object-cover"
+                />
               </div>
-              <div className="text-center">
-                <h3 className={`text-lg font-bold text-white transition-colors ${
-                  isNavigatingNequi ? 'text-gray-400' : 'group-hover:text-gray-100'
-                }`}>
-                  {isNavigatingNequi ? 'Cargando...' : 'Nequi Alpha'}
-                </h3>
-              </div>
-              <div className={`absolute inset-0 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl transition-opacity ${
-                isNavigatingNequi ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              }`}></div>
-            </button>
+              <span className="max-w-full text-center text-[0.65rem] font-bold leading-tight text-white min-[400px]:whitespace-nowrap min-[400px]:text-left min-[400px]:text-sm sm:text-base md:text-lg">
+                NQ ALPHA
+              </span>
+            </Link>
 
-            <button
-              onClick={handleOpenBancolombia}
-              disabled={isNavigatingBancolombia}
-              className={`group relative bg-slate-800 hover:bg-slate-700 rounded-xl p-6 shadow-lg flex flex-col items-center justify-center space-y-4 transition-all duration-200 ${
-                isNavigatingBancolombia ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+            <Link
+              href="/admin-panel/bancolombia_manager"
+              className="neon-border-bc group flex w-full min-w-0 max-w-full flex-col items-center justify-center gap-1.5 overflow-hidden px-1.5 py-2.5 min-[400px]:flex-row min-[400px]:gap-2 sm:gap-3 sm:px-4 sm:py-3"
             >
-              <div className="w-16 h-16 flex items-center justify-center bg-slate-700 group-hover:bg-slate-600 rounded-full relative">
-                {isNavigatingBancolombia ? (
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
-                ) : (
-                  <img
-                    src="/bancolombia-logo.png"
-                    alt="Bancolombia Logo"
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                )}
+              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full p-0.5 ring-1 ring-white/15 min-[400px]:h-10 min-[400px]:w-10 sm:h-12 sm:w-12 md:h-14 md:w-14">
+                <img
+                  src="/bancolombia-logo.png"
+                  alt="Bancolombia"
+                  className="h-full w-full object-contain"
+                />
               </div>
-              <div className="text-center">
-                <h3 className={`text-lg font-bold text-white transition-colors ${
-                  isNavigatingBancolombia ? 'text-gray-400' : 'group-hover:text-gray-100'
-                }`}>
-                  {isNavigatingBancolombia ? 'Cargando...' : 'Bancolombia Alpha'}
-                </h3>
+              <span className="max-w-full text-center text-[0.65rem] font-bold leading-tight text-white min-[400px]:whitespace-nowrap min-[400px]:text-left min-[400px]:text-sm sm:text-base md:text-lg">
+                BC ALPHA
+              </span>
+            </Link>
+          </div>
+
+          <div className="mx-auto mt-24 w-full max-w-2xl space-y-4 px-1 sm:mt-32">
+            <div className="mx-auto max-w-md">
+              <div className="flex flex-col gap-1 rounded-lg border border-gray-700/60 bg-gray-800/30 px-4 py-3">
+                <div className="flex min-h-[3.25rem] items-center justify-between gap-3">
+                  <span className="shrink-0 text-sm leading-none text-gray-400">Fondos actuales</span>
+                  <span className="min-w-0 break-words text-right text-2xl font-bold tabular-nums leading-none text-white sm:text-3xl">
+                    {adminInfo?.balance != null
+                      ? `COP $${Number(adminInfo.balance).toLocaleString('es-CO')}`
+                      : 'COP $0'}
+                  </span>
+                </div>
+                <div className="flex justify-end">
+                  <a
+                    href={
+                      adminInfo != null
+                        ? getTelegramRecargarPanelUrl(adminInfo.id)
+                        : '#'
+                    }
+                    onClick={adminInfo == null ? (e) => e.preventDefault() : undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900"
+                  >
+                    Recargar fondos
+                  </a>
+                </div>
               </div>
-              <div className={`absolute inset-0 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl transition-opacity ${
-                isNavigatingBancolombia ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              }`}></div>
-            </button>
+            </div>
+
+            <div className="w-full">
+              <h2 className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Últimas 5 operaciones
+              </h2>
+              <div className="overflow-x-auto rounded border border-gray-600/90 bg-gray-800/50 shadow-inner">
+                <table className="w-full min-w-[32rem] border-collapse text-left font-mono text-[0.7rem] text-gray-200 sm:min-w-0 sm:text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-600 bg-gray-800/80">
+                      <th className="whitespace-nowrap border-r border-gray-600 px-2 py-1.5 font-semibold text-gray-300">
+                        Fecha
+                      </th>
+                      <th className="whitespace-nowrap border-r border-gray-600 px-2 py-1.5 font-semibold text-gray-300">
+                        Tipo
+                      </th>
+                      <th className="min-w-[5rem] border-r border-gray-600 px-2 py-1.5 font-semibold text-gray-300">
+                        Usuario / destino
+                      </th>
+                      <th className="whitespace-nowrap border-r border-gray-600 px-2 py-1.5 text-right font-semibold text-gray-300">
+                        Monto
+                      </th>
+                      <th className="px-2 py-1.5 font-semibold text-gray-300">Motivo / detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lastOperations.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="border-t border-gray-600/60 px-2 py-3 text-center text-gray-500"
+                        >
+                          Aún no hay operaciones registradas
+                        </td>
+                      </tr>
+                    ) : (
+                      lastOperations.map((op, i) => (
+                        <tr
+                          key={op.id ?? `${op.timestamp ?? 'op'}-${i}`}
+                          className={i % 2 === 0 ? 'bg-gray-800/20' : 'bg-gray-900/30'}
+                        >
+                          <td className="whitespace-nowrap border-r border-t border-gray-600/60 px-2 py-1 text-gray-400">
+                            {formatOpDate(op.timestamp)}
+                          </td>
+                          <td
+                            className="max-w-[8rem] border-r border-t border-gray-600/60 px-2 py-1 align-top text-gray-200"
+                            title={op.operation_type}
+                          >
+                            <span className="line-clamp-2 break-all">{op.operation_type || '—'}</span>
+                          </td>
+                          <td
+                            className="max-w-[7rem] border-r border-t border-gray-600/60 px-2 py-1 align-top text-gray-300"
+                            title={op.target_user}
+                          >
+                            <span className="line-clamp-2 break-all">{op.target_user || '—'}</span>
+                          </td>
+                          <td className="whitespace-nowrap border-r border-t border-gray-600/60 px-2 py-1 text-right tabular-nums text-gray-200">
+                            {op.amount != null && op.amount !== 0
+                              ? `COP $${Number(op.amount).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`
+                              : '—'}
+                          </td>
+                          <td
+                            className="max-w-[10rem] border-t border-gray-600/60 px-2 py-1 align-top text-gray-400"
+                            title={op.reason}
+                          >
+                            <span className="line-clamp-2 break-words">
+                              {op.reason?.trim() || '—'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -319,7 +416,7 @@ export default function AdminPanel() {
             {/* Header del Drawer */}
             <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -351,7 +448,7 @@ export default function AdminPanel() {
                         {loading || !adminInfo ? (
                           <Shimmer className="h-4 w-20" />
                         ) : (
-                          `COP ${adminInfo.balance?.toLocaleString('es-CO') || '0'}`
+                          `COP $${adminInfo.balance?.toLocaleString('es-CO') || '0'}`
                         )}
                       </div>
                     </div>
@@ -382,11 +479,9 @@ export default function AdminPanel() {
             {/* Contenido del Drawer */}
             <div className="flex-1 overflow-y-auto">
               {adminInfo?.role === 'owner' && (
-                <button
-                  onClick={() => {
-                    toggleDrawer();
-                    handleOpenAdminGestion();
-                  }}
+                <Link
+                  href="/admin-panel/admin-gestion"
+                  onClick={toggleDrawer}
                   className="w-full text-white py-3 px-6 rounded-none font-medium flex items-center space-x-3 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none transition-colors"
                 >
                   <svg
@@ -404,7 +499,7 @@ export default function AdminPanel() {
                     />
                   </svg>
                   <span>Gestionar administradores</span>
-                </button>
+                </Link>
               )}
             </div>
           </div>

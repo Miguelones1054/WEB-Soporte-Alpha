@@ -171,7 +171,7 @@ export default function RegistrosPage() {
         );
       case 'UPDATE_USER':
         return (
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
@@ -219,7 +219,7 @@ export default function RegistrosPage() {
         );
       case 'ADD_SMS':
         return (
-          <div className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-red-700 rounded-full flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -265,7 +265,7 @@ export default function RegistrosPage() {
       case 'SUBTRACT_ADMIN_BALANCE':
         return 'text-amber-300 bg-amber-900/20 border-amber-700/60';
       case 'UPDATE_USER':
-        return 'text-blue-400 bg-blue-900/20 border-blue-700/50';
+        return 'text-red-400 bg-red-900/20 border-red-700/50';
       case 'BAN_USER':
         return 'text-red-500 bg-red-900/30 border-red-700/60';
       case 'UNBAN_USER':
@@ -277,7 +277,7 @@ export default function RegistrosPage() {
       case 'CANCEL_VIP':
         return 'text-gray-400 bg-gray-900/30 border-gray-700/60';
       case 'ADD_SMS':
-        return 'text-cyan-400 bg-cyan-900/20 border-cyan-700/50';
+        return 'text-red-300 bg-red-950/40 border-red-800/50';
       case 'SUBTRACT_SMS':
         return 'text-orange-400 bg-orange-900/20 border-orange-700/50';
       case 'CREATE_USER':
@@ -290,7 +290,7 @@ export default function RegistrosPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
@@ -336,7 +336,7 @@ export default function RegistrosPage() {
                 onClick={() => setActiveFilter('ALL')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   activeFilter === 'ALL'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -346,7 +346,7 @@ export default function RegistrosPage() {
                 onClick={() => setActiveFilter('BALANCE')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
                   activeFilter === 'BALANCE'
-                    ? 'bg-blue-800 text-white'
+                    ? 'bg-red-800 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -378,7 +378,7 @@ export default function RegistrosPage() {
                 onClick={() => setActiveFilter('SMS')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
                   activeFilter === 'SMS'
-                    ? 'bg-blue-800 text-white'
+                    ? 'bg-red-800 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -394,7 +394,7 @@ export default function RegistrosPage() {
                 onClick={() => setActiveFilter('USER_ACTIONS')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
                   activeFilter === 'USER_ACTIONS'
-                    ? 'bg-blue-800 text-white'
+                    ? 'bg-red-800 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -532,7 +532,7 @@ export default function RegistrosPage() {
                                       </>
                                     ) : (
                                       <>
-                                        Usuario: <span className="text-blue-400">{operation.target_user}</span>
+                                        Usuario: <span className="text-red-400">{operation.target_user}</span>
                                       </>
                                     )}
                                 </p>
@@ -544,7 +544,7 @@ export default function RegistrosPage() {
                                       operation.operation_type === 'SUBTRACT_BALANCE' ? 'text-red-400' :
                                       operation.operation_type === 'ADD_ADMIN_BALANCE' ? 'text-emerald-300' :
                                       operation.operation_type === 'SUBTRACT_ADMIN_BALANCE' ? 'text-amber-300' :
-                                      'text-blue-400'
+                                      'text-red-400'
                                     }`}>
                                       ${formatCurrency(operation.amount)}
                                     </span>

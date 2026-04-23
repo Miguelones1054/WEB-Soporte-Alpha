@@ -10,22 +10,152 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Grises con matices rojizos (tema general oscuro borgoña, no azul-pizarra) */
+  --color-gray-50: #fbf6f6;
+  --color-gray-100: #f2e8e8;
+  --color-gray-200: #e0d0d0;
+  --color-gray-300: #c4adad;
+  --color-gray-400: #8f6f6f;
+  --color-gray-500: #5c3d3d;
+  --color-gray-600: #3d2222;
+  --color-gray-700: #2a1414;
+  --color-gray-800: #1a0c0c;
+  --color-gray-900: #0f0808;
+  --color-gray-950: #0a0404;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0a0404;
+    --foreground: #f0e4e4;
   }
 }
 
 body {
-  background: #111827; /* bg-gray-900 - evita flash blanco */
+  background: #0f0808; /* alineado con --color-gray-900 (tema rojo oscuro) */
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+}
+
+/* Admin panel: enlaces NQ / BC — solo borde + resplandor neón (sin relleno) */
+.neon-border-nq {
+  background: transparent;
+  border: 1px solid rgba(249, 168, 212, 0.9);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 0 3px rgba(244, 114, 182, 0.95),
+    0 0 10px rgba(236, 72, 153, 0.65),
+    0 0 22px rgba(192, 38, 211, 0.4),
+    0 0 36px rgba(168, 85, 247, 0.22);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.neon-border-nq:hover {
+  border-color: rgba(252, 231, 243, 0.98);
+  box-shadow:
+    0 0 5px rgba(251, 207, 232, 0.95),
+    0 0 14px rgba(244, 114, 182, 0.75),
+    0 0 28px rgba(236, 72, 153, 0.5),
+    0 0 44px rgba(192, 38, 211, 0.32);
+}
+
+.neon-border-bc {
+  background: transparent;
+  border: 1px solid rgba(253, 224, 71, 0.95);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 0 3px rgba(250, 204, 21, 0.9),
+    0 0 10px rgba(234, 179, 8, 0.6),
+    0 0 22px rgba(202, 138, 4, 0.38),
+    0 0 36px rgba(161, 98, 7, 0.22);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.neon-border-bc:hover {
+  border-color: rgba(254, 249, 195, 0.98);
+  box-shadow:
+    0 0 5px rgba(254, 240, 138, 0.9),
+    0 0 14px rgba(250, 204, 21, 0.72),
+    0 0 28px rgba(234, 179, 8, 0.48),
+    0 0 44px rgba(202, 138, 4, 0.3);
+}
+
+/* Neón más contenido en móvil: evita desbordes que provocan scroll horizontal */
+@media (max-width: 639px) {
+  .neon-border-nq {
+    box-shadow:
+      0 0 2px rgba(244, 114, 182, 0.85),
+      0 0 8px rgba(236, 72, 153, 0.45),
+      0 0 12px rgba(192, 38, 211, 0.22);
+  }
+  .neon-border-nq:hover {
+    box-shadow:
+      0 0 3px rgba(244, 114, 182, 0.95),
+      0 0 10px rgba(236, 72, 153, 0.55);
+  }
+  .neon-border-bc {
+    box-shadow:
+      0 0 2px rgba(250, 204, 21, 0.8),
+      0 0 8px rgba(234, 179, 8, 0.42),
+      0 0 12px rgba(202, 138, 4, 0.2);
+  }
+  .neon-border-bc:hover {
+    box-shadow:
+      0 0 3px rgba(254, 240, 138, 0.85),
+      0 0 10px rgba(250, 204, 21, 0.5);
+  }
+}
+
+/* Título principal del selector de app (admin-panel) */
+.title-app-select {
+  display: inline-block;
+  max-width: 100%;
+  background: linear-gradient(
+    100deg,
+    #fda4af 0%,
+    #fce7f3 18%,
+    #ffffff 35%,
+    #fef3c7 52%,
+    #ffffff 68%,
+    #c4b5fd 85%,
+    #fda4af 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(244, 114, 182, 0.4))
+    drop-shadow(0 0 28px rgba(250, 204, 21, 0.2));
+  animation: title-app-glow 5s ease-in-out infinite;
+}
+
+@keyframes title-app-glow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (max-width: 639px) {
+  .title-app-select {
+    filter: drop-shadow(0 0 5px rgba(244, 114, 182, 0.28))
+      drop-shadow(0 0 10px rgba(250, 204, 21, 0.12));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-border-nq,
+  .neon-border-bc {
+    transition: none;
+  }
+  .title-app-select {
+    animation: none;
+    background-position: 50% 50%;
+  }
 }
 
 /* Animaciones personalizadas para el fondo de login */
@@ -75,66 +205,15 @@ body {
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: #374151;
+  background: #2a1414;
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #6B7280;
+  background: #5c3d3d;
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
-}
-
-/* Animaciones de slide para transiciones entre páginas */
-.page-transition-wrapper {
-  width: 100%;
-  min-height: 100vh;
-  background-color: #111827; /* bg-gray-900 - evita flash blanco */
-  position: relative;
-  overflow: hidden;
-}
-
-.page-transition {
-  width: 100%;
-  min-height: 100vh;
-  background-color: #111827; /* bg-gray-900 */
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-  transform: translateX(0);
-  opacity: 1;
-  position: relative;
-}
-
-.page-transition.slide-in {
-  animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes slideInFromRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0.8;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Optimización para Android - usa aceleración por hardware */
-@media (prefers-reduced-motion: no-preference) {
-  .page-transition {
-    will-change: transform, opacity;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-  }
-}
-
-/* Desactivar animaciones si el usuario prefiere movimiento reducido */
-@media (prefers-reduced-motion: reduce) {
-  .page-transition {
-    transition: none;
-    animation: none;
-  }
+  background: #8f6f6f;
 }

@@ -172,13 +172,13 @@ export default function OperationsPage() {
     if (typeof value === 'boolean') {
       return value ? 'text-green-400' : 'text-red-400';
     }
-    return 'text-blue-400';
+    return 'text-red-400';
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
@@ -200,7 +200,7 @@ export default function OperationsPage() {
               </button>
               <button
                 onClick={loadAppConfig}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
               >
                 Reintentar
               </button>
@@ -219,7 +219,7 @@ export default function OperationsPage() {
           {/* Ajustes del Bot de Recargas */}
           <div className="bg-gray-800 rounded-lg p-6 md:col-span-2 lg:col-span-3">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Ajustes del Bot de Recargas
@@ -286,7 +286,7 @@ export default function OperationsPage() {
                     disabled={updatingField !== null}
                     onChange={(e) => updateConfigValue('cap', e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
               </div>
               <div className="flex justify-between items-center">
@@ -299,7 +299,7 @@ export default function OperationsPage() {
                     disabled={updatingField !== null}
                     onChange={(e) => updateConfigValue('logs_transacciones', e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function OperationsPage() {
           {/* Funciones Especiales */}
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Funciones Especiales
@@ -324,7 +324,7 @@ export default function OperationsPage() {
                     disabled={updatingField !== null}
                     onChange={(e) => updateConfigValue('extract_name_active', e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
               </div>
               <div className="flex justify-between items-center">
@@ -337,7 +337,7 @@ export default function OperationsPage() {
                     disabled={updatingField !== null}
                     onChange={(e) => updateConfigValue('suggested_container_enabled', e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
               </div>
               <div className="flex justify-between items-center">
@@ -350,7 +350,7 @@ export default function OperationsPage() {
                     disabled={updatingField !== null}
                     onChange={(e) => updateConfigValue('red_vip_active', e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
               </div>
             </div>
@@ -367,31 +367,31 @@ export default function OperationsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <span className="text-gray-400 text-sm">Support Link:</span>
-                <p className="text-xs text-blue-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
+                <p className="text-xs text-red-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
                   {config?.support_link || 'No definido'}
                 </p>
               </div>
               <div>
                 <span className="text-gray-400 text-sm">VIP Functions Link:</span>
-                <p className="text-xs text-blue-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
+                <p className="text-xs text-red-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
                   {config?.vip_functions_link || 'No definido'}
                 </p>
               </div>
               <div>
                 <span className="text-gray-400 text-sm">Red VIP:</span>
-                <p className="text-xs text-blue-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
+                <p className="text-xs text-red-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
                   {config?.red_vip || 'No definido'}
                 </p>
               </div>
               <div>
                 <span className="text-gray-400 text-sm">On Problem Click:</span>
-                <p className="text-xs text-blue-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
+                <p className="text-xs text-red-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
                   {config?.onproblemclicklink || 'No definido'}
                 </p>
               </div>
               <div>
                 <span className="text-gray-400 text-sm">Withdraw URL:</span>
-                <p className="text-xs text-blue-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
+                <p className="text-xs text-red-400 break-all font-mono bg-gray-700 p-2 rounded mt-1">
                   {config?.withdrawurl || 'No definido'}
                 </p>
               </div>
@@ -406,7 +406,7 @@ export default function OperationsPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
           <div className="bg-gray-800/95 rounded-xl p-8 shadow-2xl border border-gray-700/50 max-w-sm mx-4 backdrop-blur-xl">
             <div className="flex items-center space-x-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-600 border-t-blue-500"></div>
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-600 border-t-red-500"></div>
               <div>
                 <h3 className="text-xl font-semibold text-white">Actualizando configuración</h3>
                 <p className="text-gray-300 text-sm mt-1">

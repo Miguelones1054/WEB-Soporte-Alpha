@@ -231,7 +231,7 @@ export default function TarifasPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
@@ -374,7 +374,7 @@ export default function TarifasPage() {
               <div className="overflow-x-auto">
                 {tarifasLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-blue-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-600 border-t-red-500"></div>
                     <span className="ml-3 text-gray-400">Cargando tarifas...</span>
                   </div>
                 ) : (
@@ -421,7 +421,7 @@ export default function TarifasPage() {
                           setSimuladorValor(value ? `$${parseInt(value).toLocaleString('es-CO')}` : '');
                         }
                       }}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-800 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-800 disabled:cursor-not-allowed"
                       placeholder="Ej: $5.000.000"
                     />
                   </div>
@@ -429,7 +429,7 @@ export default function TarifasPage() {
                   <button
                     onClick={simularRecarga}
                     disabled={simulando}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium flex items-center space-x-2"
+                    className="px-6 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium flex items-center space-x-2"
                   >
                     {simulando ? (
                       <>
@@ -459,11 +459,11 @@ export default function TarifasPage() {
                       </div>
                       <div>
                         <span className="text-gray-400 text-sm">Valor cliente final:</span>
-                        <div className="text-blue-400 font-medium">{resultadoSimulacion.valorCliente}</div>
+                        <div className="text-red-400 font-medium">{resultadoSimulacion.valorCliente}</div>
                       </div>
                       <div>
                         <span className="text-gray-400 text-sm">Ganancia:</span>
-                        <div className="text-purple-400 font-medium">{resultadoSimulacion.ganancia}</div>
+                        <div className="text-red-300 font-medium">{resultadoSimulacion.ganancia}</div>
                       </div>
                     </div>
                   </div>

@@ -94,7 +94,7 @@ function UserMovementsContent() {
   const getMovementIcon = (type: string, isQrPayment: boolean) => {
     if (isQrPayment) {
       return (
-        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+        <div className="w-8 h-8 bg-red-800 rounded-full flex items-center justify-center">
           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -123,7 +123,7 @@ function UserMovementsContent() {
 
   const getMovementColor = (type: string, isQrPayment: boolean) => {
     if (isQrPayment) {
-      return 'text-purple-400 bg-purple-900/20 border-purple-700/50';
+      return 'text-red-300 bg-red-950/30 border-red-800/50';
     }
     return type === 'INCOMING'
       ? 'text-green-400 bg-green-900/20 border-green-700/50'
@@ -149,7 +149,7 @@ function UserMovementsContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
@@ -207,7 +207,7 @@ function UserMovementsContent() {
                   onClick={() => handleTabChange('normal')}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
                     activeTab === 'normal'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-red-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
@@ -280,7 +280,7 @@ function UserMovementsContent() {
 
                           <p className={`text-lg font-bold ${
                             movement.type === 'INCOMING' ? 'text-green-400' :
-                            movement.isQrPayment ? 'text-purple-400' : 'text-red-400'
+                            movement.isQrPayment ? 'text-amber-300' : 'text-red-400'
                           }`}>
                             {movement.type === 'INCOMING' ? '+' : '-'}${formatCurrency(movement.amount)}
                           </p>
@@ -308,7 +308,7 @@ export default function UserMovementsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     }>
       <UserMovementsContent />

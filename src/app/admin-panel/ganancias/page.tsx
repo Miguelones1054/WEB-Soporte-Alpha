@@ -114,7 +114,7 @@ export default function GananciasPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
@@ -159,7 +159,7 @@ export default function GananciasPage() {
             </div>
             <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
               <p className="text-gray-400 text-sm">Operaciones</p>
-              <p className="text-2xl font-bold text-blue-300">{adminOps.length}</p>
+              <p className="text-2xl font-bold text-red-300">{adminOps.length}</p>
             </div>
           </div>
 

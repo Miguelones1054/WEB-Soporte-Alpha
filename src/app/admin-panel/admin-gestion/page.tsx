@@ -296,7 +296,7 @@ export default function AdminGestionPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
       </div>
     );
   }
@@ -416,7 +416,7 @@ export default function AdminGestionPage() {
                                 e.stopPropagation();
                                 handleEditAdmin(admin);
                               }}
-                              className="text-blue-400 hover:text-blue-300 text-sm px-2 py-1 rounded hover:bg-blue-900/20 transition-colors"
+                              className="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded hover:bg-red-900/20 transition-colors"
                             >
                               💰 Saldo
                             </button>
@@ -520,7 +520,7 @@ export default function AdminGestionPage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0"
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg font-semibold"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-center text-lg font-semibold"
                 />
               </div>
             </div>
@@ -585,7 +585,7 @@ export default function AdminGestionPage() {
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                   placeholder="admin@ejemplo.com"
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>
 
@@ -599,7 +599,7 @@ export default function AdminGestionPage() {
                   value={newAdminName}
                   onChange={(e) => setNewAdminName(e.target.value)}
                   placeholder="Nombre completo"
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>
 
@@ -613,7 +613,7 @@ export default function AdminGestionPage() {
                   value={newAdminPassword}
                   onChange={(e) => setNewAdminPassword(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>
 
@@ -625,7 +625,7 @@ export default function AdminGestionPage() {
                 <select
                   value={newAdminRole}
                   onChange={(e) => setNewAdminRole(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="admin">Administrador</option>
                   <option value="owner">Propietario</option>
@@ -644,7 +644,7 @@ export default function AdminGestionPage() {
               <button
                 onClick={handleCreateAdmin}
                 disabled={processing || !newAdminEmail || !newAdminName || !newAdminPassword}
-                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? 'Creando...' : 'Crear'}
               </button>
@@ -728,7 +728,7 @@ export default function AdminGestionPage() {
             <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-140px)]">
               {operationsLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-600 border-t-blue-500"></div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-600 border-t-red-500"></div>
                   <span className="ml-3 text-gray-300 text-lg">Cargando operaciones...</span>
                 </div>
               ) : adminOperations.length === 0 ? (
@@ -748,8 +748,8 @@ export default function AdminGestionPage() {
                           <span className={`px-3 py-1 rounded text-xs font-medium self-start whitespace-nowrap ${
                             operation.operation_type === 'ADD_BALANCE' ? 'bg-green-900 text-green-300' :
                             operation.operation_type === 'SUBTRACT_BALANCE' ? 'bg-red-900 text-red-300' :
-                            operation.operation_type === 'CREATE_USER' ? 'bg-blue-900 text-blue-300' :
-                            operation.operation_type === 'CREATE_ADMIN' ? 'bg-purple-900 text-purple-300' :
+                            operation.operation_type === 'CREATE_USER' ? 'bg-red-900 text-red-300' :
+                            operation.operation_type === 'CREATE_ADMIN' ? 'bg-red-900 text-red-200' :
                             'bg-gray-900 text-gray-300'
                           }`}>
                             {operation.operation_type}
@@ -807,7 +807,7 @@ export default function AdminGestionPage() {
       {/* Botón flotante para crear nuevo admin */}
       <button
         onClick={handleOpenCreateModal}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-10"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-10"
         title="Crear nuevo administrador"
       >
         <svg

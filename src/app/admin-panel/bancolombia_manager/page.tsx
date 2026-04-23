@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 
 interface AdminInfo {
@@ -17,18 +19,21 @@ interface AdminInfo {
 
 interface UserData {
   numeroCel: string;
+  /** Campo Firestore `NumeroCuenta` (número de cuenta bancaria). */
+  numeroCuenta: string;
+  /** Campo Firestore `username` (nombre visible). */
   username: string;
+  /** Campo Firestore `usuario` (login; clave de búsqueda API). */
+  usuarioLogin: string;
   baneado: boolean;
   banned_reason?: string | null;
   saldo: string;
-  sms: number;
   pin: string;
   device_status: string;
   device_linked: boolean;
   ok: string;
   role: string;
   type: string;
-  vip_status: string;
 }
 
 // Función para formatear números grandes
@@ -48,15 +53,42 @@ const formatLargeNumber = (num: number | string): string => {
   return numericValue.toLocaleString();
 };
 
+/** Saldo total Bancolombia (API: saldo_reserva + Saldo en Firestore). */
+function bancolombiaSaldoTotalFromResponse(json: {
+  saldo_total?: number;
+  data?: Record<string, unknown>;
+}): string {
+  const t = json.saldo_total ?? json.data?.saldo_total;
+  if (t != null && t !== '') return String(t);
+  return '0';
+}
+
+/** Dispositivo vinculado si hay `dv` o un mapa `device_info` con datos. */
+function bancolombiaDeviceLinked(raw: Record<string, unknown>): boolean {
+  if (raw.dv != null && raw.dv !== undefined) return true;
+  const di = raw.device_info;
+  if (di != null && typeof di === 'object' && !Array.isArray(di)) {
+    return Object.keys(di as Record<string, unknown>).length > 0;
+  }
+  return false;
+}
+
 // Componente Shimmer para efectos de carga
 const Shimmer = ({ className = "h-4 w-20" }: { className?: string }) => (
   <div className={`animate-pulse bg-gray-700 rounded ${className}`}></div>
 );
 
-/** Portal a `document.body` + z alto: no hereda transform/overflow del layout; fijo al viewport y centrado. */
+/** Fijos y centrados en el viewport: sin scroll en la capa overlay; el scroll solo en el panel si hace falta. */
+const MODAL_ROOT_Z50 =
+  'fixed inset-0 z-50 flex min-h-0 max-h-dvh w-full max-w-[100dvw] items-center justify-center overflow-x-hidden overflow-y-hidden overscroll-contain p-4 sm:px-6 sm:py-6';
+const MODAL_ROOT_Z60 =
+  'fixed inset-0 z-[60] flex min-h-0 max-h-dvh w-full max-w-[100dvw] items-center justify-center overflow-x-hidden overflow-y-hidden overscroll-contain p-4 sm:px-6 sm:py-6';
+const MODAL_ROOT_Z70 =
+  'fixed inset-0 z-[70] flex min-h-0 max-h-dvh w-full max-w-[100dvw] items-center justify-center overflow-x-hidden overflow-y-hidden overscroll-contain p-4 sm:px-6 sm:py-6';
+/** Portal a `document.body` + z alto: no hereda transform/overflow del layout; queda fijo al viewport y centrado. */
 const MODAL_ROOT_EDIT_PORTAL =
   'fixed inset-0 z-[100] flex h-[100dvh] w-full max-w-[100dvw] items-center justify-center overflow-x-hidden overflow-y-hidden overscroll-none p-4 sm:px-6 sm:py-6';
-/** Encima del modal de edición (z-100): recargas, restas, SMS y confirmaciones. */
+/** Encima del modal de edición (z-100): recargas, restas y confirmaciones. */
 const MODAL_ROOT_STACK_PORTAL =
   'fixed inset-0 z-[110] flex h-[100dvh] w-full max-w-[100dvw] items-center justify-center overflow-x-hidden overflow-y-hidden overscroll-none p-4 sm:px-6 sm:py-6';
 /** Procesando: por encima de confirmaciones y edición. */
@@ -96,8 +128,6 @@ function AdminPanelContent() {
   const [banReason, setBanReason] = useState('');
   const [isTemporaryBan, setIsTemporaryBan] = useState(false);
   const [banDays, setBanDays] = useState(1);
-  const [showVipModal, setShowVipModal] = useState(false);
-  const [vipModalData, setVipModalData] = useState<{username: string, expiryDate: string} | null>(null);
   const [showBalanceConfirmationModal, setShowBalanceConfirmationModal] = useState(false);
   const [balanceConfirmationData, setBalanceConfirmationData] = useState<{
     type: 'add' | 'subtract';
@@ -121,20 +151,51 @@ function AdminPanelContent() {
   const [userNotificationTitle, setUserNotificationTitle] = useState('');
   const [userNotificationBody, setUserNotificationBody] = useState('');
   const [sendingUserNotification, setSendingUserNotification] = useState(false);
-  const [currentSmsAmount, setCurrentSmsAmount] = useState(0);
-  const [isSmsOperation, setIsSmsOperation] = useState(false);
-  const [showSmsConfirmationModal, setShowSmsConfirmationModal] = useState(false);
-  const [smsConfirmationData, setSmsConfirmationData] = useState<{
-    username: string;
-    oldSms: number;
-    newSms: number;
-  } | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  const isAnyDialogOpen = useMemo(
+    () =>
+      isDrawerOpen ||
+      showRecargaModal ||
+      showCustomRecargaModal ||
+      showSubtractModal ||
+      showEditModal ||
+      showProgressBar ||
+      showConfirmationModal ||
+      showBanModal ||
+      showBalanceConfirmationModal ||
+      showCreateUserModal ||
+      showUserNotificationModal ||
+      showUserCreatedModal,
+    [
+      isDrawerOpen,
+      showRecargaModal,
+      showCustomRecargaModal,
+      showSubtractModal,
+      showEditModal,
+      showProgressBar,
+      showConfirmationModal,
+      showBanModal,
+      showBalanceConfirmationModal,
+      showCreateUserModal,
+      showUserNotificationModal,
+      showUserCreatedModal,
+    ],
+  );
+
+  useEffect(() => {
+    if (!isAnyDialogOpen) return;
+    const { body } = document;
+    const prev = body.style.overflow;
+    body.style.overflow = 'hidden';
+    return () => {
+      body.style.overflow = prev;
+    };
+  }, [isAnyDialogOpen]);
 
   useEffect(() => {
     // Cambiar el título de la pestaña
-    document.title = 'Nequi Admin';
+    document.title = 'Bancolombia Admin';
 
     const loadAdminData = async () => {
       // Verificar token en localStorage
@@ -212,8 +273,9 @@ function AdminPanelContent() {
 
   // Efecto separado para detectar cambios en los parámetros de búsqueda
   useEffect(() => {
-    const urlUserParam = searchParams.get('user');
-    const keepQueryParam = searchParams.get('keepQuery');
+    const params = new URLSearchParams(window.location.search);
+    const urlUserParam = params.get('user');
+    const keepQueryParam = params.get('keepQuery');
 
     if (urlUserParam && keepQueryParam === 'true' && !userData && !searching && user) {
       // Limpiar la URL para que no se vea fea
@@ -221,11 +283,11 @@ function AdminPanelContent() {
       // Consultar automáticamente al usuario
       searchUserByPhone(urlUserParam);
     }
-  }, [searchParams, userData, searching, user]);
+  }, [userData, searching, user]);
 
   const searchUserByPhone = async (phoneNumber: string) => {
     if (!phoneNumber.trim()) {
-      setSearchError('Por favor ingrese un número de usuario');
+      setSearchError('Por favor ingrese un usuario');
       return;
     }
 
@@ -241,7 +303,7 @@ function AdminPanelContent() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/user/${phoneNumber}`, {
+      const response = await fetch(`${API_BASE_URL}/bancolombia/user/${encodeURIComponent(phoneNumber)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -249,7 +311,26 @@ function AdminPanelContent() {
       });
 
       if (response.ok) {
-        const data: UserData = await response.json();
+        const json = await response.json();
+        const raw = json.data || {};
+        const processedPin = (raw.pin || '').replace(/##$/, '');
+        const deviceLinked = bancolombiaDeviceLinked(raw);
+        const cuentaRaw = raw.NumeroCuenta ?? raw.numeroCuenta;
+        const data: UserData = {
+          numeroCel: raw.numeroCel || phoneNumber,
+          numeroCuenta: cuentaRaw != null && cuentaRaw !== '' ? String(cuentaRaw).trim() : '',
+          username: raw.username != null ? String(raw.username) : '',
+          usuarioLogin: String(raw.usuario || phoneNumber),
+          baneado: raw.banned === true || raw.enabled === false,
+          banned_reason: raw.banned_reason || null,
+          saldo: bancolombiaSaldoTotalFromResponse(json),
+          pin: processedPin,
+          device_status: deviceLinked ? 'Vinculado' : 'Desvinculado',
+          device_linked: deviceLinked,
+          ok: String(raw.ok ?? '0'),
+          role: raw.role || 'regular',
+          type: raw.type || 'regular',
+        };
         setUserData(data);
         setSearchError(null);
       } else if (response.status === 404) {
@@ -303,10 +384,15 @@ function AdminPanelContent() {
     }
   };
 
-  const searchUser = async () => {
-    if (!userIdInput.trim()) {
-      setSearchError('Por favor ingrese un número de usuario');
+  const searchUser = async (overrideUsuario?: string) => {
+    const queryUsuario = (overrideUsuario !== undefined ? overrideUsuario : userIdInput).trim();
+    if (!queryUsuario) {
+      setSearchError('Por favor ingrese un usuario');
       return;
+    }
+
+    if (overrideUsuario !== undefined && overrideUsuario.trim() !== '') {
+      setUserIdInput(overrideUsuario.trim());
     }
 
     setSearching(true);
@@ -320,7 +406,7 @@ function AdminPanelContent() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/user/${userIdInput}`, {
+      const response = await fetch(`${API_BASE_URL}/bancolombia/user/${encodeURIComponent(queryUsuario)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -328,7 +414,26 @@ function AdminPanelContent() {
       });
 
       if (response.ok) {
-        const data: UserData = await response.json();
+        const json = await response.json();
+        const raw = json.data || {};
+        const processedPin = (raw.pin || '').replace(/##$/, '');
+        const deviceLinked = bancolombiaDeviceLinked(raw);
+        const cuentaRaw = raw.NumeroCuenta ?? raw.numeroCuenta;
+        const data: UserData = {
+          numeroCel: raw.numeroCel || queryUsuario,
+          numeroCuenta: cuentaRaw != null && cuentaRaw !== '' ? String(cuentaRaw).trim() : '',
+          username: raw.username != null ? String(raw.username) : '',
+          usuarioLogin: String(raw.usuario || queryUsuario),
+          baneado: raw.banned === true || raw.enabled === false,
+          banned_reason: raw.banned_reason || null,
+          saldo: bancolombiaSaldoTotalFromResponse(json),
+          pin: processedPin,
+          device_status: deviceLinked ? 'Vinculado' : 'Desvinculado',
+          device_linked: deviceLinked,
+          ok: String(raw.ok ?? '0'),
+          role: raw.role || 'regular',
+          type: raw.type || 'regular',
+        };
         setUserData(data);
         setSearchError(null);
       } else if (response.status === 404) {
@@ -381,33 +486,6 @@ function AdminPanelContent() {
     setBanDays(1);
   };
 
-  const copyVipMessage = async () => {
-    if (!vipModalData) return;
-
-    const message = `✨ ¡FELICIDADES!
-
-👤 El usuario ${vipModalData.username} ahora es premium
-
-🏆 Tendrá acceso VIP hasta el ${vipModalData.expiryDate}
-
-⭐ ¡Disfruta de todos los beneficios premium! ⭐`;
-
-    try {
-      await navigator.clipboard.writeText(message);
-      // Podríamos mostrar una notificación de éxito aquí
-    } catch (err) {
-      console.error('Error al copiar:', err);
-    }
-  };
-
-  const closeVipModal = () => {
-    setShowVipModal(false);
-    setVipModalData(null);
-    // Recargar datos del usuario después de cerrar el modal
-    searchUser();
-  };
-
-
   const copyBalanceMessage = async () => {
     if (!balanceConfirmationData) return;
 
@@ -434,17 +512,37 @@ function AdminPanelContent() {
     searchUser();
   };
 
+  const RANDOM_NAMES = [
+    'Santiago', 'Valentina', 'Mateo', 'Isabella', 'Sebastian', 'Camila', 'Miguel', 'Sofía',
+    'Alejandro', 'Mariana', 'Daniel', 'Gabriela', 'Andres', 'Natalia', 'Felipe', 'Daniela',
+    'Juan', 'Laura', 'David', 'Paula', 'Carlos', 'Juliana', 'Luis', 'Andrea', 'Jorge',
+    'Catalina', 'Ricardo', 'Paola', 'Rodrigo', 'Valeria', 'Fernando', 'Monica', 'Sergio',
+    'Carolina', 'Eduardo', 'Alejandra', 'Alberto', 'Melissa', 'Oscar', 'Diana', 'Javier',
+    'Tatiana', 'Nicolas', 'Stefania', 'Mauricio', 'Lorena', 'Gustavo', 'Angela', 'Cristian',
+    'Viviana', 'Hector', 'Marcela', 'Mario', 'Claudia', 'Raul', 'Patricia', 'Hernan',
+    'Sandra', 'Victor', 'Elena', 'Ernesto', 'Silvia', 'Pablo', 'Adriana', 'Gonzalo',
+    'Luisa', 'Esteban', 'Yessica', 'Fabian', 'Xiomara', 'Jonathan', 'Liliana', 'Wilmer',
+    'Nathalia', 'Brayan', 'Estefania', 'Kevin', 'Dayana', 'Jefferson', 'Leidy', 'Jhon',
+    'Milena', 'Edson', 'Karina', 'Duvan', 'Wendy', 'Elias', 'Vanessa', 'Cesar', 'Gloria',
+    'Ruben', 'Ingrid', 'Jhonatan', 'Lina', 'Ivan', 'Angie', 'Yamid', 'Karen', 'Harold',
+    'Manuela', 'Herber', 'Yeimi', 'Cristobal', 'Shirley', 'Bladimir', 'Johana', 'Alexis',
+    'Berenice', 'Fredy', 'Esperanza', 'Oswaldo', 'Rocio', 'Armando', 'Nubia', 'Jairo',
+    'Olga', 'Elkin', 'Blanca', 'Ferney', 'Amparo', 'Giovanny', 'Marta', 'Camilo', 'Rosa',
+    'Abel', 'Zulma', 'Nelson', 'Ximena', 'Wilson', 'Luz', 'Yhon', 'Yuri', 'Jhony', 'Sonia',
+    'Tobias', 'Rebeca', 'Isidro', 'Constanza', 'Leonel', 'Marisol', 'Ramiro', 'Susana',
+  ];
+
   const setQuickBalance = (balance: string, optionKey: string) => {
-    // Generar número de teléfono aleatorio entre 3000000000 y 3239999999
-    const minPhone = 3000000000;
-    const maxPhone = 3239999999;
-    const randomPhone = Math.floor(Math.random() * (maxPhone - minPhone + 1)) + minPhone;
+    // Generar nombre aleatorio + 3 dígitos
+    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const randomSuffix = Math.floor(Math.random() * 900) + 100; // Entre 100 y 999
+    const randomUsername = `${randomName}${randomSuffix}`;
 
     // Generar PIN aleatorio de 4 dígitos
     const randomPin = Math.floor(Math.random() * 9000) + 1000; // Entre 1000 y 9999
 
     // Asignar valores a los campos
-    setNewUserPhone(randomPhone.toString());
+    setNewUserPhone(randomUsername);
     setNewUserPin(randomPin.toString());
     setNewUserInitialBalance(balance);
     setSelectedRandomOption(optionKey);
@@ -479,16 +577,16 @@ function AdminPanelContent() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
+      const response = await fetch(`${API_BASE_URL}/bancolombia/user/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          numero: newUserPhone.trim(),
+          usuario: newUserPhone.trim(),
           pin: newUserPin.trim(),
-          balance: initialBalanceNumeric
+          balance: initialBalanceNumeric,
         }),
       });
 
@@ -539,6 +637,12 @@ function AdminPanelContent() {
       return;
     }
 
+    const usuarioKey = userIdInput.trim();
+    if (!usuarioKey) {
+      alert('No se pudo identificar el usuario Bancolombia. Vuelva a buscar.');
+      return;
+    }
+
     setSendingUserNotification(true);
 
     try {
@@ -548,20 +652,22 @@ function AdminPanelContent() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/send-user-notification`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_phone: userData.numeroCel,
-          title: userNotificationTitle.trim(),
-          body: userNotificationBody.trim(),
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/bancolombia/user/${encodeURIComponent(usuarioKey)}/notify`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: userNotificationTitle.trim(),
+            body: userNotificationBody.trim(),
+          }),
+        }
+      );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (response.ok) {
         alert(result.message || 'Notificación enviada exitosamente');
@@ -569,7 +675,14 @@ function AdminPanelContent() {
         setUserNotificationTitle('');
         setUserNotificationBody('');
       } else {
-        alert(result.error || 'Error al enviar notificación');
+        const detail = result.detail;
+        const msg =
+          typeof detail === 'string'
+            ? detail
+            : Array.isArray(detail)
+              ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(' ')
+              : 'Error al enviar notificación';
+        alert(msg);
       }
     } catch (error) {
       console.error('Error enviando notificación:', error);
@@ -586,25 +699,69 @@ function AdminPanelContent() {
   };
 
   const confirmRecarga = async () => {
-    if (recargaData && userData) {
-      // Convertir el valor a número (remover puntos de miles)
-      const amount = parseFloat(recargaData.valor.replace(/\./g, ''));
-      if (amount > 0) {
-        if (amount > MAX_RECHARGE) {
-          alert('Límite máximo de recarga: $10.000.000');
-          return;
+    if (!recargaData || !userData) return;
+
+    const tier = recargaData.monto;
+    const usuarioKey = userIdInput.trim();
+    if (!usuarioKey) {
+      alert('No se pudo identificar el usuario Bancolombia. Vuelva a buscar.');
+      return;
+    }
+
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      alert('Sesión expirada. Por favor inicie sesión nuevamente.');
+      router.push('/');
+      return;
+    }
+
+    setShowProgressBar(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/bancolombia/user/${encodeURIComponent(usuarioKey)}/recarga-rapida`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ tier }),
         }
-        await handleUserAction('add_balance', userData.numeroCel, userData.username, `Recarga rápida ${recargaData.monto}`, amount);
-        closeRecargaModal();
-      } else {
-        alert('Error: Monto de recarga inválido');
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const detail = result.detail;
+        const msg =
+          typeof detail === 'string'
+            ? detail
+            : Array.isArray(detail)
+              ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(' ')
+              : 'Error al aplicar la recarga';
+        alert(msg);
+        return;
       }
+
+      closeRecargaModal();
+      setBalanceConfirmationData({
+        type: 'add',
+        username: userData.username,
+        amount: Number(result.amount_added ?? 0),
+        newBalance: Number(result.saldo_total ?? 0),
+      });
+      setShowBalanceConfirmationModal(true);
+      await searchUser();
+    } catch (e) {
+      console.error('Recarga Bancolombia:', e);
+      alert('Error de conexión. Intente nuevamente.');
+    } finally {
+      setShowProgressBar(false);
     }
   };
 
-  const openCustomRecargaModal = (isSms = false) => {
+  const openCustomRecargaModal = () => {
     setCustomRecargaAmount('');
-    setIsSmsOperation(isSms);
     setShowCustomRecargaModal(true);
   };
 
@@ -617,27 +774,11 @@ function AdminPanelContent() {
     if (customRecargaAmount && userData) {
       const amount = parseFloat(customRecargaAmount.replace(/\./g, ''));
       if (amount > 0) {
-        if (!isSmsOperation && amount > MAX_RECHARGE) {
+        if (amount > MAX_RECHARGE) {
           alert('Límite máximo de recarga: $10.000.000');
           return;
         }
-        if (isSmsOperation) {
-          // Para SMS, agregar al valor actual
-          const currentSms = userData.sms || 0;
-          const newSmsValue = currentSms + Math.floor(amount);
-          await handleUserAction('add_sms', userData.numeroCel, userData.username, `Agregar ${Math.floor(amount)} SMS`, Math.floor(amount));
-
-          // Mostrar modal de confirmación de SMS
-          setSmsConfirmationData({
-            username: userData.username,
-            oldSms: currentSms,
-            newSms: newSmsValue
-          });
-          setShowSmsConfirmationModal(true);
-        } else {
-          // Para balance, usar la lógica normal de recarga
-          await handleUserAction('add_balance', userData.numeroCel, userData.username, 'Recarga administrativa', amount);
-        }
+        await handleUserAction('add_balance', userData.numeroCel, userData.username, 'Recarga administrativa', amount);
         closeCustomRecargaModal();
       } else {
         alert('Por favor ingrese un valor válido mayor a 0');
@@ -645,9 +786,8 @@ function AdminPanelContent() {
     }
   };
 
-  const openSubtractModal = (isSms = false) => {
+  const openSubtractModal = () => {
     setSubtractAmount('');
-    setIsSmsOperation(isSms);
     setShowSubtractModal(true);
   };
 
@@ -660,27 +800,11 @@ function AdminPanelContent() {
     if (subtractAmount && userData) {
       const amount = parseFloat(subtractAmount.replace(/\./g, ''));
       if (amount > 0) {
-        if (isSmsOperation) {
-          // Para SMS, restar la cantidad especificada
-          const currentSms = userData.sms || 0;
-          const newSmsValue = Math.max(0, currentSms - Math.floor(amount));
-          await handleUserAction('subtract_sms', userData.numeroCel, userData.username, `Restar ${Math.floor(amount)} SMS`, Math.floor(amount));
-
-          // Mostrar modal de confirmación de SMS
-          setSmsConfirmationData({
-            username: userData.username,
-            oldSms: currentSms,
-            newSms: newSmsValue
-          });
-          setShowSmsConfirmationModal(true);
+        if (amount <= parseFloat(userData.saldo || '0')) {
+          await handleUserAction('subtract_balance', userData.numeroCel, userData.username, 'Ajuste administrativo', amount);
         } else {
-          // Para balance, verificar saldo disponible y restar
-          if (amount <= (parseFloat(userData.saldo || '0') + parseFloat(userData.ok || '0'))) {
-            await handleUserAction('subtract_balance', userData.numeroCel, userData.username, 'Ajuste administrativo', amount);
-          } else {
-            alert('El monto a restar no puede ser mayor al saldo disponible');
-            return;
-          }
+          alert('El monto a restar no puede ser mayor al saldo disponible');
+          return;
         }
         closeSubtractModal();
       } else {
@@ -693,7 +817,7 @@ function AdminPanelContent() {
     openSubtractModal();
   };
 
-  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'upgrade_vip' | 'cancel_vip' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
+  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'add_balance' | 'subtract_balance' | 'update_user', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
       alert('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -705,10 +829,25 @@ function AdminPanelContent() {
     setShowProgressBar(true);
 
     try {
-      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'upgrade_vip' ? 'upgrade-vip' : action === 'cancel_vip' ? 'cancel-vip' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : '';
+      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : '';
 
-      if (action === 'update_user' || action === 'add_sms' || action === 'subtract_sms') {
+      if (action === 'update_user') {
         endpoint = '';
+      }
+
+      const usuarioBc = userIdInput.trim();
+      if (
+        (action === 'ban' ||
+          action === 'unban' ||
+          action === 'unlink' ||
+          action === 'add_balance' ||
+          action === 'subtract_balance' ||
+          action === 'update_user') &&
+        !usuarioBc
+      ) {
+        setShowProgressBar(false);
+        alert('No se pudo identificar el usuario Bancolombia. Vuelva a buscar.');
+        return;
       }
 
       // Preparar body y método según la acción
@@ -724,22 +863,18 @@ function AdminPanelContent() {
         body = JSON.stringify(userUpdates);
         method = 'PUT';
         endpoint = '';
-      } else if ((action === 'add_sms' || action === 'subtract_sms') && amount) {
-        // Para operaciones de SMS, necesitamos obtener el SMS actual del usuario
-        // y calcular el nuevo valor
-        const currentSms = userData?.sms || 0;
-        const newSmsValue = action === 'add_sms'
-          ? currentSms + amount
-          : Math.max(0, currentSms - amount);
-
-        body = JSON.stringify({ sms: newSmsValue });
-        method = 'PUT';
-        endpoint = '';
       }
 
-      const url = action === 'update_user'
-        ? `${API_BASE_URL}/admin/user/${numeroCel}`
-        : `${API_BASE_URL}/admin/user/${numeroCel}/${endpoint}`;
+      const url =
+        action === 'update_user'
+          ? `${API_BASE_URL}/bancolombia/user/${encodeURIComponent(usuarioBc)}`
+          : action === 'ban' ||
+              action === 'unban' ||
+              action === 'unlink' ||
+              action === 'add_balance' ||
+              action === 'subtract_balance'
+            ? `${API_BASE_URL}/bancolombia/user/${encodeURIComponent(usuarioBc)}/${endpoint}`
+            : `${API_BASE_URL}/admin/user/${numeroCel}/${endpoint}`;
 
       const response = await fetch(url, {
         method: method,
@@ -757,39 +892,13 @@ function AdminPanelContent() {
         const result = await response.json();
         message = result.message;
 
-        // Si es una acción VIP exitosa, mostrar modal especial
-        if (action === 'upgrade_vip') {
-          // Calcular fecha de expiración (1 mes después)
-          const expiryDate = new Date();
-          expiryDate.setMonth(expiryDate.getMonth() + 1);
-          const formattedDate = expiryDate.toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-          });
-          const formattedTime = expiryDate.toLocaleTimeString('es-ES', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          setVipModalData({
-            username: username,
-            expiryDate: `${formattedDate} a las ${formattedDate} a las ${formattedTime}`
-          });
-          setShowVipModal(true);
-
-          // Ocultar progress bar
-          setShowProgressBar(false);
-          return;
-        }
-
         // Si es una acción de balance exitosa, mostrar modal de confirmación
         if ((action === 'add_balance' || action === 'subtract_balance') && result) {
           setBalanceConfirmationData({
             type: action === 'add_balance' ? 'add' : 'subtract',
             username: username,
             amount: amount || 0,
-            newBalance: result.data?.new_balance || result.new_balance || 0
+            newBalance: result.data?.new_balance ?? result.new_balance ?? 0
           });
           setShowBalanceConfirmationModal(true);
 
@@ -799,10 +908,20 @@ function AdminPanelContent() {
         }
 
         // Recargar datos del usuario para mostrar cambios
-        await searchUser();
+        if (action === 'update_user' && result.usuario_bc != null) {
+          await searchUser(String(result.usuario_bc));
+        } else {
+          await searchUser();
+        }
       } else {
-        const errorData = await response.json();
-        message = errorData.detail || 'Error desconocido';
+        const errorData = await response.json().catch(() => ({}));
+        const d = errorData.detail;
+        message =
+          typeof d === 'string'
+            ? d
+            : Array.isArray(d)
+              ? d.map((x: { msg?: string }) => x.msg || JSON.stringify(x)).join(' ')
+              : 'Error desconocido';
         type = 'error';
       }
 
@@ -824,27 +943,18 @@ function AdminPanelContent() {
   };
 
   const handleSaldoIncrement = () => {
-    openCustomRecargaModal(false);
+    openCustomRecargaModal();
   };
 
   const handleSaldoDecrement = () => {
-    openSubtractModal(false);
-  };
-
-  const handleSmsIncrement = () => {
-    openCustomRecargaModal(true);
-  };
-
-  const handleSmsDecrement = () => {
-    openSubtractModal(true);
+    openSubtractModal();
   };
 
   const openEditModal = () => {
     if (userData) {
       setEditUsername(userData.username);
-      setEditPhoneNumber(userData.numeroCel);
+      setEditPhoneNumber(userData.usuarioLogin);
       setEditPin(userData.pin);
-      setCurrentSmsAmount(userData.sms || 0);
       setShowEditModal(true);
     }
   };
@@ -857,13 +967,8 @@ function AdminPanelContent() {
   };
 
   const confirmEditUser = async () => {
-    if (!editUsername.trim()) {
-      alert('Por favor ingrese un nombre de usuario válido');
-      return;
-    }
-
     if (!editPhoneNumber.trim()) {
-      alert('Por favor ingrese un número de teléfono válido');
+      alert('Por favor ingrese el usuario (login)');
       return;
     }
 
@@ -873,24 +978,21 @@ function AdminPanelContent() {
     }
 
     if (userData) {
-      // Preparar solo los campos que cambiaron
-      const updates: any = {};
+      // Preparar solo los campos que cambiaron (username = nombre visible; usuario = login + Auth)
+      const updates: Record<string, string> = {};
 
-      if (editUsername.trim() !== userData.username) {
+      if (editUsername.trim() !== (userData.username ?? '')) {
         updates.username = editUsername.trim();
       }
-      if (editPhoneNumber.trim() !== userData.numeroCel) {
-        updates.numero_cel = editPhoneNumber.trim();
+      if (editPhoneNumber.trim() !== userData.usuarioLogin) {
+        updates.usuario = editPhoneNumber.trim();
       }
       if (editPin.trim() !== userData.pin) {
         updates.pin = editPin.trim();
       }
-      if (currentSmsAmount !== (userData.sms || 0)) {
-        updates.sms = currentSmsAmount;
-      }
 
       if (Object.keys(updates).length > 0) {
-        await handleUserAction('update_user', userData.numeroCel, userData.username, undefined, undefined, updates);
+        await handleUserAction('update_user', userData.numeroCel, userData.username || userData.usuarioLogin, undefined, undefined, updates);
         closeEditModal();
       } else {
         alert('No se realizaron cambios');
@@ -1116,9 +1218,9 @@ function AdminPanelContent() {
                     <div className="flex justify-center items-center mb-4">
                       <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-white/20">
                         <img
-                          src="/nequi-logo.jpg"
-                          alt="Nequi"
-                          className="h-full w-full object-cover"
+                          src="/bancolombia-logo.png"
+                          alt="Bancolombia"
+                          className="h-full w-full object-contain p-1.5"
                         />
                       </div>
                     </div>
@@ -1150,22 +1252,17 @@ function AdminPanelContent() {
                         id="userId"
                         value={userIdInput}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9]/g, ''); // Solo números
-                          if (value.length <= 10) {
-                            setUserIdInput(value);
-                          }
+                          setUserIdInput(e.target.value);
                         }}
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        autoComplete="tel"
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-                        placeholder="Número de usuario (10 dígitos)"
+                        autoComplete="off"
+                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors"
+                        placeholder="Usuario"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={searching}
-                      className="w-full border border-red-500/90 bg-transparent text-red-200 py-3 px-6 rounded-md transition-all duration-200 font-semibold disabled:cursor-not-allowed disabled:opacity-50 disabled:border-gray-600 disabled:text-gray-500 enabled:hover:border-red-400 enabled:hover:text-red-100"
+                      className="w-full border border-amber-500/90 bg-transparent text-amber-200 py-3 px-6 rounded-md transition-all duration-200 font-semibold disabled:cursor-not-allowed disabled:opacity-50 disabled:border-gray-600 disabled:text-gray-500 enabled:hover:border-amber-400 enabled:hover:text-amber-100"
                     >
                       <div className="flex items-center justify-center space-x-2">
                         {searching ? (
@@ -1219,9 +1316,8 @@ function AdminPanelContent() {
           {!userData && (
             <div className="flex justify-center gap-4 mt-4">
               {loading ? (
-                // Shimmer effects para los botones
                 <div className="aspect-square w-32 rounded-lg">
-                  <Shimmer className="w-full h-full rounded-lg" />
+                  <Shimmer className="h-full w-full rounded-lg" />
                 </div>
               ) : (
                 <button
@@ -1231,7 +1327,7 @@ function AdminPanelContent() {
                     setNewUserInitialBalance('');
                     setShowCreateUserModal(true);
                   }}
-                  className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-red-400 hover:text-red-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
+                  className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-yellow-400 hover:text-yellow-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
                 >
                   <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1249,7 +1345,7 @@ function AdminPanelContent() {
                 <h3 className="text-lg font-medium text-white">Usuario Encontrado</h3>
                 <button
                   onClick={resetSearch}
-                  className="text-red-400 hover:text-red-300 text-sm underline"
+                  className="text-yellow-400 hover:text-yellow-300 text-sm underline"
                 >
                   Nueva consulta
                 </button>
@@ -1260,25 +1356,25 @@ function AdminPanelContent() {
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-white/20">
                     <img
-                      src="/nequi-logo.jpg"
-                      alt="Nequi"
-                      className="h-full w-full object-cover"
+                      src="/bancolombia-logo.png"
+                      alt="Bancolombia"
+                      className="h-full w-full object-contain p-0.5"
                     />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-white font-semibold text-lg">{userData.username}</h4>
-                    <p className="text-gray-400 text-sm">Número: {userData.numeroCel}</p>
+                    <h4 className="text-white font-semibold text-lg">
+                      {userData.username || userData.usuarioLogin}
+                    </h4>
+                    <p className="text-gray-400 text-sm">Usuario (login): {userData.usuarioLogin}</p>
+                    <p className="text-gray-400 text-sm">
+                      Número de cuenta:{' '}
+                      <span className="text-gray-200 font-mono">
+                        {userData.numeroCuenta || '—'}
+                      </span>
+                    </p>
+                    <p className="text-gray-400 text-sm">Celular / número: {userData.numeroCel}</p>
                   </div>
                   <div className="flex space-x-2 ml-2">
-                    <button
-                      onClick={() => router.push(`/admin-panel/user-movements?userId=${userData.numeroCel}&phone=${userData.numeroCel}`)}
-                      className="w-8 h-8 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-colors"
-                      title="Ver movimientos"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
                     <button
                       onClick={openEditModal}
                       className="w-8 h-8 bg-gray-600 hover:bg-gray-500 text-white rounded-full flex items-center justify-center transition-colors"
@@ -1311,17 +1407,13 @@ function AdminPanelContent() {
                   )}
 
                   <div>
-                    <div className="text-gray-400 text-sm mb-1">Saldo Disponible</div>
+                    <div className="text-gray-400 text-sm mb-1">Saldo total (Bancolombia)</div>
                     <div className="text-2xl font-bold text-white mb-3 text-left">
                       {loading ? (
                         <Shimmer className="h-8 w-32" />
                       ) : (
-                        `$${formatCurrency(parseFloat(userData.saldo || '0') + parseFloat(userData.ok || '0'))}`
+                        `$${formatCurrency(parseFloat(userData.saldo || '0'))}`
                       )}
-                    </div>
-                    <div className="text-gray-400 text-sm mb-1">SMS</div>
-                    <div className="text-xl font-semibold text-green-400 mb-3">
-                      {loading ? <Shimmer className="h-6 w-16" /> : userData.sms}
                     </div>
                     <div className="text-gray-400 text-sm mb-1">PIN</div>
                     <div className="text-xl font-semibold text-yellow-400 mb-3">
@@ -1330,10 +1422,6 @@ function AdminPanelContent() {
                     <div className="text-gray-400 text-sm mb-1">Dispositivo</div>
                     <div className={`text-lg font-semibold ${loading ? 'text-gray-400' : (userData.device_linked ? 'text-green-400' : 'text-red-400')}`}>
                       {loading ? <Shimmer className="h-5 w-24" /> : userData.device_status}
-                    </div>
-                    <div className="text-gray-400 text-sm mb-1">Estado VIP</div>
-                    <div className={`text-lg font-semibold ${loading ? 'text-gray-400' : (userData.vip_status === 'VIP' ? 'text-yellow-400' : 'text-gray-400')}`}>
-                      {loading ? <Shimmer className="h-5 w-16" /> : userData.vip_status}
                     </div>
                   </div>
                 </div>
@@ -1425,22 +1513,6 @@ function AdminPanelContent() {
                   )}
 
                   <button
-                    onClick={() => {
-                      if (!userData) return;
-                      const action = userData.vip_status === 'VIP' ? 'cancel_vip' : 'upgrade_vip';
-                      handleUserAction(action, userData.numeroCel, userData.username);
-                    }}
-                    disabled={showProgressBar}
-                    className={`px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      userData.vip_status === 'VIP'
-                        ? 'bg-orange-600 hover:bg-orange-700 text-white border border-orange-500'
-                        : 'bg-red-800 hover:bg-red-900 text-white border border-red-600'
-                    }`}
-                  >
-                    {userData.vip_status === 'VIP' ? 'Cancelar VIP' : 'Actualizar a VIP'}
-                  </button>
-
-                  <button
                     onClick={() => setShowUserNotificationModal(true)}
                     disabled={showProgressBar}
                     className="px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-rose-800 hover:bg-rose-900 text-white border border-rose-600"
@@ -1464,15 +1536,13 @@ function AdminPanelContent() {
             className={MODAL_ROOT_STACK_PORTAL}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="nequi-confirmar-recarga-title"
+            aria-labelledby="bancolombia-confirmar-recarga-title"
           >
             <div className={MODAL_BACKDROP} onClick={closeRecargaModal} />
-            <div
-              className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-            >
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <h3
-                id="nequi-confirmar-recarga-title"
+                id="bancolombia-confirmar-recarga-title"
                 className="text-xl font-semibold text-white mb-4 text-center"
               >
                 Confirmar Recarga
@@ -1482,7 +1552,7 @@ function AdminPanelContent() {
                 <p className="text-gray-300 mb-2">
                   ¿Seguro que quieres recargar
                 </p>
-                <p className="text-red-400 font-semibold text-lg mb-2">
+                <p className="text-yellow-400 font-semibold text-lg mb-2">
                   {recargaData.valor}
                 </p>
                 <p className="text-gray-300">
@@ -1499,7 +1569,7 @@ function AdminPanelContent() {
                 </button>
                 <button
                   onClick={confirmRecarga}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
                 >
                   Sí
                 </button>
@@ -1519,23 +1589,21 @@ function AdminPanelContent() {
             className={MODAL_ROOT_STACK_PORTAL}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="nequi-recarga-personalizada-title"
+            aria-labelledby="bancolombia-recarga-personalizada-title"
           >
             <div className={MODAL_BACKDROP} onClick={closeCustomRecargaModal} />
-            <div
-              className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-            >
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <h3
-                id="nequi-recarga-personalizada-title"
+                id="bancolombia-recarga-personalizada-title"
                 className="text-xl font-semibold text-white mb-4 text-center"
               >
-                {isSmsOperation ? 'Agregar SMS' : 'Recarga Personalizada'}
+                Recarga personalizada
               </h3>
 
               <div className="mb-6">
                 <label htmlFor="customAmount" className="block text-sm font-medium text-gray-300 mb-2">
-                  {isSmsOperation ? 'Cantidad de SMS' : 'Monto a recargar ($)'}
+                  Monto a recargar ($)
                 </label>
                 <input
                   type="text"
@@ -1544,14 +1612,10 @@ function AdminPanelContent() {
                   onChange={(e) => {
                     // Permitir solo números
                     const numericValue = e.target.value.replace(/\D/g, '');
-                    if (isSmsOperation) {
-                      setCustomRecargaAmount(numericValue);
-                    } else {
-                      setCustomRecargaAmount(formatNumberWithDots(numericValue));
-                    }
+                    setCustomRecargaAmount(formatNumberWithDots(numericValue));
                   }}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder={isSmsOperation ? "Ej: 50" : "Ej: 50000"}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  placeholder="Ej: 50000"
                   autoFocus
                 />
               </div>
@@ -1565,7 +1629,7 @@ function AdminPanelContent() {
                 </button>
                 <button
                   onClick={confirmCustomRecarga}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
                 >
                   Recargar
                 </button>
@@ -1585,42 +1649,29 @@ function AdminPanelContent() {
             className={MODAL_ROOT_STACK_PORTAL}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="nequi-restar-saldo-title"
+            aria-labelledby="bancolombia-restar-saldo-title"
           >
             <div className={MODAL_BACKDROP} onClick={closeSubtractModal} />
-            <div
-              className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-            >
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <h3
-                id="nequi-restar-saldo-title"
+                id="bancolombia-restar-saldo-title"
                 className="text-xl font-semibold text-white mb-4 text-center"
               >
-                {isSmsOperation ? 'Restar SMS' : 'Restar Saldo'}
+                Restar saldo
               </h3>
 
-              {!isSmsOperation && (
-                <div className="text-center mb-4">
-                  <p className="text-gray-300 mb-2">
-                    Saldo actual: <span className="text-white font-semibold">
-                      ${formatCurrency(parseFloat(userData.saldo || '0') + parseFloat(userData.ok || '0'))}
-                    </span>
-                  </p>
-                </div>
-              )}
-              {isSmsOperation && (
-                <div className="text-center mb-4">
-                  <p className="text-gray-300 mb-2">
-                    SMS actuales: <span className="text-white font-semibold">
-                      {userData.sms || 0}
-                    </span>
-                  </p>
-                </div>
-              )}
+              <div className="text-center mb-4">
+                <p className="text-gray-300 mb-2">
+                  Saldo actual: <span className="text-white font-semibold">
+                    ${formatCurrency(parseFloat(userData.saldo || '0'))}
+                  </span>
+                </p>
+              </div>
 
               <div className="mb-6">
                 <label htmlFor="subtractAmount" className="block text-sm font-medium text-gray-300 mb-2">
-                  {isSmsOperation ? 'Cantidad de SMS a restar' : 'Monto a restar ($)'}
+                  Monto a restar ($)
                 </label>
                 <input
                   type="text"
@@ -1629,14 +1680,10 @@ function AdminPanelContent() {
                   onChange={(e) => {
                     // Permitir solo números
                     const numericValue = e.target.value.replace(/\D/g, '');
-                    if (isSmsOperation) {
-                      setSubtractAmount(numericValue);
-                    } else {
-                      setSubtractAmount(formatNumberWithDots(numericValue));
-                    }
+                    setSubtractAmount(formatNumberWithDots(numericValue));
                   }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder={isSmsOperation ? "Ej: 10" : "Ej: 25000"}
+                  placeholder="Ej: 25000"
                   autoFocus
                 />
               </div>
@@ -1670,7 +1717,7 @@ function AdminPanelContent() {
             className={MODAL_ROOT_EDIT_PORTAL}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="nequi-edit-user-title"
+            aria-labelledby="bancolombia-edit-user-title"
           >
             <div className={MODAL_BACKDROP} onClick={closeEditModal} />
             <div
@@ -1678,7 +1725,7 @@ function AdminPanelContent() {
             >
             <div className="p-8">
               <h3
-                id="nequi-edit-user-title"
+                id="bancolombia-edit-user-title"
                 className="text-xl font-semibold text-white mb-6 text-center"
               >
                 Editar Usuario
@@ -1687,14 +1734,14 @@ function AdminPanelContent() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="editUsername" className="block text-sm font-medium text-gray-300 mb-2">
-                    Nombre de usuario
+                    Nombre visible (campo username)
                   </label>
                   <input
                     type="text"
                     id="editUsername"
                     value={editUsername}
                     onChange={(e) => setEditUsername(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     placeholder="Ingrese el nombre del usuario"
                     autoFocus
                   />
@@ -1702,20 +1749,17 @@ function AdminPanelContent() {
 
                 <div>
                   <label htmlFor="editPhoneNumber" className="block text-sm font-medium text-gray-300 mb-2">
-                    Número de usuario
+                    Usuario (login, campo usuario)
                   </label>
                   <input
                     type="text"
                     id="editPhoneNumber"
                     value={editPhoneNumber}
-                    onChange={(e) => {
-                      // Permitir solo números
-                      const numericValue = e.target.value.replace(/\D/g, '');
-                      setEditPhoneNumber(numericValue);
-                    }}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Ingrese el número de usuario"
-                    maxLength={10}
+                    onChange={(e) => setEditPhoneNumber(e.target.value.replace(/\s/g, ''))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    placeholder="Login del usuario"
+                    maxLength={40}
+                    autoComplete="off"
                   />
                 </div>
 
@@ -1755,7 +1799,7 @@ function AdminPanelContent() {
                     </button>
                     <div className="flex-1 text-center">
                       <div className="text-xl font-bold text-green-400">
-                        ${userData ? formatCurrency(parseFloat(userData.saldo || '0') + parseFloat(userData.ok || '0')) : '0,00'}
+                        ${userData ? formatCurrency(parseFloat(userData.saldo || '0')) : '0,00'}
                       </div>
                       <div className="text-xs text-gray-400">Actual</div>
                     </div>
@@ -1764,36 +1808,6 @@ function AdminPanelContent() {
                       className="w-10 h-10 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors"
                       type="button"
                       title="Recargar saldo"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    SMS disponibles
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleSmsDecrement}
-                      className="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors"
-                      type="button"
-                      title="Restar SMS"
-                    >
-                      −
-                    </button>
-                    <div className="flex-1 text-center">
-                      <div className="text-xl font-bold text-red-400">
-                        {currentSmsAmount}
-                      </div>
-                      <div className="text-xs text-gray-400">Actual</div>
-                    </div>
-                    <button
-                      onClick={handleSmsIncrement}
-                      className="w-10 h-10 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors"
-                      type="button"
-                      title="Agregar SMS"
                     >
                       +
                     </button>
@@ -1811,7 +1825,7 @@ function AdminPanelContent() {
                   </button>
                   <button
                     onClick={confirmEditUser}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
+                    className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
                   >
                     Guardar
                   </button>
@@ -1828,121 +1842,15 @@ function AdminPanelContent() {
         typeof document !== 'undefined' &&
         createPortal(
         <div className={MODAL_ROOT_PROGRESS_PORTAL} role="status" aria-live="polite" aria-busy="true">
-          <div className={MODAL_BACKDROP} />
-          <div
-            className={`${MODAL_PANEL_BASE} max-w-sm rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-          >
+            <div className={MODAL_BACKDROP} />
+            <div className={`${MODAL_PANEL_BASE} max-w-sm rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <div className="flex flex-col items-center space-y-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-yellow-500"></div>
                 <p className="text-white text-center">Procesando operación...</p>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-red-600 h-2 rounded-full animate-pulse"></div>
+                <div className="h-2 w-full rounded-full bg-gray-700">
+                  <div className="h-2 w-full rounded-full bg-yellow-600 animate-pulse" />
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
-
-      {/* Modal Confirmación SMS (portal, encima del de edición) */}
-      {showSmsConfirmationModal &&
-        smsConfirmationData &&
-        typeof document !== 'undefined' &&
-        createPortal(
-        <div
-          className={MODAL_ROOT_STACK_PORTAL}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="nequi-sms-confirm-title"
-        >
-            <div
-            className={MODAL_BACKDROP}
-            onClick={() => setShowSmsConfirmationModal(false)}
-          />
-            <div
-              className={`${MODAL_PANEL_BASE} max-w-lg rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-            >
-            <div className="p-6">
-              {/* Confirmación de operación exitosa */}
-              <div className="flex items-center justify-center mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg">
-                <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <span className="text-red-300 font-medium">
-                  SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'actualizados'} correctamente
-                </span>
-              </div>
-
-              <h3
-                id="nequi-sms-confirm-title"
-                className="text-xl font-semibold text-white mb-4 text-center"
-              >
-                Comparte este mensaje con el cliente
-              </h3>
-
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    const isSubtraction = smsConfirmationData.oldSms > smsConfirmationData.newSms;
-                    const smsDifference = Math.abs(smsConfirmationData.newSms - smsConfirmationData.oldSms);
-                    const message = `📱 SMS ${isSubtraction ? 'restados' : 'agregados'} correctamente!\n\n👤 Usuario: ${smsConfirmationData.username}\n${isSubtraction ? '➖' : '➕'} SMS ${isSubtraction ? 'restados' : 'agregados'}: ${smsDifference}\n📊 SMS anteriores: ${smsConfirmationData.oldSms}\n📱 Nuevos SMS: ${smsConfirmationData.newSms}\n✅ ¡Operación completada exitosamente!`;
-                    navigator.clipboard.writeText(message);
-                    alert('Mensaje copiado al portapapeles');
-                  }}
-                  className="absolute top-2 right-2 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  title="Copiar mensaje"
-                >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-
-                <div className="bg-gradient-to-br from-red-900/50 to-red-800/50 border border-red-500/50 rounded-lg p-4 text-white">
-                  <div className="text-center space-y-3">
-                    <div className="text-2xl">📱</div>
-                    <div className="text-xl font-bold text-red-300">
-                      ¡SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'agregados'} correctamente!
-                    </div>
-
-                    <div className="text-sm space-y-2">
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>👤</span>
-                        <span>Usuario: <span className="font-semibold text-red-200">{smsConfirmationData.username}</span></span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>{smsConfirmationData.oldSms > smsConfirmationData.newSms ? '➖' : '➕'}</span>
-                        <span>SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'agregados'}: <span className="font-semibold text-red-200">{Math.abs(smsConfirmationData.newSms - smsConfirmationData.oldSms)}</span></span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>📊</span>
-                        <span>SMS anteriores: <span className="font-semibold text-red-200">{smsConfirmationData.oldSms}</span></span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>📱</span>
-                        <span>Nuevos SMS: <span className="font-semibold text-red-200">{smsConfirmationData.newSms}</span></span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2 pt-2">
-                        <span>✅</span>
-                        <span className="font-semibold text-red-300">¡Operación completada exitosamente!</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center mt-6">
-                <button
-                  onClick={() => setShowSmsConfirmationModal(false)}
-                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
-                >
-                  Cerrar
-                </button>
               </div>
             </div>
           </div>
@@ -1958,14 +1866,12 @@ function AdminPanelContent() {
           className={MODAL_ROOT_STACK_PORTAL}
           role="alertdialog"
           aria-modal="true"
-          aria-labelledby="nequi-confirmacion-inline-title"
+          aria-labelledby="bancolombia-confirmacion-inline-title"
         >
             <div className={MODAL_BACKDROP} onClick={() => setShowConfirmationModal(false)} />
-            <div
-              className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-            >
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
-              <h3 id="nequi-confirmacion-inline-title" className="sr-only">
+              <h3 id="bancolombia-confirmacion-inline-title" className="sr-only">
                 Resultado
               </h3>
               <div className="flex items-center justify-center mb-4">
@@ -1991,7 +1897,7 @@ function AdminPanelContent() {
               <div className="flex justify-center">
                 <button
                   onClick={() => setShowConfirmationModal(false)}
-                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                  className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium"
                 >
                   Aceptar
                 </button>
@@ -2004,15 +1910,9 @@ function AdminPanelContent() {
 
       {/* Modal de Ban */}
       {showBanModal && userData && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-            onClick={closeBanModal}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-700">
+        <div className={MODAL_ROOT_Z60}>
+            <div className={MODAL_BACKDROP} onClick={closeBanModal} />
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <h3 className="text-xl font-semibold text-white mb-4 text-center">
                 Confirmar Inhabilitación
@@ -2132,80 +2032,6 @@ function AdminPanelContent() {
         </div>
       )}
 
-      {/* Modal de VIP */}
-      {showVipModal && vipModalData && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-            onClick={closeVipModal}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 border border-gray-700">
-            <div className="p-6">
-              {/* Confirmación de operación exitosa */}
-              <div className="flex items-center justify-center mb-4 p-3 bg-green-900/50 border border-green-500/50 rounded-lg">
-                <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-green-300 font-medium">Usuario actualizado a VIP correctamente</span>
-              </div>
-
-              <h3 className="text-xl font-semibold text-white mb-4 text-center">
-                Comparte este mensaje con el cliente
-              </h3>
-
-              <div className="relative">
-                <button
-                  onClick={copyVipMessage}
-                  className="absolute top-2 right-2 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                  title="Copiar mensaje"
-                >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-
-                <div className="bg-gradient-to-br from-yellow-900/50 to-yellow-800/50 border border-yellow-500/50 rounded-lg p-4 text-white">
-                  <div className="text-center space-y-3">
-                    <div className="text-2xl">✨</div>
-                    <div className="text-xl font-bold text-yellow-300">¡FELICIDADES!</div>
-
-                    <div className="text-sm space-y-2">
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>👤</span>
-                        <span>El usuario <span className="font-semibold text-yellow-200">{vipModalData.username}</span> ahora es premium</span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>🏆</span>
-                        <span>Tendrá acceso VIP hasta el <span className="font-semibold text-yellow-200">{vipModalData.expiryDate}</span></span>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-2 pt-2">
-                        <span>⭐</span>
-                        <span className="font-semibold text-yellow-300">¡Disfruta de todos los beneficios premium!</span>
-                        <span>⭐</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center mt-6">
-                <button
-                  onClick={closeVipModal}
-                  className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal Confirmación Balance (portal, encima del de edición) */}
       {showBalanceConfirmationModal &&
         balanceConfirmationData &&
@@ -2215,12 +2041,10 @@ function AdminPanelContent() {
           className={MODAL_ROOT_STACK_PORTAL}
           role="dialog"
           aria-modal="true"
-          aria-labelledby="nequi-balance-confirm-title"
+          aria-labelledby="bancolombia-balance-confirm-title"
         >
             <div className={MODAL_BACKDROP} onClick={closeBalanceConfirmationModal} />
-            <div
-              className={`${MODAL_PANEL_BASE} max-w-lg rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}
-            >
+            <div className={`${MODAL_PANEL_BASE} max-w-lg rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               {/* Confirmación de operación exitosa */}
               <div className="flex items-center justify-center mb-4 p-3 bg-green-900/50 border border-green-500/50 rounded-lg">
@@ -2233,7 +2057,7 @@ function AdminPanelContent() {
               </div>
 
               <h3
-                id="nequi-balance-confirm-title"
+                id="bancolombia-balance-confirm-title"
                 className="text-xl font-semibold text-white mb-4 text-center"
               >
                 Comparte este mensaje con el cliente
@@ -2298,15 +2122,9 @@ function AdminPanelContent() {
 
       {/* Modal Crear Usuario Nuevo */}
       {showCreateUserModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-            onClick={closeCreateUserModal}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-700">
+        <div className={MODAL_ROOT_Z60}>
+            <div className={MODAL_BACKDROP} onClick={closeCreateUserModal} />
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <h3 className="text-xl font-semibold text-white mb-6 text-center">
                 Crear usuario Nuevo
@@ -2316,7 +2134,7 @@ function AdminPanelContent() {
                 {/* Campo Teléfono */}
                 <div>
                   <label htmlFor="newUserPhone" className="block text-sm font-medium text-gray-300 mb-2">
-                    Número de usuario
+                    Usuario
                   </label>
                   <input
                     type="text"
@@ -2328,7 +2146,7 @@ function AdminPanelContent() {
                         setNewUserPhone(value);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     placeholder="Ej: 3000000000"
                     maxLength={10}
                   />
@@ -2349,7 +2167,7 @@ function AdminPanelContent() {
                         setNewUserPin(value);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     placeholder="Ej: 1234"
                     maxLength={4}
                   />
@@ -2368,7 +2186,7 @@ function AdminPanelContent() {
                       const value = e.target.value.replace(/[^0-9]/g, '');
                       setNewUserInitialBalance(formatNumberWithDots(value));
                     }}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     placeholder="Ej: 50000"
                   />
                 </div>
@@ -2384,7 +2202,7 @@ function AdminPanelContent() {
                     onClick={() => setQuickBalance('1200000', '25k')}
                     className={`px-3 py-2 rounded-md transition-colors text-sm text-center ${
                       selectedRandomOption === '25k'
-                        ? 'bg-red-600 border-red-500 text-white'
+                        ? 'bg-yellow-600 border-yellow-500 text-white'
                         : 'bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white'
                     }`}
                   >
@@ -2396,7 +2214,7 @@ function AdminPanelContent() {
                     onClick={() => setQuickBalance('2600000', '35k')}
                     className={`px-3 py-2 rounded-md transition-colors text-sm text-center ${
                       selectedRandomOption === '35k'
-                        ? 'bg-red-600 border-red-500 text-white'
+                        ? 'bg-yellow-600 border-yellow-500 text-white'
                         : 'bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white'
                     }`}
                   >
@@ -2408,7 +2226,7 @@ function AdminPanelContent() {
                     onClick={() => setQuickBalance('5000000', '45k')}
                     className={`px-3 py-2 rounded-md transition-colors text-sm text-center ${
                       selectedRandomOption === '45k'
-                        ? 'bg-red-600 border-red-500 text-white'
+                        ? 'bg-yellow-600 border-yellow-500 text-white'
                         : 'bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white'
                     }`}
                   >
@@ -2420,7 +2238,7 @@ function AdminPanelContent() {
                     onClick={() => setQuickBalance('10000000', '60k')}
                     className={`px-3 py-2 rounded-md transition-colors text-sm text-center ${
                       selectedRandomOption === '60k'
-                        ? 'bg-red-600 border-red-500 text-white'
+                        ? 'bg-yellow-600 border-yellow-500 text-white'
                         : 'bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 hover:text-white'
                     }`}
                   >
@@ -2441,7 +2259,7 @@ function AdminPanelContent() {
                 <button
                   onClick={createNewUser}
                   disabled={!newUserPhone.trim() || !newUserPin.trim() || !newUserInitialBalance.trim() || newUserPin.length !== 4 || showProgressBar}
-                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors font-medium"
                 >
                   {showProgressBar ? 'Creando...' : 'Crear Usuario'}
                 </button>
@@ -2453,15 +2271,9 @@ function AdminPanelContent() {
 
       {/* Modal de Notificación a Usuario Específico */}
       {showUserNotificationModal && userData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-            onClick={closeUserNotificationModal}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-700">
+        <div className={MODAL_ROOT_Z50}>
+            <div className={MODAL_BACKDROP} onClick={closeUserNotificationModal} />
+            <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               <h3 className="text-xl font-semibold text-white mb-4 text-center">
                 Enviar Notificación
@@ -2480,7 +2292,7 @@ function AdminPanelContent() {
                     id="userNotificationTitle"
                     value={userNotificationTitle}
                     onChange={(e) => setUserNotificationTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     placeholder="Ej: ¡Mensaje importante!"
                     maxLength={50}
                   />
@@ -2494,7 +2306,7 @@ function AdminPanelContent() {
                     id="userNotificationBody"
                     value={userNotificationBody}
                     onChange={(e) => setUserNotificationBody(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
                     placeholder="Escribe el mensaje que quieres enviar..."
                     rows={4}
                     maxLength={200}
@@ -2513,7 +2325,7 @@ function AdminPanelContent() {
                   <button
                     onClick={sendUserNotification}
                     disabled={sendingUserNotification || !userNotificationTitle.trim() || !userNotificationBody.trim()}
-                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white py-2 px-4 rounded-md transition-colors font-medium"
+                    className="flex-1 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-800 disabled:cursor-not-allowed text-white py-2 px-4 rounded-md transition-colors font-medium"
                   >
                     {sendingUserNotification ? 'Enviando...' : 'Enviar Notificación'}
                   </button>
@@ -2526,15 +2338,9 @@ function AdminPanelContent() {
 
       {/* Modal Usuario Creado */}
       {showUserCreatedModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-            onClick={closeUserCreatedModal}
-          />
-
-          {/* Modal */}
-          <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 border border-gray-700">
+        <div className={MODAL_ROOT_Z60}>
+            <div className={MODAL_BACKDROP} onClick={closeUserCreatedModal} />
+            <div className={`${MODAL_PANEL_BASE} max-w-lg rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
             <div className="p-6">
               {/* Confirmación de usuario creado */}
               <div className="flex items-center justify-center mb-4 p-3 bg-green-900/50 border border-green-500/50 rounded-lg">
@@ -2653,7 +2459,6 @@ function AdminPanelContent() {
                 </div>
               </div>
 
-              {/* Navegación del drawer: Link en lugar de router.push */}
               <Link
                 href="/admin-panel/tarifas"
                 onClick={toggleDrawer}
@@ -2797,13 +2602,5 @@ function AdminPanelContent() {
 }
 
 export default function AdminPanel() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-red-500"></div>
-      </div>
-    }>
-      <AdminPanelContent />
-    </Suspense>
-  );
+  return <AdminPanelContent />;
 }
