@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginWithEmail, onAuthStateChange } from '../lib/firebase';
+import { loginWithEmail } from '../lib/firebase';
+import { API_BASE_URL } from '../lib/constants';
 
 interface AdminData {
   id: number;
@@ -27,11 +28,38 @@ export default function Home() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // Limpiar cualquier estado anterior al cargar la página
-    localStorage.removeItem('admin_token');
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+
+    const validateSavedSession = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/me`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          setMessage('Sesion restaurada. Redirigiendo...');
+          router.push('/admin-panel');
+          return;
+        }
+
+        localStorage.removeItem('admin_token');
+      } catch (error) {
+        // Si hay fallo de red, conservamos el token para reintentar luego.
+        console.error('No fue posible validar la sesion guardada:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    validateSavedSession();
   }, []);
 
 

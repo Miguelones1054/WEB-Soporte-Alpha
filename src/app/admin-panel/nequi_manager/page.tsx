@@ -129,6 +129,9 @@ function AdminPanelContent() {
     oldSms: number;
     newSms: number;
   } | null>(null);
+  const [showNoRefundDialog, setShowNoRefundDialog] = useState(false);
+  const [showUpgradeVipConfirmModal, setShowUpgradeVipConfirmModal] = useState(false);
+  const [showCancelVipConfirmModal, setShowCancelVipConfirmModal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -661,18 +664,11 @@ function AdminPanelContent() {
       const amount = parseFloat(subtractAmount.replace(/\./g, ''));
       if (amount > 0) {
         if (isSmsOperation) {
-          // Para SMS, restar la cantidad especificada
-          const currentSms = userData.sms || 0;
-          const newSmsValue = Math.max(0, currentSms - Math.floor(amount));
+          // Para SMS, restar la cantidad especificada (sin reembolso automático)
           await handleUserAction('subtract_sms', userData.numeroCel, userData.username, `Restar ${Math.floor(amount)} SMS`, Math.floor(amount));
 
-          // Mostrar modal de confirmación de SMS
-          setSmsConfirmationData({
-            username: userData.username,
-            oldSms: currentSms,
-            newSms: newSmsValue
-          });
-          setShowSmsConfirmationModal(true);
+          // Aviso: el saldo no se reembolsa automáticamente
+          setShowNoRefundDialog(true);
         } else {
           // Para balance, verificar saldo disponible y restar
           if (amount <= (parseFloat(userData.saldo || '0') + parseFloat(userData.ok || '0'))) {
@@ -783,18 +779,23 @@ function AdminPanelContent() {
           return;
         }
 
-        // Si es una acción de balance exitosa, mostrar modal de confirmación
+        // Si es una acción de balance exitosa
         if ((action === 'add_balance' || action === 'subtract_balance') && result) {
-          setBalanceConfirmationData({
-            type: action === 'add_balance' ? 'add' : 'subtract',
-            username: username,
-            amount: amount || 0,
-            newBalance: result.data?.new_balance || result.new_balance || 0
-          });
-          setShowBalanceConfirmationModal(true);
-
-          // Ocultar progress bar
           setShowProgressBar(false);
+
+          if (action === 'subtract_balance') {
+            // Sin reembolso automático: avisar al admin que coordine la reposición.
+            await searchUser();
+            setShowNoRefundDialog(true);
+          } else {
+            setBalanceConfirmationData({
+              type: 'add',
+              username: username,
+              amount: amount || 0,
+              newBalance: result.data?.new_balance || result.new_balance || 0
+            });
+            setShowBalanceConfirmationModal(true);
+          }
           return;
         }
 
@@ -1427,8 +1428,11 @@ function AdminPanelContent() {
                   <button
                     onClick={() => {
                       if (!userData) return;
-                      const action = userData.vip_status === 'VIP' ? 'cancel_vip' : 'upgrade_vip';
-                      handleUserAction(action, userData.numeroCel, userData.username);
+                      if (userData.vip_status === 'VIP') {
+                        setShowCancelVipConfirmModal(true);
+                      } else {
+                        setShowUpgradeVipConfirmModal(true);
+                      }
                     }}
                     disabled={showProgressBar}
                     className={`px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -1942,6 +1946,161 @@ function AdminPanelContent() {
                   className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
                 >
                   Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Aviso al restar SMS: sin reembolso automático */}
+      {showNoRefundDialog &&
+        typeof document !== 'undefined' &&
+        createPortal(
+        <div
+          className={MODAL_ROOT_STACK_PORTAL}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="nequi-sms-no-refund-title"
+        >
+          <div className={MODAL_BACKDROP} onClick={() => setShowNoRefundDialog(false)} />
+          <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-red-700 bg-gray-800 shadow-xl`}>
+            <div className="p-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-red-600/20 border border-red-500/50 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                </div>
+                <h3
+                  id="nequi-sms-no-refund-title"
+                  className="text-xl font-semibold text-white"
+                >
+                  Operación realizada correctamente
+                </h3>
+                <p className="text-gray-300">
+                  Comunícate con el creador para acordar la reposición del saldo.
+                </p>
+                <button
+                  onClick={() => setShowNoRefundDialog(false)}
+                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Modal de confirmación al actualizar a VIP */}
+      {showUpgradeVipConfirmModal &&
+        userData &&
+        typeof document !== 'undefined' &&
+        createPortal(
+        <div
+          className={MODAL_ROOT_STACK_PORTAL}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="nequi-upgrade-vip-confirm-title"
+        >
+          <div className={MODAL_BACKDROP} onClick={() => setShowUpgradeVipConfirmModal(false)} />
+          <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-yellow-700 bg-gray-800 shadow-xl`}>
+            <div className="p-6">
+              <h3
+                id="nequi-upgrade-vip-confirm-title"
+                className="text-xl font-semibold text-white mb-4 text-center"
+              >
+                Confirmar actualización a VIP
+              </h3>
+
+              <div className="text-center mb-6">
+                <p className="text-gray-300 mb-2">
+                  ¿Seguro que deseas actualizar a VIP al usuario
+                </p>
+                <p className="text-yellow-400 font-semibold text-lg mb-2">
+                  {userData.username}
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Se descontará el costo VIP de tu saldo de administrador.
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowUpgradeVipConfirmModal(false)}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (!userData) return;
+                    setShowUpgradeVipConfirmModal(false);
+                    handleUserAction('upgrade_vip', userData.numeroCel, userData.username);
+                  }}
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                >
+                  Sí, actualizar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Modal de confirmación al cancelar VIP */}
+      {showCancelVipConfirmModal &&
+        userData &&
+        typeof document !== 'undefined' &&
+        createPortal(
+        <div
+          className={MODAL_ROOT_STACK_PORTAL}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="nequi-cancel-vip-confirm-title"
+        >
+          <div className={MODAL_BACKDROP} onClick={() => setShowCancelVipConfirmModal(false)} />
+          <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-orange-700 bg-gray-800 shadow-xl`}>
+            <div className="p-6">
+              <h3
+                id="nequi-cancel-vip-confirm-title"
+                className="text-xl font-semibold text-white mb-4 text-center"
+              >
+                Confirmar cancelación de VIP
+              </h3>
+
+              <div className="text-center mb-6">
+                <p className="text-gray-300 mb-2">
+                  ¿Seguro que deseas cancelar el VIP del usuario
+                </p>
+                <p className="text-orange-400 font-semibold text-lg mb-2">
+                  {userData.username}
+                </p>
+                <p className="text-gray-400 text-sm">
+                  El usuario perderá los beneficios VIP de inmediato.
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCancelVipConfirmModal(false)}
+                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (!userData) return;
+                    setShowCancelVipConfirmModal(false);
+                    handleUserAction('cancel_vip', userData.numeroCel, userData.username);
+                  }}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                >
+                  Sí, cancelar VIP
                 </button>
               </div>
             </div>

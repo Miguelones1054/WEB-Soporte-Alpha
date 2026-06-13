@@ -34,6 +34,8 @@ interface UserData {
   ok: string;
   role: string;
   type: string;
+  /** Campo Firestore `sms` (SMS disponibles del usuario). */
+  sms: number;
 }
 
 // Función para formatear números grandes
@@ -135,6 +137,15 @@ function AdminPanelContent() {
     amount: number;
     newBalance: number;
   } | null>(null);
+  const [isSmsOperation, setIsSmsOperation] = useState(false);
+  const [currentSmsAmount, setCurrentSmsAmount] = useState(0);
+  const [showSmsConfirmationModal, setShowSmsConfirmationModal] = useState(false);
+  const [smsConfirmationData, setSmsConfirmationData] = useState<{
+    username: string;
+    oldSms: number;
+    newSms: number;
+  } | null>(null);
+  const [showNoRefundDialog, setShowNoRefundDialog] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserPin, setNewUserPin] = useState('');
@@ -164,6 +175,8 @@ function AdminPanelContent() {
       showConfirmationModal ||
       showBanModal ||
       showBalanceConfirmationModal ||
+      showSmsConfirmationModal ||
+      showNoRefundDialog ||
       showCreateUserModal ||
       showUserNotificationModal ||
       showUserCreatedModal,
@@ -177,6 +190,8 @@ function AdminPanelContent() {
       showConfirmationModal,
       showBanModal,
       showBalanceConfirmationModal,
+      showSmsConfirmationModal,
+      showNoRefundDialog,
       showCreateUserModal,
       showUserNotificationModal,
       showUserCreatedModal,
@@ -192,6 +207,14 @@ function AdminPanelContent() {
       body.style.overflow = prev;
     };
   }, [isAnyDialogOpen]);
+
+  // Mantener el contador SMS del modal de edición sincronizado con userData.sms
+  // (se actualiza tras add/subtract SMS exitosos).
+  useEffect(() => {
+    if (userData) {
+      setCurrentSmsAmount(userData.sms || 0);
+    }
+  }, [userData?.sms, userData]);
 
   useEffect(() => {
     // Cambiar el título de la pestaña
@@ -330,6 +353,7 @@ function AdminPanelContent() {
           ok: String(raw.ok ?? '0'),
           role: raw.role || 'regular',
           type: raw.type || 'regular',
+          sms: Number(raw.sms ?? 0) || 0,
         };
         setUserData(data);
         setSearchError(null);
@@ -433,6 +457,7 @@ function AdminPanelContent() {
           ok: String(raw.ok ?? '0'),
           role: raw.role || 'regular',
           type: raw.type || 'regular',
+          sms: Number(raw.sms ?? 0) || 0,
         };
         setUserData(data);
         setSearchError(null);
@@ -760,53 +785,79 @@ function AdminPanelContent() {
     }
   };
 
-  const openCustomRecargaModal = () => {
+  const openCustomRecargaModal = (isSms = false) => {
     setCustomRecargaAmount('');
+    setIsSmsOperation(isSms);
     setShowCustomRecargaModal(true);
   };
 
   const closeCustomRecargaModal = () => {
     setShowCustomRecargaModal(false);
     setCustomRecargaAmount('');
+    setIsSmsOperation(false);
   };
 
   const confirmCustomRecarga = async () => {
     if (customRecargaAmount && userData) {
       const amount = parseFloat(customRecargaAmount.replace(/\./g, ''));
       if (amount > 0) {
-        if (amount > MAX_RECHARGE) {
-          alert('Límite máximo de recarga: $10.000.000');
-          return;
+        if (isSmsOperation) {
+          await handleUserAction(
+            'add_sms',
+            userData.numeroCel,
+            userData.username,
+            `Agregar ${Math.floor(amount)} SMS`,
+            Math.floor(amount),
+          );
+          closeCustomRecargaModal();
+        } else {
+          if (amount > MAX_RECHARGE) {
+            alert('Límite máximo de recarga: $10.000.000');
+            return;
+          }
+          await handleUserAction('add_balance', userData.numeroCel, userData.username, 'Recarga administrativa', amount);
+          closeCustomRecargaModal();
         }
-        await handleUserAction('add_balance', userData.numeroCel, userData.username, 'Recarga administrativa', amount);
-        closeCustomRecargaModal();
       } else {
         alert('Por favor ingrese un valor válido mayor a 0');
       }
     }
   };
 
-  const openSubtractModal = () => {
+  const openSubtractModal = (isSms = false) => {
     setSubtractAmount('');
+    setIsSmsOperation(isSms);
     setShowSubtractModal(true);
   };
 
   const closeSubtractModal = () => {
     setShowSubtractModal(false);
     setSubtractAmount('');
+    setIsSmsOperation(false);
   };
 
   const confirmSubtract = async () => {
     if (subtractAmount && userData) {
       const amount = parseFloat(subtractAmount.replace(/\./g, ''));
       if (amount > 0) {
-        if (amount <= parseFloat(userData.saldo || '0')) {
-          await handleUserAction('subtract_balance', userData.numeroCel, userData.username, 'Ajuste administrativo', amount);
+        if (isSmsOperation) {
+          await handleUserAction(
+            'subtract_sms',
+            userData.numeroCel,
+            userData.username,
+            `Restar ${Math.floor(amount)} SMS`,
+            Math.floor(amount),
+          );
+          closeSubtractModal();
         } else {
-          alert('El monto a restar no puede ser mayor al saldo disponible');
-          return;
+          if (amount <= parseFloat(userData.saldo || '0')) {
+            await handleUserAction('subtract_balance', userData.numeroCel, userData.username, 'Ajuste administrativo', amount);
+          } else {
+            alert('El monto a restar no puede ser mayor al saldo disponible');
+            return;
+          }
+          closeSubtractModal();
         }
-        closeSubtractModal();
       } else {
         alert('Por favor ingrese un valor válido');
       }
@@ -817,7 +868,7 @@ function AdminPanelContent() {
     openSubtractModal();
   };
 
-  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'add_balance' | 'subtract_balance' | 'update_user', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
+  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
       alert('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -829,7 +880,7 @@ function AdminPanelContent() {
     setShowProgressBar(true);
 
     try {
-      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : '';
+      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : action === 'add_sms' ? 'add-sms' : action === 'subtract_sms' ? 'subtract-sms' : '';
 
       if (action === 'update_user') {
         endpoint = '';
@@ -842,6 +893,8 @@ function AdminPanelContent() {
           action === 'unlink' ||
           action === 'add_balance' ||
           action === 'subtract_balance' ||
+          action === 'add_sms' ||
+          action === 'subtract_sms' ||
           action === 'update_user') &&
         !usuarioBc
       ) {
@@ -859,6 +912,8 @@ function AdminPanelContent() {
         body = JSON.stringify(banData);
       } else if ((action === 'add_balance' || action === 'subtract_balance') && amount && reason) {
         body = JSON.stringify({ amount, reason });
+      } else if ((action === 'add_sms' || action === 'subtract_sms') && amount) {
+        body = JSON.stringify({ amount, reason: reason || '' });
       } else if (action === 'update_user' && userUpdates) {
         body = JSON.stringify(userUpdates);
         method = 'PUT';
@@ -872,7 +927,9 @@ function AdminPanelContent() {
               action === 'unban' ||
               action === 'unlink' ||
               action === 'add_balance' ||
-              action === 'subtract_balance'
+              action === 'subtract_balance' ||
+              action === 'add_sms' ||
+              action === 'subtract_sms'
             ? `${API_BASE_URL}/bancolombia/user/${encodeURIComponent(usuarioBc)}/${endpoint}`
             : `${API_BASE_URL}/admin/user/${numeroCel}/${endpoint}`;
 
@@ -892,18 +949,44 @@ function AdminPanelContent() {
         const result = await response.json();
         message = result.message;
 
-        // Si es una acción de balance exitosa, mostrar modal de confirmación
+        // Si es una acción de balance exitosa
         if ((action === 'add_balance' || action === 'subtract_balance') && result) {
-          setBalanceConfirmationData({
-            type: action === 'add_balance' ? 'add' : 'subtract',
-            username: username,
-            amount: amount || 0,
-            newBalance: result.data?.new_balance ?? result.new_balance ?? 0
-          });
-          setShowBalanceConfirmationModal(true);
-
-          // Ocultar progress bar
           setShowProgressBar(false);
+
+          if (action === 'subtract_balance') {
+            // Sin reembolso automático: avisar al admin que coordine la reposición.
+            await searchUser();
+            setShowNoRefundDialog(true);
+          } else {
+            setBalanceConfirmationData({
+              type: 'add',
+              username: username,
+              amount: amount || 0,
+              newBalance: result.data?.new_balance ?? result.new_balance ?? 0
+            });
+            setShowBalanceConfirmationModal(true);
+          }
+          return;
+        }
+
+        // Si es una acción SMS exitosa
+        if ((action === 'add_sms' || action === 'subtract_sms') && result) {
+          setShowProgressBar(false);
+          await searchUser();
+
+          if (action === 'subtract_sms') {
+            // Sin reembolso automático: avisar al admin que coordine la reposición.
+            setShowNoRefundDialog(true);
+          } else {
+            const oldSms = Number(result.data?.old_sms ?? userData?.sms ?? 0) || 0;
+            const newSms = Number(result.data?.new_sms ?? result.new_sms ?? 0) || 0;
+            setSmsConfirmationData({
+              username: username,
+              oldSms,
+              newSms,
+            });
+            setShowSmsConfirmationModal(true);
+          }
           return;
         }
 
@@ -943,11 +1026,19 @@ function AdminPanelContent() {
   };
 
   const handleSaldoIncrement = () => {
-    openCustomRecargaModal();
+    openCustomRecargaModal(false);
   };
 
   const handleSaldoDecrement = () => {
-    openSubtractModal();
+    openSubtractModal(false);
+  };
+
+  const handleSmsIncrement = () => {
+    openCustomRecargaModal(true);
+  };
+
+  const handleSmsDecrement = () => {
+    openSubtractModal(true);
   };
 
   const openEditModal = () => {
@@ -955,6 +1046,7 @@ function AdminPanelContent() {
       setEditUsername(userData.username);
       setEditPhoneNumber(userData.usuarioLogin);
       setEditPin(userData.pin);
+      setCurrentSmsAmount(userData.sms || 0);
       setShowEditModal(true);
     }
   };
@@ -1415,6 +1507,10 @@ function AdminPanelContent() {
                         `$${formatCurrency(parseFloat(userData.saldo || '0'))}`
                       )}
                     </div>
+                    <div className="text-gray-400 text-sm mb-1">SMS</div>
+                    <div className="text-xl font-semibold text-yellow-400 mb-3">
+                      {loading ? <Shimmer className="h-6 w-16" /> : (userData.sms ?? 0)}
+                    </div>
                     <div className="text-gray-400 text-sm mb-1">PIN</div>
                     <div className="text-xl font-semibold text-yellow-400 mb-3">
                       {loading ? <Shimmer className="h-6 w-20" /> : (userData.pin || 'No disponible')}
@@ -1598,12 +1694,12 @@ function AdminPanelContent() {
                 id="bancolombia-recarga-personalizada-title"
                 className="text-xl font-semibold text-white mb-4 text-center"
               >
-                Recarga personalizada
+                {isSmsOperation ? 'Agregar SMS' : 'Recarga personalizada'}
               </h3>
 
               <div className="mb-6">
                 <label htmlFor="customAmount" className="block text-sm font-medium text-gray-300 mb-2">
-                  Monto a recargar ($)
+                  {isSmsOperation ? 'Cantidad de SMS' : 'Monto a recargar ($)'}
                 </label>
                 <input
                   type="text"
@@ -1612,10 +1708,14 @@ function AdminPanelContent() {
                   onChange={(e) => {
                     // Permitir solo números
                     const numericValue = e.target.value.replace(/\D/g, '');
-                    setCustomRecargaAmount(formatNumberWithDots(numericValue));
+                    if (isSmsOperation) {
+                      setCustomRecargaAmount(numericValue);
+                    } else {
+                      setCustomRecargaAmount(formatNumberWithDots(numericValue));
+                    }
                   }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                  placeholder="Ej: 50000"
+                  placeholder={isSmsOperation ? 'Ej: 50' : 'Ej: 50000'}
                   autoFocus
                 />
               </div>
@@ -1631,7 +1731,7 @@ function AdminPanelContent() {
                   onClick={confirmCustomRecarga}
                   className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-md transition-colors font-medium"
                 >
-                  Recargar
+                  {isSmsOperation ? 'Agregar' : 'Recargar'}
                 </button>
               </div>
             </div>
@@ -1658,20 +1758,31 @@ function AdminPanelContent() {
                 id="bancolombia-restar-saldo-title"
                 className="text-xl font-semibold text-white mb-4 text-center"
               >
-                Restar saldo
+                {isSmsOperation ? 'Restar SMS' : 'Restar saldo'}
               </h3>
 
-              <div className="text-center mb-4">
-                <p className="text-gray-300 mb-2">
-                  Saldo actual: <span className="text-white font-semibold">
-                    ${formatCurrency(parseFloat(userData.saldo || '0'))}
-                  </span>
-                </p>
-              </div>
+              {!isSmsOperation && (
+                <div className="text-center mb-4">
+                  <p className="text-gray-300 mb-2">
+                    Saldo actual: <span className="text-white font-semibold">
+                      ${formatCurrency(parseFloat(userData.saldo || '0'))}
+                    </span>
+                  </p>
+                </div>
+              )}
+              {isSmsOperation && (
+                <div className="text-center mb-4">
+                  <p className="text-gray-300 mb-2">
+                    SMS actuales: <span className="text-white font-semibold">
+                      {userData.sms || 0}
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <div className="mb-6">
                 <label htmlFor="subtractAmount" className="block text-sm font-medium text-gray-300 mb-2">
-                  Monto a restar ($)
+                  {isSmsOperation ? 'Cantidad de SMS a restar' : 'Monto a restar ($)'}
                 </label>
                 <input
                   type="text"
@@ -1680,10 +1791,14 @@ function AdminPanelContent() {
                   onChange={(e) => {
                     // Permitir solo números
                     const numericValue = e.target.value.replace(/\D/g, '');
-                    setSubtractAmount(formatNumberWithDots(numericValue));
+                    if (isSmsOperation) {
+                      setSubtractAmount(numericValue);
+                    } else {
+                      setSubtractAmount(formatNumberWithDots(numericValue));
+                    }
                   }}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Ej: 25000"
+                  placeholder={isSmsOperation ? 'Ej: 10' : 'Ej: 25000'}
                   autoFocus
                 />
               </div>
@@ -1813,6 +1928,36 @@ function AdminPanelContent() {
                     </button>
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    SMS disponibles
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleSmsDecrement}
+                      className="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors"
+                      type="button"
+                      title="Restar SMS"
+                    >
+                      −
+                    </button>
+                    <div className="flex-1 text-center">
+                      <div className="text-xl font-bold text-yellow-400">
+                        {currentSmsAmount}
+                      </div>
+                      <div className="text-xs text-gray-400">Actual</div>
+                    </div>
+                    <button
+                      onClick={handleSmsIncrement}
+                      className="w-10 h-10 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors"
+                      type="button"
+                      title="Agregar SMS"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="border-t border-gray-600 pt-6 mt-6">
@@ -1851,6 +1996,145 @@ function AdminPanelContent() {
                 <div className="h-2 w-full rounded-full bg-gray-700">
                   <div className="h-2 w-full rounded-full bg-yellow-600 animate-pulse" />
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Modal de Confirmación SMS (portal, encima del de edición) */}
+      {showSmsConfirmationModal &&
+        smsConfirmationData &&
+        typeof document !== 'undefined' &&
+        createPortal(
+        <div
+          className={MODAL_ROOT_STACK_PORTAL}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bancolombia-sms-confirm-title"
+        >
+          <div className={MODAL_BACKDROP} onClick={() => setShowSmsConfirmationModal(false)} />
+          <div className={`${MODAL_PANEL_BASE} max-w-lg rounded-lg border border-gray-700 bg-gray-800 shadow-xl`}>
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4 p-3 bg-yellow-900/50 border border-yellow-500/50 rounded-lg">
+                <svg className="w-5 h-5 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span className="text-yellow-300 font-medium">
+                  SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'actualizados'} correctamente
+                </span>
+              </div>
+
+              <h3
+                id="bancolombia-sms-confirm-title"
+                className="text-xl font-semibold text-white mb-4 text-center"
+              >
+                Comparte este mensaje con el cliente
+              </h3>
+
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    const isSubtraction = smsConfirmationData.oldSms > smsConfirmationData.newSms;
+                    const smsDifference = Math.abs(smsConfirmationData.newSms - smsConfirmationData.oldSms);
+                    const message = `📱 SMS ${isSubtraction ? 'restados' : 'agregados'} correctamente!\n\n👤 Usuario: ${smsConfirmationData.username}\n${isSubtraction ? '➖' : '➕'} SMS ${isSubtraction ? 'restados' : 'agregados'}: ${smsDifference}\n📊 SMS anteriores: ${smsConfirmationData.oldSms}\n📱 Nuevos SMS: ${smsConfirmationData.newSms}\n✅ ¡Operación completada exitosamente!`;
+                    navigator.clipboard.writeText(message);
+                    alert('Mensaje copiado al portapapeles');
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  title="Copiar mensaje"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+
+                <div className="bg-gradient-to-br from-yellow-900/50 to-yellow-800/40 border border-yellow-500/50 rounded-lg p-4 text-white">
+                  <div className="text-center space-y-3">
+                    <div className="text-2xl">📱</div>
+                    <div className="text-xl font-bold text-yellow-300">
+                      ¡SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'agregados'} correctamente!
+                    </div>
+
+                    <div className="text-sm space-y-2">
+                      <div className="flex items-center justify-center space-x-2">
+                        <span>👤</span>
+                        <span>Usuario: <span className="font-semibold text-yellow-200">{smsConfirmationData.username}</span></span>
+                      </div>
+
+                      <div className="flex items-center justify-center space-x-2">
+                        <span>{smsConfirmationData.oldSms > smsConfirmationData.newSms ? '➖' : '➕'}</span>
+                        <span>SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'agregados'}: <span className="font-semibold text-yellow-200">{Math.abs(smsConfirmationData.newSms - smsConfirmationData.oldSms)}</span></span>
+                      </div>
+
+                      <div className="flex items-center justify-center space-x-2">
+                        <span>📊</span>
+                        <span>SMS anteriores: <span className="font-semibold text-yellow-200">{smsConfirmationData.oldSms}</span></span>
+                      </div>
+
+                      <div className="flex items-center justify-center space-x-2">
+                        <span>📱</span>
+                        <span>Nuevos SMS: <span className="font-semibold text-yellow-200">{smsConfirmationData.newSms}</span></span>
+                      </div>
+
+                      <div className="flex items-center justify-center space-x-2 pt-2">
+                        <span>✅</span>
+                        <span className="font-semibold text-yellow-300">¡Operación completada exitosamente!</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setShowSmsConfirmationModal(false)}
+                  className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Aviso al restar SMS: sin reembolso automático */}
+      {showNoRefundDialog &&
+        typeof document !== 'undefined' &&
+        createPortal(
+        <div
+          className={MODAL_ROOT_STACK_PORTAL}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="bancolombia-sms-no-refund-title"
+        >
+          <div className={MODAL_BACKDROP} onClick={() => setShowNoRefundDialog(false)} />
+          <div className={`${MODAL_PANEL_BASE} max-w-md rounded-lg border border-yellow-700 bg-gray-800 shadow-xl`}>
+            <div className="p-6">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-yellow-600/20 border border-yellow-500/50 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                </div>
+                <h3
+                  id="bancolombia-sms-no-refund-title"
+                  className="text-xl font-semibold text-white"
+                >
+                  Operación realizada correctamente
+                </h3>
+                <p className="text-gray-300">
+                  Comunícate con el creador para acordar la reposición del saldo.
+                </p>
+                <button
+                  onClick={() => setShowNoRefundDialog(false)}
+                  className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  Entendido
+                </button>
               </div>
             </div>
           </div>
@@ -2141,14 +2425,10 @@ function AdminPanelContent() {
                     id="newUserPhone"
                     value={newUserPhone}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9]/g, '');
-                      if (value.length <= 10) {
-                        setNewUserPhone(value);
-                      }
+                      setNewUserPhone(e.target.value);
                     }}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    placeholder="Ej: 3000000000"
-                    maxLength={10}
+                    placeholder="Ej: usuario123"
                   />
                 </div>
 
