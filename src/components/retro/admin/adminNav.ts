@@ -13,14 +13,7 @@ export interface RetroNavItem {
 
 export const MANAGER_NAV_ITEMS: RetroNavItem[] = [
   { href: adminHubHref('tarifas'), label: 'Tarifas', icon: 'files/briefcase', section: 'tarifas' },
-  { href: adminHubHref('estadisticas'), label: 'Estadísticas', icon: 'office/chart1', section: 'estadisticas' },
   { href: adminHubHref('registros'), label: 'Registros', icon: 'office/appwizard_list', section: 'registros' },
-  {
-    href: adminHubHref('facturacion-sms'),
-    label: 'Facturación SMS',
-    icon: 'office/document',
-    section: 'facturacion-sms',
-  },
   { href: adminHubHref('ganancias'), label: 'Ganancias', icon: 'office/bar_graph', section: 'ganancias' },
 ];
 

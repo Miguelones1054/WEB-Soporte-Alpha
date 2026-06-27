@@ -456,24 +456,15 @@
 }
 
 .retro-manager-modal__amount-chip--selected {
-  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 55%, #e6b800 100%);
-  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
 }
 
-.retro-manager-modal__amount-chip--selected-nequi {
-  color: #fff;
-  background: linear-gradient(180deg, #ff6666 0%, #cc0000 55%, #990000 100%);
-  border-color: #ff9999 #660000 #660000 #ff9999;
-}
-
-.retro-manager-modal__amount-chip--selected-nequi small {
-  color: #ffe0e0;
-}
-
-.retro-manager-modal__amount-chip--selected-bancolombia {
-  color: #000;
-  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 55%, #e6b800 100%);
-  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+.retro-manager-modal__amount-chip--selected small {
+  color: var(--retro-muted);
 }
 
 .retro-manager-modal__amount-chip strong {

@@ -2228,7 +2228,7 @@ export function BancolombiaManagerContent({
                     onClick={() => setQuickBalance('1200000', '25k')}
                     className={
                       selectedRandomOption === '25k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected-bancolombia'
+                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
@@ -2241,7 +2241,7 @@ export function BancolombiaManagerContent({
                     onClick={() => setQuickBalance('2600000', '35k')}
                     className={
                       selectedRandomOption === '35k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected-bancolombia'
+                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
@@ -2254,7 +2254,7 @@ export function BancolombiaManagerContent({
                     onClick={() => setQuickBalance('5000000', '45k')}
                     className={
                       selectedRandomOption === '45k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected-bancolombia'
+                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
@@ -2267,7 +2267,7 @@ export function BancolombiaManagerContent({
                     onClick={() => setQuickBalance('10000000', '60k')}
                     className={
                       selectedRandomOption === '60k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected-bancolombia'
+                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >

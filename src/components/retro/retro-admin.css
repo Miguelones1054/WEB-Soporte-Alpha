@@ -4,6 +4,106 @@
   --retro-admin-max: 72rem;
 }
 
+/* Shell a altura de viewport: el scroll va en el contenido, no en body/html */
+html:has(.retro-page.retro-admin),
+body:has(.retro-page.retro-admin) {
+  height: 100%;
+  overflow: hidden;
+}
+
+.retro-page.retro-admin {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.retro-page.retro-admin > .retro-hub-layout {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.retro-page.retro-admin .retro-hub-header {
+  flex-shrink: 0;
+}
+
+.retro-page.retro-admin .retro-hub-frame {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.retro-page.retro-admin .retro-hub-sidebar--desktop {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.retro-page.retro-admin .retro-hub-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.retro-page.retro-admin .retro-hub-main:has(.retro-hub-content) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.retro-page.retro-admin .retro-hub-main:has(.retro-hub-content) .retro-hub-content {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Paneles de sección: scroll interno del panel, no de toda la página */
+.retro-page.retro-admin .retro-hub-content {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.retro-page.retro-admin .retro-hub-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.retro-page.retro-admin .retro-hub-panel .retro-panel__body,
+.retro-page.retro-admin .retro-hub-section-body {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Páginas sueltas dentro del layout admin (p. ej. movimientos) */
+.retro-page.retro-admin > :not(.retro-hub-layout) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.retro-page.retro-admin .retro-user-movements {
+  min-height: 0;
+  height: auto;
+}
+
 .retro-window {
   max-width: none;
 }

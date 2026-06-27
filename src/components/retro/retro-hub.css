@@ -1,5 +1,9 @@
 /* ── Hub panel — mismo sistema visual que login (Win95) ── */
 
+.retro-page.retro-admin > .retro-hub-layout {
+  min-height: 0;
+}
+
 .retro-hub-layout {
   --hub-sidebar-w: 240px;
   min-height: 100vh;
