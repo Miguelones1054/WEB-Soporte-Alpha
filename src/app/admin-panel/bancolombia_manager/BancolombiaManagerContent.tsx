@@ -5,11 +5,12 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useOptionalAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { API_BASE_URL } from '../../../lib/constants';
 import { humanizeNotificationError, parseApiErrorDetail } from '../../../lib/humanizeNotificationError';
 import {
+  applyAdminBalanceDeduction,
   extractAdminBalanceDeduction,
-  syncAdminInfoBalance,
   type AdminBalanceDeduction,
 } from '../../../lib/adminBalanceDeduction';
 import { RetroIcon, RetroCheckbox, RetroSelect } from '../../../components/retro';
@@ -170,10 +171,15 @@ export function BancolombiaManagerContent({
   const [userNotificationBody, setUserNotificationBody] = useState('');
   const [sendingUserNotification, setSendingUserNotification] = useState(false);
   const router = useRouter();
+  const hubSession = useOptionalAdminSessionContext();
 
   useScrollLock(!embedded && isDrawerOpen);
 
   const queueAdminBalanceModal = (deduction: AdminBalanceDeduction | null) => {
+    applyAdminBalanceDeduction<AdminInfo>(deduction, {
+      setLocalAdminInfo: setAdminInfo,
+      syncGlobalBalance: hubSession?.syncBalanceFromDeduction,
+    });
     if (deduction) setAdminBalanceModalData(deduction);
   };
 
@@ -184,6 +190,17 @@ export function BancolombiaManagerContent({
       document.title = 'Bancolombia Admin';
     }
   }, [embedded]);
+
+  useEffect(() => {
+    if (embedded && adminInfoProp) {
+      setAdminInfo(adminInfoProp);
+      setUser({
+        email: adminInfoProp.email,
+        displayName: adminInfoProp.name,
+        role: adminInfoProp.role,
+      });
+    }
+  }, [embedded, adminInfoProp]);
 
   useEffect(() => {
     if (embedded) {
@@ -602,9 +619,8 @@ export function BancolombiaManagerContent({
       if (response.ok) {
         const result = await response.json();
         const deduction = extractAdminBalanceDeduction(result);
-        syncAdminInfoBalance(setAdminInfo, deduction);
-        setUserCreatedMessage(result.client_message);
         queueAdminBalanceModal(deduction);
+        setUserCreatedMessage(result.client_message ?? '');
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -757,7 +773,6 @@ export function BancolombiaManagerContent({
 
       closeRecargaModal();
       const deduction = extractAdminBalanceDeduction(result);
-      syncAdminInfoBalance(setAdminInfo, deduction);
       setBalanceConfirmationData({
         type: 'add',
         username: userData.username,
@@ -949,7 +964,6 @@ export function BancolombiaManagerContent({
             setShowNoRefundDialog(true);
           } else {
             const deduction = extractAdminBalanceDeduction(result);
-            syncAdminInfoBalance(setAdminInfo, deduction);
             setBalanceConfirmationData({
               type: 'add',
               username: username,
@@ -973,7 +987,6 @@ export function BancolombiaManagerContent({
             const oldSms = Number(result.data?.old_sms ?? userData?.sms ?? 0) || 0;
             const newSms = Number(result.data?.new_sms ?? result.new_sms ?? 0) || 0;
             const deduction = extractAdminBalanceDeduction(result);
-            syncAdminInfoBalance(setAdminInfo, deduction);
             setSmsConfirmationData({
               username: username,
               oldSms,

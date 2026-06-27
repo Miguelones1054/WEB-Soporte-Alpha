@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import { useAdminSession } from '../../../hooks/useAdminSession';
+import { AdminSessionProvider, useAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { RetroIcon } from '../RetroIcon';
 import { RetroLoadingOverlay } from '../RetroLoadingOverlay';
 import { HUB_SIDEBAR_NAV } from './adminNav';
@@ -9,11 +9,14 @@ import { RetroSidebarNav } from './RetroSidebarNav';
 
 export interface RetroHubLayoutProps {
   documentTitle?: string;
-  children: ReactNode | ((ctx: { adminInfo: ReturnType<typeof useAdminSession>['adminInfo'] }) => ReactNode);
+  children: ReactNode | ((ctx: { adminInfo: ReturnType<typeof useAdminSessionContext>['adminInfo'] }) => ReactNode);
 }
 
-export function RetroHubLayout({ documentTitle = 'Admin Apps', children }: RetroHubLayoutProps) {
-  const session = useAdminSession({ documentTitle, redirectOnFail: true });
+function RetroHubLayoutInner({
+  documentTitle = 'Admin Apps',
+  children,
+}: RetroHubLayoutProps) {
+  const session = useAdminSessionContext();
   const { adminInfo, user, loading, logout } = session;
 
   const [showProfile, setShowProfile] = useState(false);
@@ -168,5 +171,13 @@ export function RetroHubLayout({ documentTitle = 'Admin Apps', children }: Retro
         </div>
       )}
     </div>
+  );
+}
+
+export function RetroHubLayout({ documentTitle = 'Admin Apps', children }: RetroHubLayoutProps) {
+  return (
+    <AdminSessionProvider documentTitle={documentTitle}>
+      <RetroHubLayoutInner documentTitle={documentTitle}>{children}</RetroHubLayoutInner>
+    </AdminSessionProvider>
   );
 }

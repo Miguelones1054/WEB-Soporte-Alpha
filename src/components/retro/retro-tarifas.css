@@ -25,6 +25,10 @@
   background: var(--retro-surface);
 }
 
+.retro-tarifas__simulator--sms {
+  margin-top: 12px;
+}
+
 .retro-tarifas__simulator legend {
   padding: 0 4px;
   font-size: 11px;

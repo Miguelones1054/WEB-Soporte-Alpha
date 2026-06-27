@@ -3,11 +3,12 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useOptionalAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { API_BASE_URL } from '../../../lib/constants';
 import { humanizeNotificationError, parseApiErrorDetail } from '../../../lib/humanizeNotificationError';
 import {
+  applyAdminBalanceDeduction,
   extractAdminBalanceDeduction,
-  syncAdminInfoBalance,
   type AdminBalanceDeduction,
 } from '../../../lib/adminBalanceDeduction';
 import { RetroLoadingOverlay, RetroIcon, RetroCheckbox, RetroSelect } from '../../../components/retro';
@@ -151,10 +152,15 @@ export function NequiManagerContent({
   const [showCancelVipConfirmModal, setShowCancelVipConfirmModal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hubSession = useOptionalAdminSessionContext();
 
   useScrollLock(!embedded && isDrawerOpen);
 
   const queueAdminBalanceModal = (deduction: AdminBalanceDeduction | null) => {
+    applyAdminBalanceDeduction<AdminInfo>(deduction, {
+      setLocalAdminInfo: setAdminInfo,
+      syncGlobalBalance: hubSession?.syncBalanceFromDeduction,
+    });
     if (deduction) setAdminBalanceModalData(deduction);
   };
 
@@ -165,6 +171,17 @@ export function NequiManagerContent({
       document.title = 'Nequi Admin';
     }
   }, [embedded]);
+
+  useEffect(() => {
+    if (embedded && adminInfoProp) {
+      setAdminInfo(adminInfoProp);
+      setUser({
+        email: adminInfoProp.email,
+        displayName: adminInfoProp.name,
+        role: adminInfoProp.role,
+      });
+    }
+  }, [embedded, adminInfoProp]);
 
   useEffect(() => {
     if (embedded) {
@@ -545,9 +562,8 @@ export function NequiManagerContent({
       if (response.ok) {
         const result = await response.json();
         const deduction = extractAdminBalanceDeduction(result);
-        syncAdminInfoBalance(setAdminInfo, deduction);
-        setUserCreatedMessage(result.client_message);
         queueAdminBalanceModal(deduction);
+        setUserCreatedMessage(result.client_message);
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -820,13 +836,12 @@ export function NequiManagerContent({
           });
 
           const deduction = extractAdminBalanceDeduction(result);
-          syncAdminInfoBalance(setAdminInfo, deduction);
+          queueAdminBalanceModal(deduction);
 
           setVipModalData({
             username: username,
             expiryDate: `${formattedDate} a las ${formattedTime}`,
           });
-          queueAdminBalanceModal(deduction);
           setShowVipModal(true);
 
           setShowProgressBar(false);
@@ -839,7 +854,6 @@ export function NequiManagerContent({
           const currentSms = userData?.sms || 0;
           const newSmsValue = amount ? currentSms + amount : currentSms;
           const deduction = extractAdminBalanceDeduction(result);
-          syncAdminInfoBalance(setAdminInfo, deduction);
 
           setSmsConfirmationData({
             username,
@@ -861,7 +875,6 @@ export function NequiManagerContent({
             setShowNoRefundDialog(true);
           } else {
             const deduction = extractAdminBalanceDeduction(result);
-            syncAdminInfoBalance(setAdminInfo, deduction);
 
             setBalanceConfirmationData({
               type: 'add',

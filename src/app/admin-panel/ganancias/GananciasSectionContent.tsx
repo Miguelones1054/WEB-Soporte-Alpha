@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroAlert, RetroIcon, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
@@ -92,11 +92,6 @@ export function GananciasSectionContent() {
 
   const getOperationLabel = (type: string) => OPERATION_LABELS[type] || type;
 
-  const showAdminColumn = useMemo(() => {
-    const emails = new Set(operations.map((op) => op.admin_email).filter(Boolean));
-    return emails.size > 1;
-  }, [operations]);
-
   if (loading) {
     return <RetroLoadingOverlay message="Cargando ganancias..." />;
   }
@@ -107,7 +102,8 @@ export function GananciasSectionContent() {
 
       {porcentajeActual != null && (
         <RetroAlert variant="info">
-          Tarifas y ganancias calculadas con tu porcentaje de costo: <strong>{porcentajeActual}%</strong>
+          Tu porcentaje actual es <strong>{porcentajeActual}%</strong>. En la tabla, cada fila
+          muestra el porcentaje y la ganancia registrados al momento de la operación.
         </RetroAlert>
       )}
 
@@ -152,15 +148,15 @@ export function GananciasSectionContent() {
                 <th>Valor cliente</th>
                 <th>Costo admin</th>
                 <th>Ganancia</th>
-                {showAdminColumn && <th>Admin</th>}
                 <th>%</th>
               </tr>
             </thead>
             <tbody>
               {operations.length === 0 ? (
                 <tr>
-                  <td colSpan={showAdminColumn ? 8 : 7} className="retro-table__empty">
-                    No hay ventas registradas con ganancia calculable.
+                  <td colSpan={7} className="retro-table__empty">
+                    No hay ventas registradas con ganancia histórica. Las operaciones nuevas
+                    guardan el porcentaje y la ganancia al momento de ejecutarse.
                   </td>
                 </tr>
               ) : (
@@ -172,7 +168,6 @@ export function GananciasSectionContent() {
                     <td>${formatCurrency(op.valor_cliente || 0)}</td>
                     <td>${formatCurrency(op.costo_admin || 0)}</td>
                     <td className="retro-text-ok">${formatCurrency(op.ganancia || 0)}</td>
-                    {showAdminColumn && <td>{op.admin_email}</td>}
                     <td>{op.porcentaje}%</td>
                   </tr>
                 ))

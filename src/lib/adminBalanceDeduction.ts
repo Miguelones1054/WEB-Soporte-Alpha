@@ -40,3 +40,17 @@ export function syncAdminInfoBalance<T extends { balance?: number }>(
   if (!deduction) return;
   setAdminInfo((prev) => (prev ? { ...prev, balance: deduction.new_balance } : prev));
 }
+
+export function applyAdminBalanceDeduction<T extends { balance?: number }>(
+  deduction: AdminBalanceDeduction | null | undefined,
+  options?: {
+    setLocalAdminInfo?: Dispatch<SetStateAction<T | null>>;
+    syncGlobalBalance?: (deduction: AdminBalanceDeduction) => void;
+  },
+) {
+  if (!deduction) return;
+  if (options?.setLocalAdminInfo) {
+    syncAdminInfoBalance(options.setLocalAdminInfo, deduction);
+  }
+  options?.syncGlobalBalance?.(deduction);
+}

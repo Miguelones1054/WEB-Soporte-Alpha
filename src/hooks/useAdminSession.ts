@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../lib/constants';
+import type { AdminBalanceDeduction } from '../lib/adminBalanceDeduction';
 import { clearAllSessionData, getAdminToken } from '../lib/sessionStorage';
 
 export interface AdminInfo {
@@ -81,10 +82,30 @@ export function useAdminSession(options: UseAdminSessionOptions = {}) {
     }
   }, [redirectOnFail, router]);
 
+  const syncBalanceFromDeduction = useCallback((deduction: AdminBalanceDeduction | null | undefined) => {
+    if (!deduction) return;
+    setAdminInfo((prev) =>
+      prev ? { ...prev, balance: deduction.new_balance } : prev,
+    );
+  }, []);
+
+  const updateBalance = useCallback((newBalance: number) => {
+    setAdminInfo((prev) => (prev ? { ...prev, balance: newBalance } : prev));
+  }, []);
+
   useEffect(() => {
     if (documentTitle) document.title = documentTitle;
     void refetch();
   }, [documentTitle, refetch]);
 
-  return { loading, adminInfo, user, error, logout, refetch };
+  return {
+    loading,
+    adminInfo,
+    user,
+    error,
+    logout,
+    refetch,
+    syncBalanceFromDeduction,
+    updateBalance,
+  };
 }

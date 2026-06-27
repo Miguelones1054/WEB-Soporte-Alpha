@@ -28,6 +28,13 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
   },
   ...MANAGER_NAV_ITEMS,
   {
+    href: adminHubHref('ajustes'),
+    label: 'Ajustes',
+    icon: 'system/settings_gear',
+    ownerOnly: true,
+    section: 'ajustes',
+  },
+  {
     href: adminHubHref('admin-gestion'),
     label: 'Gestionar administradores',
     icon: 'users/address_book_users',

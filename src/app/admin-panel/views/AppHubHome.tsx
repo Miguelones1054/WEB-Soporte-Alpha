@@ -1,17 +1,19 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { AdminInfo } from '../../../hooks/useAdminSession';
+import { useAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { adminHubHref } from '../../../lib/adminHubSections';
 import { getTelegramRecargarPanelUrl } from '../../../lib/constants';
 import { RetroIcon } from '../../../components/retro';
 
 interface AppHubHomeProps {
-  adminInfo: AdminInfo | null;
+  adminInfo?: ReturnType<typeof useAdminSessionContext>['adminInfo'];
 }
 
-export function AppHubHome({ adminInfo }: AppHubHomeProps) {
+export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
   const router = useRouter();
+  const session = useAdminSessionContext();
+  const adminInfo = adminInfoProp ?? session.adminInfo;
 
   return (
     <div className="retro-hub-content">

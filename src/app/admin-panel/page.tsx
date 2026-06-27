@@ -14,6 +14,7 @@ import { FacturacionSmsSectionView } from './views/FacturacionSmsSectionView';
 import { RegistrosSectionView } from './views/RegistrosSectionView';
 import { TarifasSectionView } from './views/TarifasSectionView';
 import { AdminGestionSectionView } from './views/AdminGestionSectionView';
+import { AjustesSectionView } from './views/AjustesSectionView';
 
 function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
   const router = useRouter();
@@ -48,6 +49,8 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <RegistrosSectionView onClose={goHome} />;
       case 'tarifas':
         return <TarifasSectionView onClose={goHome} />;
+      case 'ajustes':
+        return <AjustesSectionView onClose={goHome} />;
       case 'admin-gestion':
         return <AdminGestionSectionView onClose={goHome} />;
       default:

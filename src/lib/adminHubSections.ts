@@ -8,6 +8,7 @@ export const ADMIN_HUB_SECTIONS = [
   'registros',
   'facturacion-sms',
   'ganancias',
+  'ajustes',
   'admin-gestion',
 ] as const;
 
@@ -24,6 +25,7 @@ export const HUB_SECTION_META: Record<
   registros: { title: 'Registros de operaciones', icon: 'office/appwizard_list' },
   'facturacion-sms': { title: 'Facturación SMS', icon: 'office/document' },
   ganancias: { title: 'Ganancias del administrador', icon: 'office/bar_graph' },
+  ajustes: { title: 'Ajustes del sistema', icon: 'system/settings_gear', ownerOnly: true },
   'admin-gestion': { title: 'Gestionar administradores', icon: 'users/address_book_users', ownerOnly: true },
 };
 
@@ -36,6 +38,7 @@ export const LEGACY_HUB_PATHS: Record<string, AdminHubSection> = {
   '/admin-panel/registros': 'registros',
   '/admin-panel/reporte-facturacion-sms': 'facturacion-sms',
   '/admin-panel/ganancias': 'ganancias',
+  '/admin-panel/ajustes': 'ajustes',
   '/admin-panel/admin-gestion': 'admin-gestion',
 };
 
