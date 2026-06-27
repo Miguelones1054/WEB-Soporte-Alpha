@@ -565,37 +565,13 @@ body:has(.retro-page.retro-admin) {
 .retro-modal--md { max-width: 32rem; }
 .retro-modal--lg { max-width: 48rem; }
 
-.retro-modal__titlebar {
-  flex-shrink: 0;
-}
-
 .retro-modal__body {
-  flex: 1 1 auto;
-  min-height: 0;
   padding: 12px;
   overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
   font-size: 12px;
   background: #c0c0c0;
   background: var(--retro-surface);
   color: var(--retro-text);
-}
-
-@media (max-width: 639px) {
-  .retro-modal-root {
-    align-items: flex-start;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    padding-top: max(12px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  }
-
-  .retro-modal {
-    max-height: none;
-    flex-shrink: 0;
-  }
 }
 
 /* Overrides: páginas legacy (managers) dentro de .retro-admin */

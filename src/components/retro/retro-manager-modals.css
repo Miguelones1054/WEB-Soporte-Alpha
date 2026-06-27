@@ -335,7 +335,6 @@
 
 .retro-manager-modal__admin-balance {
   margin-top: 12px;
-  margin-bottom: 12px;
   padding: 8px 10px;
   background: #f0f0f0;
   border: 2px solid;
@@ -343,7 +342,6 @@
   font-size: 11px;
   line-height: 1.5;
   color: var(--retro-text);
-  flex-shrink: 0;
 }
 
 .retro-manager-modal__admin-balance-title {
@@ -551,15 +549,5 @@
 }
 
 .retro-modal__body.retro-manager-modal__body {
-  max-height: none;
-}
-
-@media (max-width: 639px) {
-  .retro-manager-modal__message-box {
-    max-height: min(200px, 38dvh);
-  }
-
-  .retro-manager-modal__admin-balance {
-    margin-top: 0;
-  }
+  max-height: min(72dvh, calc(100dvh - 5rem));
 }

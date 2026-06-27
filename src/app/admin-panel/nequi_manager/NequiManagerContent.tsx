@@ -1823,8 +1823,6 @@ export function NequiManagerContent({
                 SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'actualizados'} correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={smsConfirmationData.adminBalanceDeduction} />
-
               <RetroModalMessagePanel
                 onCopy={() => {
                   const isSubtraction = smsConfirmationData.oldSms > smsConfirmationData.newSms;
@@ -1849,6 +1847,8 @@ export function NequiManagerContent({
                   <p>✅ ¡Operación completada exitosamente!</p>
                 </div>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={smsConfirmationData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2096,8 +2096,6 @@ export function NequiManagerContent({
                 Usuario actualizado a VIP correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={vipModalData.adminBalanceDeduction} />
-
               <RetroModalMessagePanel onCopy={copyVipMessage}>
                 <div className="retro-manager-modal__message-rich">
                   <div className="retro-manager-modal__message-emoji">✨</div>
@@ -2107,6 +2105,8 @@ export function NequiManagerContent({
                   <p>⭐ ¡Disfruta de todos los beneficios premium! ⭐</p>
                 </div>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={vipModalData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2132,8 +2132,6 @@ export function NequiManagerContent({
                 Saldo {balanceConfirmationData.type === 'add' ? 'agregado' : 'restado'} correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={balanceConfirmationData.adminBalanceDeduction} />
-
               <RetroModalMessagePanel onCopy={copyBalanceMessage}>
                 <div className="retro-manager-modal__message-rich">
                   <div className="retro-manager-modal__message-emoji">💰</div>
@@ -2150,6 +2148,8 @@ export function NequiManagerContent({
                   <p>✅ ¡Operación completada exitosamente!</p>
                 </div>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={balanceConfirmationData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2385,11 +2385,11 @@ export function NequiManagerContent({
                 Usuario creado correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={userCreatedAdminDeduction} />
-
               <RetroModalMessagePanel onCopy={copyUserCreatedMessage}>
                 <pre>{userCreatedMessage}</pre>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={userCreatedAdminDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button

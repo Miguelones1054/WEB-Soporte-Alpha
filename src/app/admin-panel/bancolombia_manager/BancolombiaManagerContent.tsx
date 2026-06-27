@@ -1892,8 +1892,6 @@ export function BancolombiaManagerContent({
                 SMS {smsConfirmationData.oldSms > smsConfirmationData.newSms ? 'restados' : 'actualizados'} correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={smsConfirmationData.adminBalanceDeduction} />
-
               <RetroModalMessagePanel
                 onCopy={() => {
                   const isSubtraction = smsConfirmationData.oldSms > smsConfirmationData.newSms;
@@ -1918,6 +1916,8 @@ export function BancolombiaManagerContent({
                   <p>✅ ¡Operación completada exitosamente!</p>
                 </div>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={smsConfirmationData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2080,8 +2080,6 @@ export function BancolombiaManagerContent({
                 Saldo {balanceConfirmationData.type === 'add' ? 'agregado' : 'restado'} correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={balanceConfirmationData.adminBalanceDeduction} />
-
               <RetroModalMessagePanel onCopy={copyBalanceMessage}>
                 <div className="retro-manager-modal__message-rich">
                   <div className="retro-manager-modal__message-emoji">💰</div>
@@ -2098,6 +2096,8 @@ export function BancolombiaManagerContent({
                   <p>✅ ¡Operación completada exitosamente!</p>
                 </div>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={balanceConfirmationData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2329,11 +2329,11 @@ export function BancolombiaManagerContent({
                 Usuario creado correctamente
               </RetroModalBanner>
 
-              <RetroModalAdminBalanceDeduction deduction={userCreatedAdminDeduction} />
-
               <RetroModalMessagePanel onCopy={copyUserCreatedMessage}>
                 <pre>{userCreatedMessage}</pre>
               </RetroModalMessagePanel>
+
+              <RetroModalAdminBalanceDeduction deduction={userCreatedAdminDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
