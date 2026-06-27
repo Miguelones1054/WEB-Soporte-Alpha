@@ -21,7 +21,7 @@ import {
   RetroModalBanner,
   RetroModalMessagePanel,
   RetroModalAlertCenter,
-  RetroModalAdminBalanceDeduction,
+  RetroAdminBalanceModal,
 } from '../../../components/retro/admin';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 
@@ -143,7 +143,6 @@ export function BancolombiaManagerContent({
     username: string;
     amount: number;
     newBalance: number;
-    adminBalanceDeduction?: AdminBalanceDeduction | null;
   } | null>(null);
   const [isSmsOperation, setIsSmsOperation] = useState(false);
   const [showSmsConfirmationModal, setShowSmsConfirmationModal] = useState(false);
@@ -151,7 +150,6 @@ export function BancolombiaManagerContent({
     username: string;
     oldSms: number;
     newSms: number;
-    adminBalanceDeduction?: AdminBalanceDeduction | null;
   } | null>(null);
   const [showNoRefundDialog, setShowNoRefundDialog] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -161,7 +159,7 @@ export function BancolombiaManagerContent({
   const [selectedRandomOption, setSelectedRandomOption] = useState<string | null>(null);
   const [showUserCreatedModal, setShowUserCreatedModal] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState('');
-  const [userCreatedAdminDeduction, setUserCreatedAdminDeduction] = useState<AdminBalanceDeduction | null>(null);
+  const [adminBalanceModalData, setAdminBalanceModalData] = useState<AdminBalanceDeduction | null>(null);
   const [editUserData, setEditUserData] = useState<{
     username: string;
     pin: string;
@@ -174,6 +172,12 @@ export function BancolombiaManagerContent({
   const router = useRouter();
 
   useScrollLock(!embedded && isDrawerOpen);
+
+  const queueAdminBalanceModal = (deduction: AdminBalanceDeduction | null) => {
+    if (deduction) setAdminBalanceModalData(deduction);
+  };
+
+  const closeAdminBalanceModal = () => setAdminBalanceModalData(null);
 
   useEffect(() => {
     if (!embedded) {
@@ -600,7 +604,7 @@ export function BancolombiaManagerContent({
         const deduction = extractAdminBalanceDeduction(result);
         syncAdminInfoBalance(setAdminInfo, deduction);
         setUserCreatedMessage(result.client_message);
-        setUserCreatedAdminDeduction(deduction);
+        queueAdminBalanceModal(deduction);
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -637,7 +641,6 @@ export function BancolombiaManagerContent({
   const closeUserCreatedModal = () => {
     setShowUserCreatedModal(false);
     setUserCreatedMessage('');
-    setUserCreatedAdminDeduction(null);
   };
 
   const openResultModal = (message: string, type: 'success' | 'error') => {
@@ -760,8 +763,8 @@ export function BancolombiaManagerContent({
         username: userData.username,
         amount: Number(result.amount_added ?? 0),
         newBalance: Number(result.saldo_total ?? 0),
-        adminBalanceDeduction: deduction,
       });
+      queueAdminBalanceModal(deduction);
       setShowBalanceConfirmationModal(true);
       await searchUser();
     } catch (e) {
@@ -952,8 +955,8 @@ export function BancolombiaManagerContent({
               username: username,
               amount: amount || 0,
               newBalance: result.data?.new_balance ?? result.new_balance ?? 0,
-              adminBalanceDeduction: deduction,
             });
+            queueAdminBalanceModal(deduction);
             setShowBalanceConfirmationModal(true);
           }
           return;
@@ -975,8 +978,8 @@ export function BancolombiaManagerContent({
               username: username,
               oldSms,
               newSms,
-              adminBalanceDeduction: deduction,
             });
+            queueAdminBalanceModal(deduction);
             setShowSmsConfirmationModal(true);
           }
           return;
@@ -1917,8 +1920,6 @@ export function BancolombiaManagerContent({
                 </div>
               </RetroModalMessagePanel>
 
-              <RetroModalAdminBalanceDeduction deduction={smsConfirmationData.adminBalanceDeduction} />
-
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
                   onClick={() => setShowSmsConfirmationModal(false)}
@@ -2096,8 +2097,6 @@ export function BancolombiaManagerContent({
                   <p>✅ ¡Operación completada exitosamente!</p>
                 </div>
               </RetroModalMessagePanel>
-
-              <RetroModalAdminBalanceDeduction deduction={balanceConfirmationData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2333,8 +2332,6 @@ export function BancolombiaManagerContent({
                 <pre>{userCreatedMessage}</pre>
               </RetroModalMessagePanel>
 
-              <RetroModalAdminBalanceDeduction deduction={userCreatedAdminDeduction} />
-
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
                   onClick={closeUserCreatedModal}
@@ -2345,6 +2342,13 @@ export function BancolombiaManagerContent({
               </div>
         </RetroModal>
       )}
+
+      <RetroAdminBalanceModal
+        open={!!adminBalanceModalData}
+        deduction={adminBalanceModalData}
+        onClose={closeAdminBalanceModal}
+        zIndex={100}
+      />
 
       {/* Drawer de Estadísticas */}
       {!embedded && isDrawerOpen && (

@@ -334,7 +334,7 @@
 }
 
 .retro-manager-modal__admin-balance {
-  margin-top: 12px;
+  margin-top: 0;
   padding: 8px 10px;
   background: #f0f0f0;
   border: 2px solid;

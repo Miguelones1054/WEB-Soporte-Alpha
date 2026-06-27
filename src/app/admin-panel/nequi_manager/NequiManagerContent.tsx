@@ -19,7 +19,7 @@ import {
   RetroModalBanner,
   RetroModalMessagePanel,
   RetroModalAlertCenter,
-  RetroModalAdminBalanceDeduction,
+  RetroAdminBalanceModal,
 } from '../../../components/retro/admin';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 
@@ -114,7 +114,6 @@ export function NequiManagerContent({
   const [vipModalData, setVipModalData] = useState<{
     username: string;
     expiryDate: string;
-    adminBalanceDeduction?: AdminBalanceDeduction | null;
   } | null>(null);
   const [showBalanceConfirmationModal, setShowBalanceConfirmationModal] = useState(false);
   const [balanceConfirmationData, setBalanceConfirmationData] = useState<{
@@ -122,7 +121,6 @@ export function NequiManagerContent({
     username: string;
     amount: number;
     newBalance: number;
-    adminBalanceDeduction?: AdminBalanceDeduction | null;
   } | null>(null);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUserPhone, setNewUserPhone] = useState('');
@@ -131,7 +129,7 @@ export function NequiManagerContent({
   const [selectedRandomOption, setSelectedRandomOption] = useState<string | null>(null);
   const [showUserCreatedModal, setShowUserCreatedModal] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState('');
-  const [userCreatedAdminDeduction, setUserCreatedAdminDeduction] = useState<AdminBalanceDeduction | null>(null);
+  const [adminBalanceModalData, setAdminBalanceModalData] = useState<AdminBalanceDeduction | null>(null);
   const [editUserData, setEditUserData] = useState<{
     username: string;
     pin: string;
@@ -147,7 +145,6 @@ export function NequiManagerContent({
     username: string;
     oldSms: number;
     newSms: number;
-    adminBalanceDeduction?: AdminBalanceDeduction | null;
   } | null>(null);
   const [showNoRefundDialog, setShowNoRefundDialog] = useState(false);
   const [showUpgradeVipConfirmModal, setShowUpgradeVipConfirmModal] = useState(false);
@@ -156,6 +153,12 @@ export function NequiManagerContent({
   const searchParams = useSearchParams();
 
   useScrollLock(!embedded && isDrawerOpen);
+
+  const queueAdminBalanceModal = (deduction: AdminBalanceDeduction | null) => {
+    if (deduction) setAdminBalanceModalData(deduction);
+  };
+
+  const closeAdminBalanceModal = () => setAdminBalanceModalData(null);
 
   useEffect(() => {
     if (!embedded) {
@@ -544,7 +547,7 @@ export function NequiManagerContent({
         const deduction = extractAdminBalanceDeduction(result);
         syncAdminInfoBalance(setAdminInfo, deduction);
         setUserCreatedMessage(result.client_message);
-        setUserCreatedAdminDeduction(deduction);
+        queueAdminBalanceModal(deduction);
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -581,7 +584,6 @@ export function NequiManagerContent({
   const closeUserCreatedModal = () => {
     setShowUserCreatedModal(false);
     setUserCreatedMessage('');
-    setUserCreatedAdminDeduction(null);
   };
 
   const openResultModal = (message: string, type: 'success' | 'error') => {
@@ -823,8 +825,8 @@ export function NequiManagerContent({
           setVipModalData({
             username: username,
             expiryDate: `${formattedDate} a las ${formattedTime}`,
-            adminBalanceDeduction: deduction,
           });
+          queueAdminBalanceModal(deduction);
           setShowVipModal(true);
 
           setShowProgressBar(false);
@@ -843,8 +845,8 @@ export function NequiManagerContent({
             username,
             oldSms: currentSms,
             newSms: newSmsValue,
-            adminBalanceDeduction: deduction,
           });
+          queueAdminBalanceModal(deduction);
           setShowSmsConfirmationModal(true);
           await searchUser();
           return;
@@ -866,8 +868,8 @@ export function NequiManagerContent({
               username: username,
               amount: amount || 0,
               newBalance: result.data?.new_balance || result.new_balance || 0,
-              adminBalanceDeduction: deduction,
             });
+            queueAdminBalanceModal(deduction);
             setShowBalanceConfirmationModal(true);
           }
           return;
@@ -1848,8 +1850,6 @@ export function NequiManagerContent({
                 </div>
               </RetroModalMessagePanel>
 
-              <RetroModalAdminBalanceDeduction deduction={smsConfirmationData.adminBalanceDeduction} />
-
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
                   onClick={() => setShowSmsConfirmationModal(false)}
@@ -2106,8 +2106,6 @@ export function NequiManagerContent({
                 </div>
               </RetroModalMessagePanel>
 
-              <RetroModalAdminBalanceDeduction deduction={vipModalData.adminBalanceDeduction} />
-
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
                   onClick={closeVipModal}
@@ -2148,8 +2146,6 @@ export function NequiManagerContent({
                   <p>✅ ¡Operación completada exitosamente!</p>
                 </div>
               </RetroModalMessagePanel>
-
-              <RetroModalAdminBalanceDeduction deduction={balanceConfirmationData.adminBalanceDeduction} />
 
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
@@ -2389,8 +2385,6 @@ export function NequiManagerContent({
                 <pre>{userCreatedMessage}</pre>
               </RetroModalMessagePanel>
 
-              <RetroModalAdminBalanceDeduction deduction={userCreatedAdminDeduction} />
-
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
                   onClick={closeUserCreatedModal}
@@ -2401,6 +2395,13 @@ export function NequiManagerContent({
               </div>
         </RetroModal>
       )}
+
+      <RetroAdminBalanceModal
+        open={!!adminBalanceModalData}
+        deduction={adminBalanceModalData}
+        onClose={closeAdminBalanceModal}
+        zIndex={100}
+      />
 
       {/* Drawer de Estadísticas */}
       {!embedded && isDrawerOpen && (

@@ -7,14 +7,18 @@ import {
 
 export function RetroModalAdminBalanceDeduction({
   deduction,
+  showHeading = true,
 }: {
   deduction?: AdminBalanceDeduction | null;
+  showHeading?: boolean;
 }) {
   if (!deduction) return null;
 
   return (
     <div className="retro-manager-modal__admin-balance">
-      <p className="retro-manager-modal__admin-balance-title">Tu saldo de administrador</p>
+      {showHeading && (
+        <p className="retro-manager-modal__admin-balance-title">Tu saldo de administrador</p>
+      )}
       <p>
         Descontado: <strong>${formatAdminBalanceCop(deduction.amount_deducted)}</strong>
       </p>

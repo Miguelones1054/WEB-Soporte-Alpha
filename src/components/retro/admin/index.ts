@@ -37,6 +37,8 @@ export {
 } from './RetroManagerModalUI';
 
 export { RetroModalAdminBalanceDeduction } from './RetroModalAdminBalanceDeduction';
+export { RetroAdminBalanceModal } from './RetroAdminBalanceModal';
+export type { RetroAdminBalanceModalProps } from './RetroAdminBalanceModal';
 
 export { RetroHubLayout } from './RetroHubLayout';
 export type { RetroHubLayoutProps } from './RetroHubLayout';
