@@ -14,6 +14,7 @@ const SCROLL_CONTAINER_SELECTOR = [
 ].join(', ');
 
 const ALLOW_SCROLL_SELECTOR = [
+  '.retro-modal-root',
   '.retro-modal__body',
   '.retro-drawer__body',
   '.retro-manager-modal__body',
@@ -45,6 +46,20 @@ function unlockScrollContainers() {
   });
 }
 
+function findScrollableAncestor(target: Element): HTMLElement | null {
+  let node: Element | null = target;
+  while (node) {
+    if (node.matches(ALLOW_SCROLL_SELECTOR)) {
+      const el = node as HTMLElement;
+      if (el.scrollHeight > el.clientHeight + 1) {
+        return el;
+      }
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
 function onTouchMove(e: TouchEvent) {
   const target = e.target;
   if (!(target instanceof Element)) {
@@ -52,8 +67,12 @@ function onTouchMove(e: TouchEvent) {
     return;
   }
 
-  const scrollable = target.closest(ALLOW_SCROLL_SELECTOR) as HTMLElement | null;
-  if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) {
+  if (target.closest('.retro-modal-backdrop, .retro-drawer-backdrop')) {
+    e.preventDefault();
+    return;
+  }
+
+  if (findScrollableAncestor(target)) {
     return;
   }
 
