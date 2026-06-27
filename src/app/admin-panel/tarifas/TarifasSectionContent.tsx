@@ -13,16 +13,11 @@ interface TarifaData {
   ganancia?: string;
 }
 
-const FALLBACK_TARIFAS: TarifaData[] = [
-  { definicion: 'Recarga / Usuario 1.2M', valor: '$15.250', valorClienteFinal: '$25.000', ganancia: '$9.750' },
-  { definicion: 'Recarga / Usuario 2.6M', valor: '$21.350', valorClienteFinal: '$35.000', ganancia: '$13.650' },
-  { definicion: 'Recarga / Usuario 5M', valor: '$27.450', valorClienteFinal: '$45.000', ganancia: '$17.550' },
-  { definicion: 'Recarga / Usuario 10M', valor: '$36.600', valorClienteFinal: '$60.000', ganancia: '$23.400' },
-  { definicion: 'Actualización VIP', valor: '$30.500', valorClienteFinal: '$50.000', ganancia: '$19.500' },
-];
+const FALLBACK_TARIFAS: TarifaData[] = [];
 
 export function TarifasSectionContent() {
   const [tarifas, setTarifas] = useState<TarifaData[]>([]);
+  const [porcentaje, setPorcentaje] = useState<number | null>(null);
   const [tarifasLoading, setTarifasLoading] = useState(true);
   const [simuladorValor, setSimuladorValor] = useState('');
   const [simulando, setSimulando] = useState(false);
@@ -67,8 +62,10 @@ export function TarifasSectionContent() {
             ganancia: tarifa.ganancia,
           }));
           setTarifas(tarifasFormateadas);
+          setPorcentaje(typeof data.porcentaje === 'number' ? data.porcentaje : null);
         } else {
-          console.error('Error obteniendo tarifas del backend');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Error obteniendo tarifas del backend', errorData.detail);
           setTarifas(FALLBACK_TARIFAS);
         }
       } catch (error) {
@@ -170,7 +167,9 @@ export function TarifasSectionContent() {
     <>
       <div className="retro-tarifas">
         <p className="retro-tarifas__intro">
-          Pagos que no estén definidos en la tabla usarán el algoritmo de cálculo de saldo automático.
+          {porcentaje != null
+            ? `Tarifas calculadas con tu porcentaje de costo (${porcentaje}%). Valor = lo que pagas; ganancia = margen sobre el cliente.`
+            : 'Pagos que no estén definidos en la tabla usarán el algoritmo de cálculo de saldo automático.'}
         </p>
 
         <RetroInteractiveTable

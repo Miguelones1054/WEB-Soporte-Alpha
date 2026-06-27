@@ -12,6 +12,7 @@ export interface AdminInfo {
   role: string;
   active: boolean;
   balance: number;
+  porcentaje?: number | null;
 }
 
 export interface AdminUser {

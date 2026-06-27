@@ -60,6 +60,27 @@
   cursor: pointer;
 }
 
+.retro-admin-gestion__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.retro-admin-gestion__action-btn--danger {
+  background: linear-gradient(180deg, #ffb8b8 0%, #c85252 55%, #800000 100%);
+  border-color: #ffb8b8 #800000 #800000 #ffb8b8;
+  color: #fff;
+}
+
+.retro-admin-gestion__checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
 .retro-admin-gestion__action-btn:active:not(:disabled) {
   border-color: var(--retro-btn-shadow) var(--retro-btn-highlight) var(--retro-btn-highlight) var(--retro-btn-shadow);
   box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);

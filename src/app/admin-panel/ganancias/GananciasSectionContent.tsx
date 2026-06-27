@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroAlert, RetroIcon, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
 
-interface AdminOperation {
+interface GananciaOperation {
   id: string;
   admin_email: string;
   admin_name: string;
@@ -13,22 +13,38 @@ interface AdminOperation {
   target_user: string;
   amount: number;
   reason: string;
-  previous_balance: number;
-  new_balance: number;
   timestamp: string;
+  ganancia: number;
+  valor_cliente: number;
+  costo_admin: number;
+  porcentaje: number;
 }
+
+const OPERATION_LABELS: Record<string, string> = {
+  ADD_BALANCE: 'Recarga Nequi',
+  ADD_BALANCE_BANCOLOMBIA: 'Recarga Bancolombia',
+  ADD_BALANCE_BANCOLOMBIA_MANUAL: 'Recarga BC manual',
+  CREATE_USER: 'Crear usuario Nequi',
+  CREATE_USER_BANCOLOMBIA: 'Crear usuario BC',
+  UPGRADE_VIP: 'Actualización VIP',
+  ADD_SMS: 'Agregar SMS',
+  ADD_SMS_BANCOLOMBIA: 'Agregar SMS BC',
+};
 
 export function GananciasSectionContent() {
   const router = useRouter();
-  const [operations, setOperations] = useState<AdminOperation[]>([]);
+  const [operations, setOperations] = useState<GananciaOperation[]>([]);
+  const [porcentajeActual, setPorcentajeActual] = useState<number | null>(null);
+  const [totalHoy, setTotalHoy] = useState(0);
+  const [totalHistorico, setTotalHistorico] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetchOperations();
+    void fetchGanancias();
   }, []);
 
-  const fetchOperations = async () => {
+  const fetchGanancias = async () => {
     try {
       const token = localStorage.getItem('admin_token');
       if (!token) {
@@ -36,7 +52,7 @@ export function GananciasSectionContent() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/operations?limit=500`, {
+      const response = await fetch(`${API_BASE_URL}/admin/ganancias?limit=500`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -45,11 +61,14 @@ export function GananciasSectionContent() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Error al cargar operaciones');
+        throw new Error(errorData.detail || 'Error al cargar ganancias');
       }
 
       const data = await response.json();
       setOperations(data.operations || []);
+      setPorcentajeActual(data.porcentaje_actual ?? null);
+      setTotalHoy(data.total_hoy ?? 0);
+      setTotalHistorico(data.total_historico ?? 0);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
       setError(message);
@@ -71,38 +90,12 @@ export function GananciasSectionContent() {
       second: '2-digit',
     });
 
-  const adminOps = useMemo(
-    () =>
-      operations.filter((op) =>
-        ['ADD_ADMIN_BALANCE', 'SUBTRACT_ADMIN_BALANCE'].includes(op.operation_type)
-      ),
-    [operations]
-  );
+  const getOperationLabel = (type: string) => OPERATION_LABELS[type] || type;
 
-  const GAIN_RATIO = 0.39 / 0.61;
-
-  const calcOpGain = (op: AdminOperation) => {
-    const base = op.amount || 0;
-    const gain = base * GAIN_RATIO;
-    return op.operation_type === 'ADD_ADMIN_BALANCE' ? -gain : gain;
-  };
-
-  const { totalHoy, totalHistorico } = useMemo(() => {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    let totalDia = 0;
-    let total = 0;
-
-    adminOps.forEach((op) => {
-      const gain = calcOpGain(op);
-      total += gain;
-      const opDay = new Date(op.timestamp);
-      opDay.setHours(0, 0, 0, 0);
-      if (opDay.getTime() === hoy.getTime()) totalDia += gain;
-    });
-
-    return { totalHoy: totalDia, totalHistorico: total };
-  }, [adminOps]);
+  const showAdminColumn = useMemo(() => {
+    const emails = new Set(operations.map((op) => op.admin_email).filter(Boolean));
+    return emails.size > 1;
+  }, [operations]);
 
   if (loading) {
     return <RetroLoadingOverlay message="Cargando ganancias..." />;
@@ -112,12 +105,18 @@ export function GananciasSectionContent() {
     <div className="retro-admin-container space-y-4">
       {error && <RetroAlert variant="error">{error}</RetroAlert>}
 
+      {porcentajeActual != null && (
+        <RetroAlert variant="info">
+          Tarifas y ganancias calculadas con tu porcentaje de costo: <strong>{porcentajeActual}%</strong>
+        </RetroAlert>
+      )}
+
       <div className="retro-stat-grid">
         <div className="retro-stat-card">
           <p className="retro-stat-card__label">Ganancia del día</p>
           <p className="retro-stat-card__value retro-text-ok">
             <span className="retro-stat-card__value-row">
-              <span>${formatCurrency(Math.abs(totalHoy))}</span>
+              <span>${formatCurrency(totalHoy)}</span>
               <RetroIcon name="office/calendar" size={16} alt="" />
             </span>
           </p>
@@ -126,7 +125,7 @@ export function GananciasSectionContent() {
           <p className="retro-stat-card__label">Ganancia histórica</p>
           <p className="retro-stat-card__value retro-text-ok">
             <span className="retro-stat-card__value-row">
-              <span>${formatCurrency(Math.abs(totalHistorico))}</span>
+              <span>${formatCurrency(totalHistorico)}</span>
               <RetroIcon name="office/bar_graph" size={16} alt="" />
             </span>
           </p>
@@ -135,42 +134,46 @@ export function GananciasSectionContent() {
           <p className="retro-stat-card__label">Operaciones</p>
           <p className="retro-stat-card__value">
             <span className="retro-stat-card__value-row">
-              <span>{adminOps.length}</span>
+              <span>{operations.length}</span>
               <RetroIcon name="office/document" size={16} alt="" />
             </span>
           </p>
         </div>
       </div>
 
-      <RetroWindow title={`Registros de balance admin (${adminOps.length})`} fullWidth bodyClassName="p-0">
+      <RetroWindow title={`Ventas con ganancia (${operations.length})`} fullWidth bodyClassName="p-0">
         <div className="retro-table-wrap">
           <table className="retro-table">
             <thead>
               <tr>
                 <th>Fecha</th>
                 <th>Tipo</th>
-                <th>Monto</th>
+                <th>Usuario</th>
+                <th>Valor cliente</th>
+                <th>Costo admin</th>
                 <th>Ganancia</th>
-                <th>Admin</th>
-                <th>Razón</th>
+                {showAdminColumn && <th>Admin</th>}
+                <th>%</th>
               </tr>
             </thead>
             <tbody>
-              {adminOps.length === 0 ? (
+              {operations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="retro-table__empty">
-                    No hay registros de balance de admin.
+                  <td colSpan={showAdminColumn ? 8 : 7} className="retro-table__empty">
+                    No hay ventas registradas con ganancia calculable.
                   </td>
                 </tr>
               ) : (
-                adminOps.map((op) => (
+                operations.map((op) => (
                   <tr key={op.id}>
                     <td>{formatDate(op.timestamp)}</td>
-                    <td>{op.operation_type === 'ADD_ADMIN_BALANCE' ? 'Ingreso' : 'Descuento'}</td>
-                    <td>${formatCurrency(op.amount || 0)}</td>
-                    <td className="retro-text-ok">${formatCurrency(Math.abs(calcOpGain(op)))}</td>
-                    <td>{op.admin_email}</td>
-                    <td>{op.reason || '(Sin razón)'}</td>
+                    <td>{getOperationLabel(op.operation_type)}</td>
+                    <td>{op.target_user || '—'}</td>
+                    <td>${formatCurrency(op.valor_cliente || 0)}</td>
+                    <td>${formatCurrency(op.costo_admin || 0)}</td>
+                    <td className="retro-text-ok">${formatCurrency(op.ganancia || 0)}</td>
+                    {showAdminColumn && <td>{op.admin_email}</td>}
+                    <td>{op.porcentaje}%</td>
                   </tr>
                 ))
               )}
