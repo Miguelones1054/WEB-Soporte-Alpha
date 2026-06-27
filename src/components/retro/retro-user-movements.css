@@ -1,0 +1,172 @@
+/* Movimientos de usuario — estilo Win98 */
+
+.retro-user-movements {
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  background: var(--retro-surface);
+}
+
+.retro-user-movements__shell {
+  max-width: 960px;
+  margin: 0 auto;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.retro-user-movements__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.retro-user-movements__back {
+  flex-shrink: 0;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  cursor: pointer;
+}
+
+.retro-user-movements__back:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-user-movements__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--retro-surface);
+}
+
+.retro-user-movements__intro {
+  margin: 0;
+  font-size: 11px;
+  color: var(--retro-muted);
+}
+
+.retro-user-movements__tabs {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  background: var(--retro-surface);
+}
+
+.retro-user-movements__tabs legend {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.retro-user-movements__tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.retro-user-movements__tab-btn {
+  padding: 4px 10px;
+  font-family: var(--retro-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--retro-text);
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 55%, #e6b800 100%);
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  box-shadow: 1px 1px 0 var(--retro-btn-deep);
+  cursor: pointer;
+}
+
+.retro-user-movements__tab-btn--active {
+  border-color: var(--retro-btn-shadow) var(--retro-btn-highlight) var(--retro-btn-highlight) var(--retro-btn-shadow);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-user-movements__tab-btn--danger.retro-user-movements__tab-btn--active {
+  background: linear-gradient(180deg, #ffb8b8 0%, #ff5252 55%, #c80000 100%);
+  border-color: #800000 #ffb8b8 #ffb8b8 #800000;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+}
+
+.retro-user-movements__error {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #7f0000;
+  background: #ffe8e8;
+  border: 2px solid #a00000;
+}
+
+.retro-user-movements__table.retro-tableview-panel {
+  max-height: min(62dvh, calc(100dvh - 14rem));
+}
+
+.retro-user-movements__type-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.retro-user-movements__type-badge--incoming {
+  color: #004000;
+  background: #e8ffe8;
+  border-color: #80c080;
+}
+
+.retro-user-movements__type-badge--outgoing {
+  color: #7f0000;
+  background: #ffe8e8;
+  border-color: #ff8080;
+}
+
+.retro-user-movements__type-badge--qr {
+  color: #7f4f00;
+  background: #fff4d0;
+  border-color: #c8a000;
+}
+
+.retro-user-movements__amount--incoming {
+  font-weight: 700;
+  color: #004000;
+}
+
+.retro-user-movements__amount--outgoing {
+  font-weight: 700;
+  color: #7f0000;
+}
+
+.retro-user-movements__amount--qr {
+  font-weight: 700;
+  color: #7f4f00;
+}
+
+.retro-tableview-panel table > tbody > tr.highlighted .retro-user-movements__type-badge,
+.retro-tableview-panel table > tbody > tr.highlighted .retro-user-movements__amount--incoming,
+.retro-tableview-panel table > tbody > tr.highlighted .retro-user-movements__amount--outgoing,
+.retro-tableview-panel table > tbody > tr.highlighted .retro-user-movements__amount--qr,
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-user-movements__type-badge,
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-user-movements__amount--incoming,
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-user-movements__amount--outgoing,
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-user-movements__amount--qr {
+  color: #fff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+}

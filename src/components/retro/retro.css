@@ -1,0 +1,542 @@
+/* ── Retro Web UI (Windows 95 / web clásico) ── */
+
+.retro-page,
+.retro-modal-root {
+  --retro-bg: #bdbdbd;
+  --retro-bg-pattern: #b5b5b5;
+  --retro-surface: #c0c0c0;
+  --retro-text: #000000;
+  --retro-muted: #404040;
+  --retro-border-light: #ffffff;
+  --retro-border-mid: #dfdfdf;
+  --retro-border-dark: #808080;
+  --retro-border-darker: #404040;
+  --retro-btn-face: #ffcc00;
+  --retro-btn-highlight: #fff4a8;
+  --retro-btn-shadow: #9a7b00;
+  --retro-btn-deep: #6b5500;
+  --retro-title-start: #000080;
+  --retro-title-end: #1084d0;
+  --retro-font: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
+
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
+.retro-page {
+  min-height: 100vh;
+  background-color: var(--retro-bg);
+  background-image:
+    linear-gradient(
+      45deg,
+      var(--retro-bg-pattern) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--retro-bg-pattern) 75%,
+      var(--retro-bg-pattern)
+    ),
+    linear-gradient(
+      45deg,
+      var(--retro-bg-pattern) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--retro-bg-pattern) 75%,
+      var(--retro-bg-pattern)
+    );
+  background-size: 4px 4px;
+  background-position: 0 0, 2px 2px;
+}
+
+.retro-modal-root {
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
+.retro-panel {
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.retro-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: linear-gradient(90deg, var(--retro-title-start) 0%, var(--retro-title-end) 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.retro-titlebar__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background: var(--retro-surface);
+  border: 1px solid var(--retro-border-dark);
+}
+
+.retro-panel__body {
+  padding: 16px;
+}
+
+.retro-panel__body--flush {
+  padding: 0;
+}
+
+.retro-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.retro-field__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--retro-text);
+}
+
+.retro-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.retro-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  font-family: var(--retro-font);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--retro-text);
+  background: #ffffff;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-mid) var(--retro-border-mid) var(--retro-border-dark);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  transition: none;
+}
+
+.retro-input::placeholder {
+  color: #6b6b6b;
+}
+
+.retro-input:focus {
+  outline: 1px dotted #000;
+  outline-offset: -5px;
+}
+
+.retro-input:disabled {
+  background: var(--retro-surface);
+  color: var(--retro-muted);
+  cursor: not-allowed;
+}
+
+.retro-input--with-suffix {
+  padding-right: 36px;
+}
+
+.retro-input-suffix {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.retro-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 100%;
+  padding: 0;
+  font-family: var(--retro-font);
+  font-size: 11px;
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-dark) var(--retro-border-dark) var(--retro-border-light);
+  cursor: pointer;
+  transition: none;
+}
+
+.retro-icon-btn:active:not(:disabled) {
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.25);
+  transform: translate(1px, 1px);
+}
+
+.retro-icon-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.retro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 7px 18px;
+  font-family: var(--retro-font);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #000;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  background: linear-gradient(
+    180deg,
+    var(--retro-btn-highlight) 0%,
+    var(--retro-btn-face) 38%,
+    #e6b800 100%
+  );
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  box-shadow: 2px 2px 0 var(--retro-btn-deep);
+  border-radius: 0;
+  transition: none;
+}
+
+.retro-btn--full {
+  width: 100%;
+}
+
+.retro-btn--pressed,
+.retro-btn:active:not(:disabled) {
+  border-color: var(--retro-btn-shadow) var(--retro-btn-highlight) var(--retro-btn-highlight) var(--retro-btn-shadow);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(2px, 2px);
+  background: linear-gradient(180deg, #e6b800 0%, #ffcc00 55%, #fff4a8 100%);
+}
+
+.retro-btn:disabled {
+  color: var(--retro-muted);
+  background: var(--retro-surface);
+  border-color: var(--retro-border-mid) var(--retro-border-dark) var(--retro-border-dark) var(--retro-border-mid);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.retro-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+  user-select: none;
+  font-family: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
+}
+
+.retro-checkbox--disabled {
+  cursor: not-allowed;
+}
+
+/* Contenedor: input invisible encima de la caja dibujada */
+.retro-checkbox__control {
+  position: relative;
+  display: block;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+/* Ocultar checkbox nativo (Tailwind/preflight lo deja visible con clip:rect) */
+.retro-checkbox__input[type='checkbox'] {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: default;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.retro-checkbox__box {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  display: block;
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+  background: #ffffff;
+  border: 2px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow:
+    inset 1px 1px 0 rgba(0, 0, 0, 0.35),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: 0;
+}
+
+.retro-checkbox:active:not(.retro-checkbox--disabled) .retro-checkbox__box,
+.retro-checkbox__input:active + .retro-checkbox__box {
+  background: #f0f0f0;
+  box-shadow:
+    inset 2px 2px 0 rgba(0, 0, 0, 0.2),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.retro-checkbox--disabled .retro-checkbox__box {
+  background: #c0c0c0;
+  border-color: #808080 #dfdfdf #dfdfdf #808080;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+.retro-checkbox--disabled .retro-checkbox__input[type='checkbox'] {
+  cursor: not-allowed;
+}
+
+.retro-checkbox__input[type='checkbox']:checked + .retro-checkbox__box::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 3px;
+  height: 7px;
+  border: solid #000000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
+
+.retro-checkbox--disabled .retro-checkbox__input[type='checkbox']:checked + .retro-checkbox__box::after {
+  border-color: #404040;
+}
+
+.retro-checkbox__input[type='checkbox']:focus-visible + .retro-checkbox__box {
+  outline: 1px dotted #000000;
+  outline-offset: 1px;
+}
+
+.retro-checkbox__label {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 13px;
+  color: #000000;
+  letter-spacing: 0;
+}
+
+.retro-checkbox--disabled .retro-checkbox__label {
+  color: #404040;
+}
+
+.retro-alert {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  border: 2px solid;
+}
+
+.retro-alert--error {
+  color: #7f0000;
+  background: #ffe4e4;
+  border-color: #cc6666 #800000 #800000 #cc6666;
+}
+
+.retro-alert--success {
+  color: #004000;
+  background: #e4ffe8;
+  border-color: #66cc77 #006622 #006622 #66cc77;
+}
+
+.retro-alert--info {
+  color: #000040;
+  background: #e8e8ff;
+  border-color: #6666cc #000080 #000080 #6666cc;
+}
+
+.retro-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.retro-loading-box {
+  min-width: 220px;
+  padding: 16px 20px;
+  text-align: center;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.retro-loading-box p {
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
+}
+
+/* Reloj de arena Win95 — arena cayendo + volteo */
+.retro-hourglass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  animation: retro-hourglass-flip 2.4s steps(1, end) infinite;
+}
+
+.retro-hourglass__frame {
+  position: relative;
+  width: 18px;
+  height: 22px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    62% 46%,
+    62% 54%,
+    100% 100%,
+    0% 100%,
+    38% 54%,
+    38% 46%
+  );
+  image-rendering: pixelated;
+}
+
+.retro-hourglass__top-sand,
+.retro-hourglass__bottom-sand {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffcc00;
+  box-shadow: inset 0 1px 0 #fff4a8, inset 0 -1px 0 #9a7b00;
+}
+
+.retro-hourglass__top-sand {
+  top: 2px;
+  width: 12px;
+  height: 7px;
+  clip-path: polygon(0% 0%, 100% 0%, 72% 100%, 28% 100%);
+  transform-origin: center bottom;
+  animation: retro-hourglass-top-drain 2.4s steps(8, end) infinite;
+}
+
+.retro-hourglass__bottom-sand {
+  bottom: 2px;
+  width: 12px;
+  height: 0;
+  clip-path: polygon(28% 0%, 72% 0%, 100% 100%, 0% 100%);
+  transform-origin: center top;
+  animation: retro-hourglass-bottom-fill 2.4s steps(8, end) infinite;
+}
+
+.retro-hourglass__stream {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  margin-left: -1px;
+  margin-top: -1px;
+  background: #e6b800;
+  animation: retro-hourglass-stream 2.4s steps(4, end) infinite;
+}
+
+@keyframes retro-hourglass-top-drain {
+  0%,
+  8% {
+    height: 7px;
+    opacity: 1;
+  }
+  72% {
+    height: 0;
+    opacity: 1;
+  }
+  73%,
+  100% {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes retro-hourglass-bottom-fill {
+  0%,
+  8% {
+    height: 0;
+    opacity: 1;
+  }
+  72% {
+    height: 7px;
+    opacity: 1;
+  }
+  73%,
+  100% {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes retro-hourglass-stream {
+  0%,
+  8% {
+    height: 0;
+    opacity: 0;
+  }
+  12%,
+  68% {
+    height: 5px;
+    opacity: 1;
+  }
+  72%,
+  100% {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes retro-hourglass-flip {
+  0%,
+  72% {
+    transform: rotate(0deg);
+  }
+  73%,
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retro-hourglass,
+  .retro-hourglass__top-sand,
+  .retro-hourglass__bottom-sand,
+  .retro-hourglass__stream {
+    animation: none;
+  }
+
+  .retro-hourglass__top-sand {
+    height: 4px;
+    opacity: 1;
+  }
+
+  .retro-hourglass__bottom-sand {
+    height: 4px;
+    opacity: 1;
+  }
+}

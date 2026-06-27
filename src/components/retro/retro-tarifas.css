@@ -1,0 +1,111 @@
+/* Tarifas — estilo Win98 */
+
+.retro-tarifas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
+.retro-tarifas__intro {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--retro-muted);
+  text-align: center;
+}
+
+.retro-tarifas__simulator {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  background: var(--retro-surface);
+}
+
+.retro-tarifas__simulator legend {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.retro-tarifas__simulator-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.retro-tarifas__simulator-field {
+  flex: 1;
+  min-width: 180px;
+}
+
+.retro-tarifas__simulator-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.retro-tarifas__result {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.retro-tarifas__result-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.retro-tarifas__result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+@media (max-width: 520px) {
+  .retro-tarifas__result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.retro-tarifas__result-item-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10px;
+  color: var(--retro-muted);
+}
+
+.retro-tarifas__result-item-value {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.retro-tarifas__result-item-value--admin {
+  color: #004000;
+}
+
+.retro-tarifas__result-item-value--client {
+  color: #000080;
+}
+
+.retro-tarifas__result-item-value--gain {
+  color: #7f0000;
+}
+
+.retro-tarifas__cell-strong {
+  font-weight: 700;
+}
+
+.retro-tarifas__cell-gain {
+  font-weight: 700;
+  color: #004000;
+}

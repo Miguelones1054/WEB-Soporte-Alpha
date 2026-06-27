@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
   /* Grises con matices rojizos (tema general oscuro borgoña, no azul-pizarra) */
   --color-gray-50: #fbf6f6;
   --color-gray-100: #f2e8e8;
@@ -34,7 +34,7 @@
 body {
   background: #0f0808; /* alineado con --color-gray-900 (tema rojo oscuro) */
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
   margin: 0;
   padding: 0;
   overflow-x: hidden;

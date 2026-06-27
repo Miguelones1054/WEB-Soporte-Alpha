@@ -1,26 +1,27 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "../components/retro/retro.css";
+import "../components/retro/retro-scrollbars.css";
+import "../components/retro/retro-admin.css";
+import "../components/retro/retro-hub.css";
+import "../components/retro/retro-app-manager.css";
+import "../components/retro/retro-tableview.css";
+import "../components/retro/retro-admin-gestion.css";
+import "../components/retro/retro-tarifas.css";
+import "../components/retro/retro-user-movements.css";
+import "../components/retro/retro-select.css";
+import "../components/retro/retro-manager-modals.css";
 
 export const metadata: Metadata = {
-  title: "Nequi Admin",
-  description: "Panel de administración de Nequi Admin",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+  title: "Administración Alpha",
+  description: "Panel de administración Administración Alpha",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -30,9 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         {children}
       </body>
     </html>

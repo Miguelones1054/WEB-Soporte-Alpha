@@ -1,0 +1,718 @@
+/* ── Hub panel — mismo sistema visual que login (Win95) ── */
+
+.retro-hub-layout {
+  --hub-sidebar-w: 240px;
+  min-height: 100vh;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  background: transparent;
+}
+
+/* Iconos retro Windows 98 (.ico) */
+.retro-icon,
+.retro-titlebar__icon-img,
+.retro-hub-sidebar__link-icon-img {
+  display: block;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.retro-titlebar__icon-img {
+  width: 14px;
+  height: 14px;
+  background: var(--retro-surface);
+  border: 1px solid var(--retro-border-dark);
+  box-sizing: border-box;
+  padding: 1px;
+}
+
+.retro-hub-sidebar__link-icon-img {
+  width: 16px;
+  height: 16px;
+}
+
+.retro-hub-stat__icon .retro-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Barra superior azul (como titlebar del login) */
+.retro-hub-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 2px solid var(--retro-border-darker);
+}
+
+.retro-hub-header__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  min-height: 28px;
+}
+
+.retro-hub-header__titlebar .retro-titlebar__text {
+  flex: 1;
+}
+
+.retro-hub-header__menu-btn {
+  display: inline-flex;
+}
+
+.retro-hub-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.retro-hub-profile {
+  position: relative;
+}
+
+/* Botón perfil admin — shell 98.css; icono en marco fijo aparte del texto */
+@font-face {
+  font-family: "Pixelated MS Sans Serif";
+  font-style: normal;
+  font-weight: 400;
+  src:
+    url("../../../node_modules/98.css/dist/ms_sans_serif.woff2") format("woff2"),
+    url("../../../node_modules/98.css/dist/ms_sans_serif.woff") format("woff");
+}
+
+.retro-hub-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 23px;
+  min-width: 23px;
+  padding: 2px 8px 2px 3px;
+  background: silver;
+  border: none;
+  border-radius: 0;
+  box-shadow:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px grey,
+    inset 2px 2px #dfdfdf;
+  box-sizing: border-box;
+  cursor: pointer;
+  -webkit-font-smoothing: none;
+}
+
+.retro-hub-profile-btn:hover {
+  background: silver;
+}
+
+.retro-hub-profile-btn:active:not(:disabled) {
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px #0a0a0a,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px grey;
+}
+
+.retro-hub-profile-btn:active:not(:disabled) .retro-hub-profile-btn__label {
+  transform: translate(1px, 1px);
+}
+
+.retro-hub-profile-btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -4px;
+}
+
+/* Marco del icono — igual que titlebar, tamaño fijo */
+.retro-hub-profile-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 1px;
+  box-sizing: border-box;
+  background: var(--retro-surface);
+  border: 1px solid var(--retro-border-dark);
+  line-height: 0;
+}
+
+.retro-hub-profile-btn__icon-img {
+  display: block;
+  width: 14px;
+  height: 14px;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.retro-hub-profile-btn__label {
+  display: none;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "Pixelated MS Sans Serif", Tahoma, "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: #222;
+}
+
+.retro-hub-profile-btn__caret {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  line-height: 0;
+}
+
+.retro-hub-profile-btn__caret-img {
+  display: block;
+  width: 8px;
+  height: 8px;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  opacity: 0.85;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.retro-hub-profile-popup {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  min-width: 220px;
+  padding: 10px 12px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+  font-size: 11px;
+  color: var(--retro-text);
+  text-align: left;
+}
+
+.retro-hub-profile-popup__name {
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.retro-hub-profile-popup__role {
+  text-transform: capitalize;
+  color: var(--retro-muted);
+}
+
+/* Marco sidebar + contenido */
+.retro-hub-frame {
+  display: flex;
+  min-height: calc(100vh - 72px);
+}
+
+.retro-hub-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--hub-sidebar-w);
+  flex-shrink: 0;
+  padding: 8px;
+  box-sizing: border-box;
+  background: var(--retro-surface);
+  border-right: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-dark);
+  box-shadow: inset -1px 0 0 var(--retro-border-light);
+}
+
+.retro-hub-sidebar--desktop {
+  display: none;
+}
+
+.retro-hub-sidebar__profile,
+.retro-hub-sidebar__balance,
+.retro-hub-sidebar__nav-box {
+  padding: 8px;
+  margin-bottom: 8px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.retro-hub-sidebar__profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retro-hub-sidebar__nav-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 10px;
+  padding: 6px;
+}
+
+.retro-hub-sidebar__avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 100%);
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.retro-hub-sidebar__name {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.retro-hub-sidebar__meta {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: var(--retro-muted);
+}
+
+.retro-hub-sidebar__balance {
+  margin-bottom: 10px;
+}
+
+.retro-hub-sidebar__balance-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--retro-muted);
+  margin-bottom: 2px;
+}
+
+.retro-hub-sidebar__balance-value {
+  font-size: 13px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.retro-hub-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.retro-hub-sidebar__link,
+.retro-hub-sidebar__logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  text-decoration: none;
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.retro-hub-sidebar__link:hover {
+  background: #dfdfdf;
+}
+
+.retro-hub-sidebar__link:active:not(.retro-hub-sidebar__link--active) {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-hub-sidebar__link--active,
+.retro-hub-sidebar__link--active:hover {
+  background: #c0c0c0;
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+  color: var(--retro-text);
+}
+
+.retro-hub-sidebar__link-icon {
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.retro-hub-sidebar__logout {
+  margin-top: auto;
+}
+
+.retro-hub-sidebar__logout:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.retro-hub-main {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  overflow-x: hidden;
+}
+
+/* Drawer móvil */
+.retro-hub-mobile-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.retro-hub-mobile-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: default;
+}
+
+.retro-hub-mobile-backdrop--open {
+  opacity: 1;
+}
+
+.retro-hub-sidebar--mobile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  transform: translateX(-105%);
+  transition: transform 0.2s ease;
+  z-index: 1;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+}
+
+.retro-hub-sidebar--mobile.retro-hub-sidebar--open {
+  transform: translateX(0);
+}
+
+.retro-hub-sidebar__mobile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 4px 2px 8px;
+  border-bottom: 2px solid var(--retro-border-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Tarjeta unificada: bienvenida + fondos */
+.retro-hub-user-card {
+  margin-bottom: 16px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.retro-hub-user-card__welcome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.retro-hub-user-card__welcome-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.retro-hub-user-card__welcome-text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--retro-text);
+}
+
+.retro-hub-user-card__welcome-text strong {
+  font-weight: 800;
+}
+
+.retro-hub-user-card__funds {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.retro-hub-user-card__funds-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 100%);
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+}
+
+.retro-hub-user-card__funds-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.retro-hub-user-card__funds-label {
+  margin: 0;
+  font-size: 10px;
+  color: var(--retro-muted);
+  font-weight: 700;
+}
+
+.retro-hub-user-card__funds-value {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.retro-hub-user-card__btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 11px;
+  text-decoration: none;
+  text-align: center;
+}
+
+.retro-hub-section-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.retro-hub-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.retro-hub-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.retro-hub-stat__icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 100%);
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.retro-hub-stat__label {
+  margin: 0;
+  font-size: 10px;
+  color: var(--retro-muted);
+  font-weight: 700;
+}
+
+.retro-hub-stat__value {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.retro-hub-stat__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.retro-hub-stat--funds {
+  align-items: flex-start;
+}
+
+.retro-hub-stat__btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 11px;
+  text-decoration: none;
+  text-align: center;
+}
+
+.retro-hub-app-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  max-width: 480px;
+}
+
+.retro-hub-app-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 12px;
+  text-decoration: none;
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.22);
+  min-height: 140px;
+}
+
+.retro-hub-app-card:hover {
+  background: #d4d4d4;
+}
+
+.retro-hub-app-card:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.15);
+  transform: translate(2px, 2px);
+}
+
+.retro-hub-app-card__logo-wrap {
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 2px solid var(--retro-border-dark);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.retro-hub-app-card__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.retro-hub-app-card__logo-wrap--bancolombia {
+  background: transparent;
+  padding: 0;
+}
+
+.retro-hub-app-card__logo--bancolombia {
+  padding: 0;
+  object-fit: cover;
+}
+
+.retro-hub-app-card__label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.retro-hub-panel {
+  margin-bottom: 14px;
+  max-width: 100%;
+}
+
+.retro-hub-panel .retro-panel__body--flush {
+  padding: 0;
+}
+
+.retro-hub-header__titlebar-icon {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .retro-hub-header__titlebar-icon {
+    display: inline-block;
+  }
+
+  .retro-hub-header__menu-btn {
+    display: none;
+  }
+
+  .retro-hub-profile-btn {
+    min-width: 75px;
+    padding-right: 10px;
+  }
+
+  .retro-hub-profile-btn__label {
+    display: inline;
+  }
+
+  .retro-hub-profile-btn__caret {
+    display: inline-flex;
+  }
+
+  .retro-hub-sidebar--desktop {
+    display: flex;
+  }
+
+  .retro-hub-main {
+    padding: 16px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .retro-hub-app-grid {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+
+  .retro-hub-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retro-hub-sidebar--mobile,
+  .retro-hub-mobile-backdrop {
+    transition: none;
+  }
+}
+
+.retro-hub-section-body {
+  overflow: auto;
+  max-height: min(78dvh, calc(100dvh - 8rem));
+}

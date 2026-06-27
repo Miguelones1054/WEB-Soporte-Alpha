@@ -1,0 +1,163 @@
+/* Gestión de administradores — estilo Win98 */
+
+.retro-admin-gestion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
+.retro-admin-gestion__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+}
+
+.retro-admin-gestion__hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--retro-muted);
+}
+
+.retro-admin-gestion__badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.retro-admin-gestion__badge--active {
+  color: #004000;
+  background: #e8ffe8;
+  border-color: #80c080 #004000 #004000 #80c080;
+}
+
+.retro-admin-gestion__badge--inactive {
+  color: #7f0000;
+  background: #ffe8e8;
+  border-color: #ff8080 #800000 #800000 #ff8080;
+}
+
+.retro-admin-gestion__action-btn {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 55%, #e6b800 100%);
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  box-shadow: 1px 1px 0 var(--retro-btn-deep);
+  cursor: pointer;
+}
+
+.retro-admin-gestion__action-btn:active:not(:disabled) {
+  border-color: var(--retro-btn-shadow) var(--retro-btn-highlight) var(--retro-btn-highlight) var(--retro-btn-shadow);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-admin-gestion__info-box {
+  padding: 8px 10px;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.retro-admin-gestion__info-box-label {
+  margin: 0 0 2px;
+  font-size: 10px;
+  color: var(--retro-muted);
+}
+
+.retro-admin-gestion__info-box-value {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.retro-admin-gestion__info-box-value--balance {
+  font-size: 14px;
+}
+
+.retro-admin-gestion__info-box-meta {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: var(--retro-muted);
+}
+
+.retro-admin-gestion__info-box-divider {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid var(--retro-border-dark);
+}
+
+.retro-admin-gestion__op-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.retro-admin-gestion__op-toggle-btn {
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  cursor: pointer;
+}
+
+.retro-admin-gestion__op-toggle-btn--add.retro-admin-gestion__op-toggle-btn--active {
+  background: linear-gradient(180deg, #b8ffb8 0%, #52c852 55%, #008000 100%);
+  border-color: #b8ffb8 #004000 #004000 #b8ffb8;
+  box-shadow: 2px 2px 0 #003000;
+}
+
+.retro-admin-gestion__op-toggle-btn--subtract.retro-admin-gestion__op-toggle-btn--active {
+  background: linear-gradient(180deg, #ffb8b8 0%, #ff5252 55%, #c80000 100%);
+  border-color: #ffb8b8 #800000 #800000 #ffb8b8;
+  box-shadow: 2px 2px 0 #5a0000;
+}
+
+.retro-admin-gestion__op-type {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid;
+}
+
+.retro-admin-gestion__op-type--add {
+  color: #004000;
+  background: #e8ffe8;
+  border-color: #80c080;
+}
+
+.retro-admin-gestion__op-type--subtract {
+  color: #7f0000;
+  background: #ffe8e8;
+  border-color: #ff8080;
+}
+
+.retro-admin-gestion__op-type--neutral {
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border-color: var(--retro-border-dark);
+}
+
+.retro-admin-gestion__ops-table {
+  max-height: min(52dvh, calc(100dvh - 12rem));
+}

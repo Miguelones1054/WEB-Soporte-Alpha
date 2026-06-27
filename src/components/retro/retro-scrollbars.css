@@ -1,0 +1,102 @@
+/**
+ * Scrollbars — reglas de 98.css (npm), scoped al panel retro.
+ * No importar 98.css global (pisa botones/fuentes).
+ * Assets: public/icons/98css/ (desde node_modules/98.css/icon/)
+ */
+
+.retro-page,
+.retro-modal-root,
+.retro-select__list--portal {
+  --98-button-face: #dfdfdf;
+  --98-button-highlight: #ffffff;
+  --98-button-shadow: #808080;
+  --98-window-frame: #0a0a0a;
+  --98-border-raised-outer: inset -1px -1px var(--98-window-frame),
+    inset 1px 1px var(--98-button-highlight);
+  --98-border-raised-inner: inset -2px -2px var(--98-button-shadow),
+    inset 2px 2px var(--98-button-face);
+}
+
+.retro-page ::-webkit-scrollbar,
+.retro-modal-root ::-webkit-scrollbar,
+.retro-select__list--portal::-webkit-scrollbar {
+  width: 16px;
+}
+
+.retro-page ::-webkit-scrollbar:horizontal,
+.retro-modal-root ::-webkit-scrollbar:horizontal,
+.retro-select__list--portal::-webkit-scrollbar:horizontal {
+  height: 17px;
+}
+
+.retro-page ::-webkit-scrollbar-corner,
+.retro-modal-root ::-webkit-scrollbar-corner,
+.retro-select__list--portal::-webkit-scrollbar-corner {
+  background: var(--98-button-face);
+}
+
+.retro-page ::-webkit-scrollbar-track,
+.retro-modal-root ::-webkit-scrollbar-track,
+.retro-select__list--portal::-webkit-scrollbar-track {
+  background-image: url("/icons/98css/scrollbar-background.svg");
+}
+
+.retro-page ::-webkit-scrollbar-thumb,
+.retro-modal-root ::-webkit-scrollbar-thumb,
+.retro-select__list--portal::-webkit-scrollbar-thumb {
+  background-color: var(--98-button-face);
+  box-shadow: var(--98-border-raised-outer), var(--98-border-raised-inner);
+}
+
+.retro-page ::-webkit-scrollbar-button:horizontal:start:decrement,
+.retro-page ::-webkit-scrollbar-button:horizontal:end:increment,
+.retro-page ::-webkit-scrollbar-button:vertical:start:decrement,
+.retro-page ::-webkit-scrollbar-button:vertical:end:increment,
+.retro-modal-root ::-webkit-scrollbar-button:horizontal:start:decrement,
+.retro-modal-root ::-webkit-scrollbar-button:horizontal:end:increment,
+.retro-modal-root ::-webkit-scrollbar-button:vertical:start:decrement,
+.retro-modal-root ::-webkit-scrollbar-button:vertical:end:increment,
+.retro-select__list--portal::-webkit-scrollbar-button:horizontal:start:decrement,
+.retro-select__list--portal::-webkit-scrollbar-button:horizontal:end:increment,
+.retro-select__list--portal::-webkit-scrollbar-button:vertical:start:decrement,
+.retro-select__list--portal::-webkit-scrollbar-button:vertical:end:increment {
+  display: block;
+}
+
+/* WebKit crea botones duplicados en cada extremo del scroll horizontal */
+.retro-page ::-webkit-scrollbar-button:horizontal:start:increment,
+.retro-page ::-webkit-scrollbar-button:horizontal:end:decrement,
+.retro-modal-root ::-webkit-scrollbar-button:horizontal:start:increment,
+.retro-modal-root ::-webkit-scrollbar-button:horizontal:end:decrement,
+.retro-select__list--portal::-webkit-scrollbar-button:horizontal:start:increment,
+.retro-select__list--portal::-webkit-scrollbar-button:horizontal:end:decrement {
+  display: none;
+}
+
+.retro-page ::-webkit-scrollbar-button:vertical:start:decrement,
+.retro-modal-root ::-webkit-scrollbar-button:vertical:start:decrement,
+.retro-select__list--portal::-webkit-scrollbar-button:vertical:start:decrement {
+  height: 17px;
+  background-image: url("/icons/98css/button-up.svg");
+}
+
+.retro-page ::-webkit-scrollbar-button:vertical:end:increment,
+.retro-modal-root ::-webkit-scrollbar-button:vertical:end:increment,
+.retro-select__list--portal::-webkit-scrollbar-button:vertical:end:increment {
+  height: 17px;
+  background-image: url("/icons/98css/button-down.svg");
+}
+
+.retro-page ::-webkit-scrollbar-button:horizontal:start:decrement,
+.retro-modal-root ::-webkit-scrollbar-button:horizontal:start:decrement,
+.retro-select__list--portal::-webkit-scrollbar-button:horizontal:start:decrement {
+  width: 16px;
+  background-image: url("/icons/98css/button-left.svg");
+}
+
+.retro-page ::-webkit-scrollbar-button:horizontal:end:increment,
+.retro-modal-root ::-webkit-scrollbar-button:horizontal:end:increment,
+.retro-select__list--portal::-webkit-scrollbar-button:horizontal:end:increment {
+  width: 16px;
+  background-image: url("/icons/98css/button-right.svg");
+}

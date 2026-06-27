@@ -1,0 +1,261 @@
+/* 98.css — TableView (https://jdan.github.io/98.css/#table-view) */
+
+.retro-tableview-panel.sunken-panel {
+  border: 2px groove transparent;
+  border-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='5' height='5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='gray' d='M0 0h4v1H0z'/%3E%3Cpath fill='gray' d='M0 0h1v4H0z'/%3E%3Cpath fill='%230a0a0a' d='M1 1h2v1H1z'/%3E%3Cpath fill='%230a0a0a' d='M1 1h1v2H1z'/%3E%3Cpath fill='%23fff' d='M0 4h5v1H0z'/%3E%3Cpath fill='%23fff' d='M4 0h1v5H4z'/%3E%3Cpath fill='%23dfdfdf' d='M3 1h1v3H3z'/%3E%3Cpath fill='%23dfdfdf' d='M1 3h3v1H1z'/%3E%3C/svg%3E")
+    2;
+  box-sizing: border-box;
+  overflow: auto;
+  background-color: #fff;
+  width: 100%;
+  max-height: min(62dvh, calc(100dvh - 14rem));
+}
+
+.retro-tableview-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  position: relative;
+  text-align: left;
+  white-space: nowrap;
+  background-color: #fff;
+  font-family: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
+  font-size: 11px;
+  color: #000;
+}
+
+.retro-tableview-panel table > thead > tr > * {
+  background: silver;
+  box-shadow:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px grey,
+    inset 2px 2px #dfdfdf;
+  box-sizing: border-box;
+  font-weight: 400;
+  height: 17px;
+  padding: 0 6px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.retro-tableview-panel table.interactive > tbody > tr {
+  cursor: pointer;
+}
+
+.retro-tableview-panel table > tbody > tr.highlighted {
+  background-color: navy;
+  color: #fff;
+}
+
+.retro-tableview-panel table > tbody > tr.highlighted .retro-registros__type-badge,
+.retro-tableview-panel table > tbody > tr.highlighted .retro-registros__amount--add,
+.retro-tableview-panel table > tbody > tr.highlighted .retro-registros__amount--subtract {
+  color: #fff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) {
+  background-color: #000080;
+  color: #fff;
+}
+
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-registros__type-badge,
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-registros__amount--add,
+.retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) .retro-registros__amount--subtract {
+  color: #fff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.retro-tableview-panel table > tbody > tr > * {
+  height: 14px;
+  padding: 0 6px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.retro-tableview-panel table > tbody > tr > td.retro-tableview-cell--wrap {
+  white-space: normal;
+  max-width: 280px;
+}
+
+.retro-tableview-empty {
+  padding: 16px;
+  text-align: center;
+  font-family: var(--retro-font);
+  font-size: 11px;
+  color: var(--retro-muted);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+}
+
+/* Registros — filtros + tabla */
+.retro-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
+.retro-registros__filters {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  background: var(--retro-surface);
+}
+
+.retro-registros__filters legend {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.retro-registros__filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.retro-registros__filter-btn {
+  padding: 4px 10px;
+  font-family: var(--retro-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--retro-text);
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 55%, #e6b800 100%);
+  border: 2px solid;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-shadow) var(--retro-btn-shadow) var(--retro-btn-highlight);
+  box-shadow: 1px 1px 0 var(--retro-btn-deep);
+  cursor: pointer;
+}
+
+.retro-registros__filter-btn--active {
+  border-color: var(--retro-btn-shadow) var(--retro-btn-highlight) var(--retro-btn-highlight) var(--retro-btn-shadow);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-registros__header {
+  margin: 0;
+}
+
+.retro-registros__title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.retro-registros__subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: var(--retro-muted);
+}
+
+.retro-registros__error {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #7f0000;
+  background: #ffe8e8;
+  border: 2px solid #a00000;
+}
+
+.retro-registros__table.retro-tableview-panel {
+  max-height: min(58dvh, calc(100dvh - 16rem));
+}
+
+.retro-registros__type-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.retro-registros__type-badge--add {
+  color: #004000;
+  background: #e8ffe8;
+  border-color: #80c080;
+}
+
+.retro-registros__type-badge--subtract {
+  color: #7f0000;
+  background: #ffe8e8;
+  border-color: #ff8080;
+}
+
+.retro-registros__type-badge--action {
+  color: #000080;
+  background: #e8e8ff;
+  border-color: #8080c0;
+}
+
+.retro-registros__type-badge--neutral {
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border-color: var(--retro-border-dark);
+}
+
+.retro-registros__amount--add {
+  font-weight: 700;
+  color: #004000;
+}
+
+.retro-registros__amount--subtract {
+  font-weight: 700;
+  color: #7f0000;
+}
+
+/* Proteger TableView 98.css de overrides globales en .retro-admin */
+.retro-admin .retro-tableview-panel table {
+  font-family: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif !important;
+  font-size: 11px !important;
+  color: #000 !important;
+  background-color: #fff !important;
+  border-collapse: collapse !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.retro-admin .retro-tableview-panel table th,
+.retro-admin .retro-tableview-panel table td {
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.retro-admin .retro-tableview-panel table > thead > tr > th {
+  background: silver !important;
+  box-shadow:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px grey,
+    inset 2px 2px #dfdfdf !important;
+  font-weight: 400 !important;
+  height: 17px !important;
+  padding: 0 6px !important;
+}
+
+.retro-admin .retro-tableview-panel table tbody tr:nth-child(even) {
+  background: transparent !important;
+}
+
+.retro-admin .retro-tableview-panel table tbody tr.highlighted,
+.retro-admin .retro-tableview-panel table.interactive > tbody > tr:hover:not(.highlighted) {
+  background-color: navy !important;
+  color: #fff !important;
+}
+
+.retro-admin .retro-tableview-panel.sunken-panel {
+  background-color: #fff !important;
+  border: 2px groove transparent !important;
+  border-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='5' height='5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='gray' d='M0 0h4v1H0z'/%3E%3Cpath fill='gray' d='M0 0h1v4H0z'/%3E%3Cpath fill='%230a0a0a' d='M1 1h2v1H1z'/%3E%3Cpath fill='%230a0a0a' d='M1 1h1v2H1z'/%3E%3Cpath fill='%23fff' d='M0 4h5v1H0z'/%3E%3Cpath fill='%23fff' d='M4 0h1v5H4z'/%3E%3Cpath fill='%23dfdfdf' d='M3 1h1v3H3z'/%3E%3Cpath fill='%23dfdfdf' d='M1 3h3v1H1z'/%3E%3C/svg%3E")
+    2 !important;
+}

@@ -1,0 +1,110 @@
+/* Combobox + lista desplegable Win98 (reemplaza <select> nativo) */
+
+.retro-select {
+  position: relative;
+  width: 100%;
+  font-family: var(--retro-font);
+}
+
+.retro-select__combobox {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+
+.retro-select__field,
+.retro-select__trigger {
+  box-sizing: border-box;
+  margin: 0;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  border-radius: 0;
+}
+
+.retro-select__field {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.3;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  border-right: none;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.12);
+  cursor: default;
+}
+
+.retro-select__field:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.retro-select__trigger {
+  flex-shrink: 0;
+  width: 20px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  line-height: 1;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: inset -1px -1px #fff, inset 1px 1px grey;
+  cursor: default;
+}
+
+.retro-select__trigger:active:not(:disabled),
+.retro-select--open .retro-select__trigger {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+}
+
+.retro-select--disabled .retro-select__field,
+.retro-select--disabled .retro-select__trigger {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.retro-select__list {
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  max-height: 168px;
+  overflow-y: auto;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  box-shadow:
+    inset 1px 1px 0 rgba(0, 0, 0, 0.12),
+    2px 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.retro-select__list--portal {
+  position: fixed;
+  z-index: 200;
+}
+
+.retro-select__option {
+  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #000;
+  cursor: default;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.retro-select__option--active,
+.retro-select__option:hover {
+  background: navy;
+  color: #fff;
+}
+
+.retro-select__option--selected:not(.retro-select__option--active) {
+  background: #000080;
+  color: #fff;
+}

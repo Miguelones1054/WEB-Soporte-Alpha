@@ -1,0 +1,690 @@
+/* ── Admin Panel — estilo retro Win95 ── */
+
+.retro-admin {
+  --retro-admin-max: 72rem;
+}
+
+.retro-window {
+  max-width: none;
+}
+
+.retro-window--full {
+  width: 100%;
+}
+
+.retro-titlebar__text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Header principal */
+.retro-admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  background: linear-gradient(90deg, var(--retro-title-start) 0%, var(--retro-title-end) 100%);
+  border-bottom: 2px solid var(--retro-border-darker);
+  color: #ffffff;
+  min-height: 36px;
+}
+
+.retro-admin-header__left,
+.retro-admin-header__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.retro-admin-header__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.retro-admin-header__btn {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.retro-admin-main {
+  padding: 16px;
+  overflow-x: hidden;
+}
+
+.retro-admin-main--center {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.retro-admin-container {
+  width: 100%;
+  max-width: var(--retro-admin-max);
+  margin: 0 auto;
+}
+
+/* Perfil popup */
+.retro-profile-popup {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  min-width: 220px;
+  padding: 10px 12px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+  font-size: 11px;
+  color: var(--retro-text);
+  text-align: left;
+}
+
+.retro-profile-popup__name {
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.retro-profile-popup__role {
+  text-transform: capitalize;
+  color: var(--retro-muted);
+}
+
+.retro-hr {
+  border: none;
+  border-top: 1px solid var(--retro-border-dark);
+  margin: 8px 0;
+}
+
+.retro-text-ok {
+  color: #006400;
+  font-weight: 700;
+}
+
+.retro-text-error {
+  color: #7f0000;
+  font-weight: 700;
+}
+
+/* Drawer lateral */
+.retro-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.retro-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: default;
+}
+
+.retro-drawer-backdrop--open {
+  opacity: 1;
+}
+
+.retro-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(100%, 300px);
+  display: flex;
+  flex-direction: column;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  transform: translateX(-105%);
+  transition: transform 0.2s ease;
+}
+
+.retro-drawer--open {
+  transform: translateX(0);
+}
+
+.retro-drawer__titlebar {
+  flex-shrink: 0;
+}
+
+.retro-drawer__close,
+.retro-modal__close {
+  min-width: 22px;
+  height: 20px;
+  padding: 0 4px;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.retro-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.retro-drawer__box {
+  padding: 8px;
+  margin-bottom: 8px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.retro-drawer__box-title {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--retro-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.retro-drawer__info {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.retro-drawer__info p {
+  margin: 0 0 4px;
+}
+
+.retro-drawer__balance-value {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.retro-drawer__nav-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 6px;
+}
+
+.retro-drawer__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.retro-drawer__link {
+  display: block;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  text-decoration: none;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+.retro-drawer__link:hover,
+.retro-drawer__link:focus {
+  background: #dfdfdf;
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+
+.retro-drawer__link:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Hub — selector de apps */
+.retro-hub-title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--retro-text);
+  text-shadow: 1px 1px 0 #ffffff;
+}
+
+.retro-app-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.retro-app-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  text-decoration: none;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.22);
+  color: var(--retro-text);
+  min-height: 110px;
+}
+
+.retro-app-link:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.18);
+  transform: translate(2px, 2px);
+}
+
+.retro-app-link--nq {
+  border-color: #ffcce8 #800040 #800040 #ffcce8;
+}
+
+.retro-app-link--bc {
+  border-color: #fff4a8 #6b5500 #6b5500 #fff4a8;
+}
+
+.retro-app-link__logo-wrap {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 2px solid var(--retro-border-dark);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.retro-app-link__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.retro-app-link__label {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Stats / cards */
+.retro-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.retro-stat-card {
+  padding: 10px 12px;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+}
+
+.retro-stat-card__label {
+  font-size: 11px;
+  color: var(--retro-muted);
+  margin: 0 0 4px;
+}
+
+.retro-stat-card__value {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--retro-text);
+}
+
+.retro-stat-card__value-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tablas retro */
+.retro-table-wrap {
+  overflow-x: auto;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark);
+  background: #ffffff;
+}
+
+.retro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  color: #000;
+}
+
+.retro-table th,
+.retro-table td {
+  border: 1px solid var(--retro-border-dark);
+  padding: 4px 6px;
+  vertical-align: top;
+}
+
+.retro-table th {
+  background: var(--retro-surface);
+  font-weight: 700;
+  text-align: left;
+}
+
+.retro-table tbody tr:nth-child(even) {
+  background: #f4f4f4;
+}
+
+.retro-table__empty {
+  text-align: center;
+  color: var(--retro-muted);
+  padding: 16px !important;
+}
+
+/* Filtros pill → retro */
+.retro-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.retro-filter-btn {
+  min-height: 26px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  cursor: default;
+  color: var(--retro-text);
+}
+
+.retro-filter-btn--active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.2);
+  background: #dfdfdf;
+}
+
+/* Modal */
+.retro-modal-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.retro-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: default;
+}
+
+.retro-modal {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: min(90dvh, calc(100dvh - 2rem));
+  display: flex;
+  flex-direction: column;
+  background: #c0c0c0;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+}
+
+.retro-modal--sm { max-width: 24rem; }
+.retro-modal--md { max-width: 32rem; }
+.retro-modal--lg { max-width: 48rem; }
+
+.retro-modal__body {
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 12px;
+  background: #c0c0c0;
+  background: var(--retro-surface);
+  color: var(--retro-text);
+}
+
+/* Overrides: páginas legacy (managers) dentro de .retro-admin */
+.retro-admin .min-h-screen.bg-gray-900 {
+  min-height: auto !important;
+  background: transparent !important;
+}
+
+.retro-admin > .min-h-screen.bg-gray-900 {
+  min-height: 100vh;
+}
+
+.retro-admin header.bg-gray-800 {
+  background: linear-gradient(90deg, var(--retro-title-start) 0%, var(--retro-title-end) 100%) !important;
+  border: none !important;
+  border-bottom: 2px solid var(--retro-border-darker) !important;
+  padding: 4px 8px !important;
+}
+
+.retro-admin header.bg-gray-800 h1,
+.retro-admin header.bg-gray-800 .text-white {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  font-family: var(--retro-font) !important;
+}
+
+.retro-admin header.bg-gray-800 button {
+  background: var(--retro-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light) !important;
+  border-radius: 0 !important;
+  color: #000 !important;
+  min-width: 28px;
+  min-height: 26px;
+  padding: 2px 8px !important;
+}
+
+.retro-admin header.bg-gray-800 button:hover {
+  background: #dfdfdf !important;
+}
+
+.retro-admin header.bg-gray-800 svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.retro-admin .bg-gray-800,
+.retro-admin .bg-gray-800\/30,
+.retro-admin .bg-gray-800\/50,
+.retro-admin .bg-gray-800\/95 {
+  background: var(--retro-surface) !important;
+  border-radius: 0 !important;
+  color: var(--retro-text) !important;
+}
+
+.retro-admin .border-gray-700,
+.retro-admin .border-gray-600,
+.retro-admin .border-gray-700\/50,
+.retro-admin .border-gray-600\/90 {
+  border-color: var(--retro-border-dark) !important;
+  border-radius: 0 !important;
+}
+
+.retro-admin .text-white,
+.retro-admin .text-gray-200,
+.retro-admin .text-gray-300 {
+  color: var(--retro-text) !important;
+}
+
+.retro-admin .text-gray-400,
+.retro-admin .text-gray-500 {
+  color: var(--retro-muted) !important;
+}
+
+.retro-admin .rounded-lg,
+.retro-admin .rounded-xl,
+.retro-admin .rounded-md,
+.retro-admin .rounded-full {
+  border-radius: 0 !important;
+}
+
+.retro-admin input,
+.retro-admin textarea,
+.retro-admin select {
+  font-family: var(--retro-font) !important;
+  font-size: 12px !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid !important;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light) var(--retro-border-dark) !important;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+.retro-admin input:focus,
+.retro-admin textarea:focus,
+.retro-admin select:focus {
+  outline: 1px dotted #000 !important;
+  outline-offset: -3px !important;
+  ring: none !important;
+}
+
+.retro-admin button.bg-red-600,
+.retro-admin button.bg-red-700,
+.retro-admin a.bg-blue-600 {
+  background: linear-gradient(180deg, var(--retro-btn-highlight) 0%, var(--retro-btn-face) 45%, #e6b800 100%) !important;
+  color: #000 !important;
+  border: 2px solid !important;
+  border-color: var(--retro-btn-highlight) var(--retro-btn-deep) var(--retro-btn-deep) var(--retro-btn-highlight) !important;
+  border-radius: 0 !important;
+  font-weight: 700 !important;
+  font-family: var(--retro-font) !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+.retro-admin button.bg-gray-600,
+.retro-admin button.bg-gray-700,
+.retro-admin button.bg-gray-800 {
+  background: var(--retro-surface) !important;
+  color: var(--retro-text) !important;
+  border: 2px solid !important;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light) !important;
+  border-radius: 0 !important;
+  font-family: var(--retro-font) !important;
+}
+
+.retro-admin table {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 11px !important;
+  border-collapse: collapse !important;
+}
+
+.retro-admin table th,
+.retro-admin table td {
+  border: 1px solid var(--retro-border-dark) !important;
+}
+
+.retro-admin table thead {
+  background: var(--retro-surface) !important;
+}
+
+.retro-admin table tbody tr:nth-child(even) {
+  background: #f0f0f0 !important;
+}
+
+.retro-admin .fixed.inset-0.z-50 .relative.w-full.max-w-md,
+.retro-admin .fixed.inset-0.z-\[50\] .relative.w-full.max-w-md,
+.retro-admin .fixed.inset-0.z-\[60\] .relative.bg-gray-800,
+.retro-admin [class*='MODAL'] .relative.bg-gray-800 {
+  background: var(--retro-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light) !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+.retro-admin .neon-border-nq,
+.retro-admin .neon-border-bc {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+@media (max-width: 639px) {
+  .retro-admin-main {
+    padding: 10px;
+  }
+
+  .retro-app-grid {
+    gap: 8px;
+  }
+}
+
+/* Drawer legacy en managers */
+.retro-admin .fixed.inset-0.z-50 .relative.w-full.max-w-md {
+  background: var(--retro-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light) !important;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: none !important;
+}
+
+.retro-admin .fixed.inset-0.z-50 .backdrop-blur-xl {
+  backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.retro-admin .fixed.inset-0.z-50 a.w-full.text-white {
+  color: var(--retro-text) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid var(--retro-border-mid) !important;
+}
+
+.retro-admin .fixed.inset-0.z-50 a.w-full.text-white:hover {
+  background: #dfdfdf !important;
+}
+
+.retro-admin .profile-popup {
+  background: var(--retro-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light) !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28) !important;
+}
+
+.retro-admin-shell {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retro-drawer,
+  .retro-drawer-backdrop {
+    transition: none;
+  }
+}
