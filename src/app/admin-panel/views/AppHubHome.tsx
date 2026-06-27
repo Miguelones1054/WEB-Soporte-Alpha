@@ -1,9 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { adminHubHref } from '../../../lib/adminHubSections';
-import { getTelegramRecargarPanelUrl } from '../../../lib/constants';
+import { AdminRecargaModal } from '../../../components/retro/admin';
 import { RetroIcon } from '../../../components/retro';
 
 interface AppHubHomeProps {
@@ -14,6 +15,7 @@ export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
   const router = useRouter();
   const session = useAdminSessionContext();
   const adminInfo = adminInfoProp ?? session.adminInfo;
+  const [showRecargaModal, setShowRecargaModal] = useState(false);
 
   return (
     <div className="retro-hub-content">
@@ -36,18 +38,25 @@ export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
                 ? `COP $${Number(adminInfo.balance).toLocaleString('es-CO')}`
                 : 'COP $0'}
             </p>
-            <a
-              href={adminInfo != null ? getTelegramRecargarPanelUrl(adminInfo.id) : '#'}
-              onClick={adminInfo == null ? (e) => e.preventDefault() : undefined}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               className="retro-btn retro-hub-user-card__btn"
+              onClick={() => setShowRecargaModal(true)}
             >
               Recargar
-            </a>
+            </button>
           </div>
         </div>
       </div>
+
+      <AdminRecargaModal
+        open={showRecargaModal}
+        onClose={() => setShowRecargaModal(false)}
+        onRecargaExitosa={(newBalance) => {
+          if (newBalance != null) session.updateBalance(newBalance);
+          void session.refetch();
+        }}
+      />
 
       <h2 className="retro-hub-section-title">Selecciona APP</h2>
 

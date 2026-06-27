@@ -70,6 +70,8 @@ function getOperationTypeLabel(operationType: string) {
       return 'Retiro';
     case 'ADD_ADMIN_BALANCE':
       return 'Recarga admin';
+    case 'ADD_ADMIN_BALANCE_WOMPI':
+      return 'Recarga Wompi';
     case 'SUBTRACT_ADMIN_BALANCE':
       return 'Retiro admin';
     case 'CREATE_USER':

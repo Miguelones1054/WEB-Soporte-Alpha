@@ -40,6 +40,9 @@ export { RetroModalAdminBalanceDeduction } from './RetroModalAdminBalanceDeducti
 export { RetroAdminBalanceModal } from './RetroAdminBalanceModal';
 export type { RetroAdminBalanceModalProps } from './RetroAdminBalanceModal';
 
+export { AdminRecargaModal } from './AdminRecargaModal';
+export type { AdminRecargaModalProps } from './AdminRecargaModal';
+
 export { RetroHubLayout } from './RetroHubLayout';
 export type { RetroHubLayoutProps } from './RetroHubLayout';
 

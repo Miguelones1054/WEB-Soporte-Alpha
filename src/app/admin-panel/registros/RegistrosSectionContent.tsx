@@ -29,6 +29,8 @@ function getOperationTypeLabel(operationType: string): string {
       return 'Retiro';
     case 'ADD_ADMIN_BALANCE':
       return 'Recarga admin';
+    case 'ADD_ADMIN_BALANCE_WOMPI':
+      return 'Recarga Wompi';
     case 'SUBTRACT_ADMIN_BALANCE':
       return 'Retiro admin';
     case 'UPDATE_USER':
@@ -150,7 +152,7 @@ export function RegistrosSectionContent() {
     if (activeFilter === 'ALL') return operations;
 
     const balanceTypes = ['ADD_BALANCE', 'SUBTRACT_BALANCE'];
-    const adminBalanceTypes = ['ADD_ADMIN_BALANCE', 'SUBTRACT_ADMIN_BALANCE'];
+    const adminBalanceTypes = ['ADD_ADMIN_BALANCE', 'ADD_ADMIN_BALANCE_WOMPI', 'SUBTRACT_ADMIN_BALANCE'];
     const smsTypes = ['ADD_SMS', 'SUBTRACT_SMS'];
     const userActionTypes = [
       'UPDATE_USER',
@@ -275,7 +277,7 @@ export function RegistrosSectionContent() {
               ],
               [
                 'ADMIN_BALANCE',
-                `Balance Admin (${operations.filter((op) => ['ADD_ADMIN_BALANCE', 'SUBTRACT_ADMIN_BALANCE'].includes(op.operation_type)).length})`,
+                `Balance Admin (${operations.filter((op) => ['ADD_ADMIN_BALANCE', 'ADD_ADMIN_BALANCE_WOMPI', 'SUBTRACT_ADMIN_BALANCE'].includes(op.operation_type)).length})`,
               ],
               [
                 'SMS',

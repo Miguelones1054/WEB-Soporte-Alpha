@@ -136,12 +136,6 @@ export function AjustesSectionContent() {
 
         <RetroWindow title="Configuración de SMS" fullWidth>
           <div className="space-y-3">
-            <p className="retro-tarifas__intro m-0">
-              Define el costo unitario por mensaje y el valor de venta al cliente. Al vender SMS, el
-              admin paga el costo base más su porcentaje aplicado sobre el margen (venta − costo
-              base).
-            </p>
-
             <div className="retro-stat-grid">
               <div className="retro-stat-card">
                 <p className="retro-stat-card__label">Costo por SMS</p>
