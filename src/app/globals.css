@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #bdbdbd;
+  --foreground: #000000;
+  --retro-root-bg: #bdbdbd;
+  --retro-root-bg-pattern: #b5b5b5;
 }
 
 @theme inline {
@@ -10,34 +12,51 @@
   --color-foreground: var(--foreground);
   --font-sans: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
-  /* Grises con matices rojizos (tema general oscuro borgoña, no azul-pizarra) */
-  --color-gray-50: #fbf6f6;
-  --color-gray-100: #f2e8e8;
-  --color-gray-200: #e0d0d0;
-  --color-gray-300: #c4adad;
-  --color-gray-400: #8f6f6f;
-  --color-gray-500: #5c3d3d;
-  --color-gray-600: #3d2222;
-  --color-gray-700: #2a1414;
-  --color-gray-800: #1a0c0c;
-  --color-gray-900: #0f0808;
-  --color-gray-950: #0a0404;
+  /* Grises neutros alineados con Win98 / retro.css */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f4f4f4;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+  --color-gray-950: #0a0a0a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0404;
-    --foreground: #f0e4e4;
-  }
+html {
+  background-color: var(--retro-root-bg);
+  background-image:
+    linear-gradient(
+      45deg,
+      var(--retro-root-bg-pattern) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--retro-root-bg-pattern) 75%,
+      var(--retro-root-bg-pattern)
+    ),
+    linear-gradient(
+      45deg,
+      var(--retro-root-bg-pattern) 25%,
+      transparent 25%,
+      transparent 75%,
+      var(--retro-root-bg-pattern) 75%,
+      var(--retro-root-bg-pattern)
+    );
+  background-size: 4px 4px;
+  background-position: 0 0, 2px 2px;
 }
 
 body {
-  background: #0f0808; /* alineado con --color-gray-900 (tema rojo oscuro) */
+  background: transparent;
   color: var(--foreground);
   font-family: Tahoma, "MS Sans Serif", Verdana, Geneva, sans-serif;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  min-height: 100%;
 }
 
 /* Admin panel: enlaces NQ / BC — solo borde + resplandor neón (sin relleno) */
@@ -205,15 +224,15 @@ body {
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: #2a1414;
+  background: #dfdfdf;
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #5c3d3d;
+  background: #808080;
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: #8f6f6f;
+  background: #606060;
 }
