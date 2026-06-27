@@ -28,4 +28,6 @@ export type { RetroInteractiveTableProps, RetroTableColumn } from './RetroIntera
 export { RetroIcon } from './RetroIcon';
 export type { RetroIconProps } from './RetroIcon';
 
+export { RetroSoundProvider } from './RetroSoundProvider';
+
 export * from './admin';

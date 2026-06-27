@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { playRetroSound } from '../../../lib/retroSounds';
 import { RetroModal } from './RetroModal';
 
 export interface RetroManagerConfirmModalProps {
@@ -19,6 +21,11 @@ export function RetroManagerConfirmModal({
   zIndex = 110,
   title = 'Resultado',
 }: RetroManagerConfirmModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    playRetroSound(type === 'success' ? 'success' : 'error');
+  }, [open, type]);
+
   return (
     <RetroModal
       open={open}

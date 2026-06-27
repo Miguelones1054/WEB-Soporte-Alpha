@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { RetroSoundProvider } from "../components/retro/RetroSoundProvider";
 import "./globals.css";
 import "../components/retro/retro.css";
 import "../components/retro/retro-scrollbars.css";
@@ -32,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <RetroSoundProvider>{children}</RetroSoundProvider>
       </body>
     </html>
   );
