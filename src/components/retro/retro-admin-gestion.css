@@ -181,4 +181,11 @@
 
 .retro-admin-gestion__ops-table {
   max-height: min(52dvh, calc(100dvh - 12rem));
+  max-width: 100%;
+}
+
+.retro-modal__body .retro-tableview-panel,
+.retro-manager-modal__body .retro-tableview-panel {
+  max-width: 100%;
+  touch-action: pan-x pan-y;
 }

@@ -568,6 +568,8 @@ body:has(.retro-page.retro-admin) {
 .retro-modal__body {
   padding: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
   font-size: 12px;
   background: #c0c0c0;
   background: var(--retro-surface);

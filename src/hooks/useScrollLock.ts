@@ -17,7 +17,51 @@ const ALLOW_SCROLL_SELECTOR = [
   '.retro-modal__body',
   '.retro-drawer__body',
   '.retro-manager-modal__body',
+  '.retro-tableview-panel',
+  '.retro-page--auth .retro-panel__body',
 ].join(', ');
+
+const SCROLL_LOCK_ROOT_SELECTOR = '.retro-modal-root, .retro-drawer';
+
+function canElementScroll(el: HTMLElement): boolean {
+  return (
+    el.scrollHeight > el.clientHeight + 1 ||
+    el.scrollWidth > el.clientWidth + 1
+  );
+}
+
+function isAllowedScrollTarget(el: HTMLElement): boolean {
+  return (
+    Boolean(el.closest(SCROLL_LOCK_ROOT_SELECTOR)) ||
+    el.matches(ALLOW_SCROLL_SELECTOR) ||
+    Boolean(el.closest(ALLOW_SCROLL_SELECTOR))
+  );
+}
+
+function findScrollableFromTarget(target: Element): HTMLElement | null {
+  let node: Element | null = target;
+  while (node && node instanceof HTMLElement) {
+    if (canElementScroll(node) && isAllowedScrollTarget(node)) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+}
+
+function onTouchMove(e: TouchEvent) {
+  const target = e.target;
+  if (!(target instanceof Element)) {
+    e.preventDefault();
+    return;
+  }
+
+  if (findScrollableFromTarget(target)) {
+    return;
+  }
+
+  e.preventDefault();
+}
 
 let lockCount = 0;
 let touchMoveListener: ((e: TouchEvent) => void) | null = null;
@@ -43,21 +87,6 @@ function unlockScrollContainers() {
     delete el.dataset.retroScrollLock;
     delete el.dataset.retroScrollLockPrevOverflow;
   });
-}
-
-function onTouchMove(e: TouchEvent) {
-  const target = e.target;
-  if (!(target instanceof Element)) {
-    e.preventDefault();
-    return;
-  }
-
-  const scrollable = target.closest(ALLOW_SCROLL_SELECTOR) as HTMLElement | null;
-  if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) {
-    return;
-  }
-
-  e.preventDefault();
 }
 
 export function acquireScrollLock(): () => void {
