@@ -27,18 +27,3 @@ export const DARKLIVERY_API_BASE = (
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_DARKLIVERY_API_BASE) ||
   'https://api.darklivery.com'
 ).replace(/\/$/, '');
-
-/** Enlace al grupo de Telegram (Administradores Alpha) para /recargar_panel. */
-export const TELEGRAM_RECARGA_PANEL_GROUP_BASE =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_TELEGRAM_RECARGA_PANEL_GROUP) ||
-  'https://t.me/+bUHk5Cz8M285YWQx';
-
-/**
- * Abre el chat del grupo con el texto listo: `/recargar_panel {id}`.
- * Usa el parámetro `text` de t.me.
- */
-export function getTelegramRecargarPanelUrl(adminId: number) {
-  const u = new URL(TELEGRAM_RECARGA_PANEL_GROUP_BASE);
-  u.searchParams.set('text', `/recargar_panel ${adminId}`);
-  return u.toString();
-}
