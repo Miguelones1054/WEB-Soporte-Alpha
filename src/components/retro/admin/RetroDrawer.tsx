@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ReactNode } from 'react';
+import { useScrollLock } from '../../../hooks/useScrollLock';
 import type { AdminInfo } from '../../../hooks/useAdminSession';
 import { RetroButton } from '../RetroButton';
 import type { RetroNavItem } from './adminNav';
@@ -25,6 +26,8 @@ export function RetroDrawer({
   extraContent,
   onClose,
 }: RetroDrawerProps) {
+  useScrollLock(open);
+
   if (!open) return null;
 
   const visibleItems = navItems.filter(

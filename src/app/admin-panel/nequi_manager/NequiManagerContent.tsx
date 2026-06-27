@@ -21,6 +21,7 @@ import {
   RetroModalAlertCenter,
   RetroModalAdminBalanceDeduction,
 } from '../../../components/retro/admin';
+import { useScrollLock } from '../../../hooks/useScrollLock';
 
 interface AdminInfo {
   id: number;
@@ -153,6 +154,8 @@ export function NequiManagerContent({
   const [showCancelVipConfirmModal, setShowCancelVipConfirmModal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useScrollLock(!embedded && isDrawerOpen);
 
   useEffect(() => {
     if (!embedded) {

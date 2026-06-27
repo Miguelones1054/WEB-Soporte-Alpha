@@ -1,6 +1,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
+import { useScrollLock } from '../../../hooks/useScrollLock';
 import { RetroIcon } from '../RetroIcon';
 
 export interface RetroManagerProgressModalProps {
@@ -14,6 +15,8 @@ export function RetroManagerProgressModal({
   message = 'Procesando operación...',
   zIndex = 120,
 }: RetroManagerProgressModalProps) {
+  useScrollLock(open);
+
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(

@@ -174,7 +174,7 @@ export default function Home() {
   };
 
   return (
-    <div className="retro-page flex items-center justify-center p-4">
+    <div className="retro-page retro-page--auth flex items-center justify-center p-4">
       {isLoading && <RetroLoadingOverlay message="Verificando credenciales..." />}
 
       <RetroPanel title="Nequi Admin — Inicio de sesión">

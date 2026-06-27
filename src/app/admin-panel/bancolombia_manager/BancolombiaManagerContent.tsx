@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
@@ -23,6 +23,7 @@ import {
   RetroModalAlertCenter,
   RetroModalAdminBalanceDeduction,
 } from '../../../components/retro/admin';
+import { useScrollLock } from '../../../hooks/useScrollLock';
 
 interface AdminInfo {
   id: number;
@@ -172,51 +173,7 @@ export function BancolombiaManagerContent({
   const [sendingUserNotification, setSendingUserNotification] = useState(false);
   const router = useRouter();
 
-  const isAnyDialogOpen = useMemo(
-    () =>
-      isDrawerOpen ||
-      showRecargaModal ||
-      showCustomRecargaModal ||
-      showSubtractModal ||
-      showEditModal ||
-      showProgressBar ||
-      searching ||
-      showConfirmationModal ||
-      showBanModal ||
-      showBalanceConfirmationModal ||
-      showSmsConfirmationModal ||
-      showNoRefundDialog ||
-      showCreateUserModal ||
-      showUserNotificationModal ||
-      showUserCreatedModal,
-    [
-      isDrawerOpen,
-      showRecargaModal,
-      showCustomRecargaModal,
-      showSubtractModal,
-      showEditModal,
-      showProgressBar,
-      searching,
-      showConfirmationModal,
-      showBanModal,
-      showBalanceConfirmationModal,
-      showSmsConfirmationModal,
-      showNoRefundDialog,
-      showCreateUserModal,
-      showUserNotificationModal,
-      showUserCreatedModal,
-    ],
-  );
-
-  useEffect(() => {
-    if (!isAnyDialogOpen) return;
-    const { body } = document;
-    const prev = body.style.overflow;
-    body.style.overflow = 'hidden';
-    return () => {
-      body.style.overflow = prev;
-    };
-  }, [isAnyDialogOpen]);
+  useScrollLock(!embedded && isDrawerOpen);
 
   useEffect(() => {
     if (!embedded) {

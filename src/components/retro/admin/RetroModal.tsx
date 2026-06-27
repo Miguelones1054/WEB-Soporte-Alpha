@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useScrollLock } from '../../../hooks/useScrollLock';
 import { RetroIcon } from '../RetroIcon';
 import type { RetroIconName } from '../../../assets/icons/win98/registry';
 
@@ -34,6 +35,8 @@ export function RetroModal({
   ariaLabelledBy,
   icon = 'navigation/program_manager',
 }: RetroModalProps) {
+  useScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {

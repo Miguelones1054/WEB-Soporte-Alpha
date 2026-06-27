@@ -47,9 +47,63 @@
   background-position: 0 0, 2px 2px;
 }
 
+/* Login: sin scroll del documento al deslizar (touch/móvil) */
+html:has(.retro-page--auth),
+body:has(.retro-page--auth) {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+.retro-page--auth {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  box-sizing: border-box;
+}
+
+.retro-page--auth .retro-panel {
+  max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.retro-page--auth .retro-panel__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .retro-modal-root {
   font-family: var(--retro-font);
   color: var(--retro-text);
+}
+
+/* Bloqueo de scroll de fondo con modal/drawer/overlay abierto */
+html.retro-scroll-locked,
+html.retro-scroll-locked body {
+  overscroll-behavior: none;
+}
+
+html.retro-scroll-locked .retro-hub-main,
+html.retro-scroll-locked .retro-hub-sidebar--desktop,
+html.retro-scroll-locked .retro-page.retro-admin .retro-hub-panel .retro-panel__body,
+html.retro-scroll-locked .retro-page.retro-admin .retro-hub-section-body,
+html.retro-scroll-locked .retro-page.retro-admin > :not(.retro-hub-layout),
+html.retro-scroll-locked .retro-page--auth .retro-panel__body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.retro-modal-backdrop,
+.retro-drawer-backdrop,
+.retro-loading-overlay {
+  touch-action: none;
 }
 
 .retro-panel {

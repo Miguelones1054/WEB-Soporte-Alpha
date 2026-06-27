@@ -1,10 +1,14 @@
 'use client';
 
+import { useScrollLock } from '../../hooks/useScrollLock';
+
 export interface RetroLoadingOverlayProps {
   message?: string;
 }
 
 export function RetroLoadingOverlay({ message = 'Cargando...' }: RetroLoadingOverlayProps) {
+  useScrollLock(true);
+
   return (
     <div className="retro-loading-overlay" role="status" aria-live="polite" aria-busy="true">
       <div className="retro-loading-box">
