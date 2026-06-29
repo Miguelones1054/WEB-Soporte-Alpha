@@ -278,7 +278,7 @@ export function AdminGestionSectionContent() {
 
   const parsePorcentaje = (value: string) => {
     const parsed = parseInt(value, 10);
-    if (Number.isNaN(parsed) || parsed < 1 || parsed > 100) return null;
+    if (Number.isNaN(parsed) || parsed < 0 || parsed > 100) return null;
     return parsed;
   };
 
@@ -290,7 +290,7 @@ export function AdminGestionSectionContent() {
 
     const porcentaje = parsePorcentaje(newAdminPorcentaje);
     if (porcentaje === null) {
-      showError('El porcentaje debe ser un número entre 1 y 100');
+      showError('El porcentaje debe ser un número entre 0 y 100');
       return;
     }
 
@@ -343,7 +343,7 @@ export function AdminGestionSectionContent() {
 
     const porcentaje = parsePorcentaje(editAdminPorcentaje);
     if (porcentaje === null) {
-      showError('El porcentaje debe ser un número entre 1 y 100');
+      showError('El porcentaje debe ser un número entre 0 y 100');
       return;
     }
 
@@ -830,7 +830,7 @@ export function AdminGestionSectionContent() {
               <input
                 id="newAdminPorcentaje"
                 type="number"
-                min={1}
+                min={0}
                 max={100}
                 value={newAdminPorcentaje}
                 onChange={(e) => setNewAdminPorcentaje(e.target.value)}
@@ -919,7 +919,7 @@ export function AdminGestionSectionContent() {
               <input
                 id="editAdminPorcentaje"
                 type="number"
-                min={1}
+                min={0}
                 max={100}
                 value={editAdminPorcentaje}
                 onChange={(e) => setEditAdminPorcentaje(e.target.value)}
