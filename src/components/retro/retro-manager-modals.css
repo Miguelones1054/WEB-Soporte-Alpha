@@ -291,6 +291,10 @@
   transform: translateX(0);
 }
 
+.retro-manager-modal__copy-feedback--error {
+  color: #8b0000;
+}
+
 .retro-manager-modal__message-box {
   padding: 14px 12px;
   background: #f0f0f0;

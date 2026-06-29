@@ -13,20 +13,21 @@ export interface RetroNavItem {
 
 export const MANAGER_NAV_ITEMS: RetroNavItem[] = [
   { href: adminHubHref('tarifas'), label: 'Tarifas', icon: 'files/briefcase', section: 'tarifas' },
+  { href: adminHubHref('paquetes'), label: 'Paquetes', icon: 'misc/package', section: 'paquetes' },
   { href: adminHubHref('registros'), label: 'Registros', icon: 'office/appwizard_list', section: 'registros' },
   { href: adminHubHref('ganancias'), label: 'Ganancias', icon: 'office/bar_graph', section: 'ganancias' },
 ];
 
 export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
   { href: '/admin-panel', label: 'Panel principal', icon: 'navigation/homepage' },
-  { href: adminHubHref('nequi'), label: 'Nequi', icon: 'navigation/program_manager', section: 'nequi' },
-  {
-    href: adminHubHref('bancolombia'),
-    label: 'Bancolombia',
-    icon: 'navigation/computer_explorer',
-    section: 'bancolombia',
-  },
   ...MANAGER_NAV_ITEMS,
+  {
+    href: adminHubHref('ganancias-admins'),
+    label: 'Ganancias admins',
+    icon: 'office/bar_graph',
+    ownerOnly: true,
+    section: 'ganancias-admins',
+  },
   {
     href: adminHubHref('ajustes'),
     label: 'Ajustes',

@@ -40,6 +40,9 @@ export { RetroModalAdminBalanceDeduction } from './RetroModalAdminBalanceDeducti
 export { RetroAdminBalanceModal } from './RetroAdminBalanceModal';
 export type { RetroAdminBalanceModalProps } from './RetroAdminBalanceModal';
 
+export { CreatePaqueteModal } from './CreatePaqueteModal';
+export type { CreatePaqueteModalProps } from './CreatePaqueteModal';
+
 export { AdminRecargaModal } from './AdminRecargaModal';
 export type { AdminRecargaModalProps } from './AdminRecargaModal';
 

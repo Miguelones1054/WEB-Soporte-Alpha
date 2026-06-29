@@ -23,6 +23,8 @@ import {
   RetroAdminBalanceModal,
 } from '../../../components/retro/admin';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { copyTextToClipboard } from '../../../lib/copyToClipboard';
+import { playRetroSound } from '../../../lib/retroSounds';
 
 interface AdminInfo {
   id: number;
@@ -83,6 +85,14 @@ export function NequiManagerContent({
   onBackToHub,
 }: NequiManagerContentProps) {
   const MAX_RECHARGE = 10_000_000;
+  const TEST_USER_BALANCE_OPTIONS = [
+    { value: 0, label: '$0' },
+    { value: 1000, label: '$1.000' },
+    { value: 2000, label: '$2.000' },
+    { value: 3000, label: '$3.000' },
+    { value: 4000, label: '$4.000' },
+    { value: 5000, label: '$5.000' },
+  ] as const;
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
@@ -101,8 +111,10 @@ export function NequiManagerContent({
   const [subtractAmount, setSubtractAmount] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editUsername, setEditUsername] = useState('');
-  const [editPhoneNumber, setEditPhoneNumber] = useState('');
-  const [editPin, setEditPin] = useState('');
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [changePinValue, setChangePinValue] = useState('');
+  const [showChangePhoneModal, setShowChangePhoneModal] = useState(false);
+  const [changePhoneValue, setChangePhoneValue] = useState('');
   const [showProgressBar, setShowProgressBar] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
@@ -124,9 +136,11 @@ export function NequiManagerContent({
     newBalance: number;
   } | null>(null);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showCreateTestUserModal, setShowCreateTestUserModal] = useState(false);
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserPin, setNewUserPin] = useState('');
   const [newUserInitialBalance, setNewUserInitialBalance] = useState('');
+  const [testUserInitialBalance, setTestUserInitialBalance] = useState(0);
   const [selectedRandomOption, setSelectedRandomOption] = useState<string | null>(null);
   const [showUserCreatedModal, setShowUserCreatedModal] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState('');
@@ -370,8 +384,9 @@ export function NequiManagerContent({
     }
   };
 
-  const searchUser = async () => {
-    if (!userIdInput.trim()) {
+  const searchUser = async (phoneOverride?: string) => {
+    const phone = (phoneOverride ?? userIdInput).trim();
+    if (!phone) {
       setSearchError('Por favor ingrese un número de usuario');
       return;
     }
@@ -387,7 +402,7 @@ export function NequiManagerContent({
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/user/${userIdInput}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/user/${phone}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -459,12 +474,7 @@ export function NequiManagerContent({
 
 ⭐ ¡Disfruta de todos los beneficios premium! ⭐`;
 
-    try {
-      await navigator.clipboard.writeText(message);
-      // Podríamos mostrar una notificación de éxito aquí
-    } catch (err) {
-      console.error('Error al copiar:', err);
-    }
+    await copyTextToClipboard(message);
   };
 
   const closeVipModal = () => {
@@ -487,11 +497,7 @@ export function NequiManagerContent({
 
 ✅ Operación completada exitosamente`;
 
-    try {
-      await navigator.clipboard.writeText(message);
-    } catch (err) {
-      console.error('Error al copiar:', err);
-    }
+    await copyTextToClipboard(message);
   };
 
   const closeBalanceConfirmationModal = () => {
@@ -515,6 +521,16 @@ export function NequiManagerContent({
     setNewUserPin(randomPin.toString());
     setNewUserInitialBalance(balance);
     setSelectedRandomOption(optionKey);
+  };
+
+  const fillRandomTestUserFields = () => {
+    const minPhone = 3000000000;
+    const maxPhone = 3239999999;
+    const randomPhone = Math.floor(Math.random() * (maxPhone - minPhone + 1)) + minPhone;
+    const randomPin = Math.floor(Math.random() * 9000) + 1000;
+
+    setNewUserPhone(randomPhone.toString());
+    setNewUserPin(randomPin.toString());
   };
 
   const createNewUser = async () => {
@@ -564,6 +580,7 @@ export function NequiManagerContent({
         const deduction = extractAdminBalanceDeduction(result);
         queueAdminBalanceModal(deduction);
         setUserCreatedMessage(result.client_message);
+        playRetroSound('success');
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -587,15 +604,65 @@ export function NequiManagerContent({
     setSelectedRandomOption(null);
   };
 
-  const copyUserCreatedMessage = async () => {
-    if (userCreatedMessage) {
-      try {
-        await navigator.clipboard.writeText(userCreatedMessage);
-      } catch (err) {
-        console.error('Error al copiar:', err);
+  const closeCreateTestUserModal = () => {
+    setShowCreateTestUserModal(false);
+    setNewUserPhone('');
+    setNewUserPin('');
+    setTestUserInitialBalance(0);
+  };
+
+  const createTestUser = async () => {
+    if (!newUserPhone.trim() || !newUserPin.trim()) {
+      alert('Por favor complete todos los campos');
+      return;
+    }
+
+    if (newUserPin.length !== 4) {
+      alert('El PIN debe tener exactamente 4 dígitos');
+      return;
+    }
+
+    setShowProgressBar(true);
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        alert('Sesión expirada. Por favor inicie sesión nuevamente.');
+        setShowProgressBar(false);
+        return;
       }
+
+      const response = await fetch(`${API_BASE_URL}/admin/users/test`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numero: newUserPhone.trim(),
+          pin: newUserPin.trim(),
+          balance: testUserInitialBalance,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setUserCreatedMessage(result.client_message);
+        playRetroSound('success');
+        setShowUserCreatedModal(true);
+        closeCreateTestUserModal();
+      } else {
+        const errorData = await response.json();
+        alert(`Error creando usuario de prueba: ${errorData.detail || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error de conexión. Intente nuevamente.');
+    } finally {
+      setShowProgressBar(false);
     }
   };
+
 
   const closeUserCreatedModal = () => {
     setShowUserCreatedModal(false);
@@ -861,6 +928,7 @@ export function NequiManagerContent({
             newSms: newSmsValue,
           });
           queueAdminBalanceModal(deduction);
+          playRetroSound('success');
           setShowSmsConfirmationModal(true);
           await searchUser();
           return;
@@ -883,13 +951,19 @@ export function NequiManagerContent({
               newBalance: result.data?.new_balance || result.new_balance || 0,
             });
             queueAdminBalanceModal(deduction);
+            playRetroSound('success');
             setShowBalanceConfirmationModal(true);
           }
           return;
         }
 
         // Recargar datos del usuario para mostrar cambios
-        await searchUser();
+        if (action === 'update_user' && userUpdates?.numero_cel) {
+          setUserIdInput(userUpdates.numero_cel);
+          await searchUser(userUpdates.numero_cel);
+        } else {
+          await searchUser();
+        }
       } else {
         const errorData = await response.json();
         message = errorData.detail || 'Error desconocido';
@@ -932,8 +1006,6 @@ export function NequiManagerContent({
   const openEditModal = () => {
     if (userData) {
       setEditUsername(userData.username);
-      setEditPhoneNumber(userData.numeroCel);
-      setEditPin(userData.pin);
       setShowEditModal(true);
     }
   };
@@ -941,8 +1013,6 @@ export function NequiManagerContent({
   const closeEditModal = () => {
     setShowEditModal(false);
     setEditUsername('');
-    setEditPhoneNumber('');
-    setEditPin('');
   };
 
   const confirmEditUser = async () => {
@@ -951,28 +1021,11 @@ export function NequiManagerContent({
       return;
     }
 
-    if (!editPhoneNumber.trim()) {
-      alert('Por favor ingrese un número de teléfono válido');
-      return;
-    }
-
-    if (!editPin.trim()) {
-      alert('Por favor ingrese un PIN válido');
-      return;
-    }
-
     if (userData) {
-      // Preparar solo los campos que cambiaron
-      const updates: any = {};
+      const updates: { username?: string } = {};
 
       if (editUsername.trim() !== userData.username) {
         updates.username = editUsername.trim();
-      }
-      if (editPhoneNumber.trim() !== userData.numeroCel) {
-        updates.numero_cel = editPhoneNumber.trim();
-      }
-      if (editPin.trim() !== userData.pin) {
-        updates.pin = editPin.trim();
       }
 
       if (Object.keys(updates).length > 0) {
@@ -982,6 +1035,78 @@ export function NequiManagerContent({
         alert('No se realizaron cambios');
       }
     }
+  };
+
+  const openChangePinModal = () => {
+    if (userData) {
+      setChangePinValue(userData.pin || '');
+      setShowChangePinModal(true);
+    }
+  };
+
+  const closeChangePinModal = () => {
+    setShowChangePinModal(false);
+    setChangePinValue('');
+  };
+
+  const confirmChangePin = async () => {
+    if (!changePinValue.trim()) {
+      alert('Por favor ingrese un PIN válido');
+      return;
+    }
+
+    if (changePinValue.trim().length !== 4) {
+      alert('El PIN debe tener exactamente 4 dígitos');
+      return;
+    }
+
+    if (!userData) return;
+
+    if (changePinValue.trim() === userData.pin) {
+      alert('El PIN no cambió');
+      return;
+    }
+
+    await handleUserAction('update_user', userData.numeroCel, userData.username, undefined, undefined, {
+      pin: changePinValue.trim(),
+    });
+    closeChangePinModal();
+  };
+
+  const openChangePhoneModal = () => {
+    if (userData) {
+      setChangePhoneValue(userData.numeroCel);
+      setShowChangePhoneModal(true);
+    }
+  };
+
+  const closeChangePhoneModal = () => {
+    setShowChangePhoneModal(false);
+    setChangePhoneValue('');
+  };
+
+  const confirmChangePhone = async () => {
+    if (!changePhoneValue.trim()) {
+      alert('Por favor ingrese un número de teléfono válido');
+      return;
+    }
+
+    if (changePhoneValue.trim().length !== 10) {
+      alert('El número debe tener exactamente 10 dígitos');
+      return;
+    }
+
+    if (!userData) return;
+
+    if (changePhoneValue.trim() === userData.numeroCel) {
+      alert('El número no cambió');
+      return;
+    }
+
+    await handleUserAction('update_user', userData.numeroCel, userData.username, undefined, undefined, {
+      numero_cel: changePhoneValue.trim(),
+    });
+    closeChangePhoneModal();
   };
 
   const formatNumberWithDots = (value: string) => {
@@ -1322,27 +1447,47 @@ export function NequiManagerContent({
 
           {/* Botones de acciones rápidas */}
           {!userData && (
-            <div className="flex justify-center gap-4 mt-4">
+            <div className="flex justify-center gap-4 mt-4 flex-wrap">
               {loading ? (
-                // Shimmer effects para los botones
-                <div className="aspect-square w-32 rounded-lg">
-                  <Shimmer className="w-full h-full rounded-lg" />
-                </div>
+                <>
+                  <div className="aspect-square w-32 rounded-lg">
+                    <Shimmer className="w-full h-full rounded-lg" />
+                  </div>
+                  <div className="aspect-square w-32 rounded-lg">
+                    <Shimmer className="w-full h-full rounded-lg" />
+                  </div>
+                </>
               ) : (
-                <button
-                  onClick={() => {
-                    setNewUserPhone('');
-                    setNewUserPin('');
-                    setNewUserInitialBalance('');
-                    setShowCreateUserModal(true);
-                  }}
-                  className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-red-400 hover:text-red-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
-                >
-                  <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span className="text-xs text-center leading-tight">Crear nuevo usuario</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setNewUserPhone('');
+                      setNewUserPin('');
+                      setNewUserInitialBalance('');
+                      setShowCreateUserModal(true);
+                    }}
+                    className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-red-400 hover:text-red-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
+                  >
+                    <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span className="text-xs text-center leading-tight">Crear nuevo usuario</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewUserPhone('');
+                      setNewUserPin('');
+                      setTestUserInitialBalance(0);
+                      setShowCreateTestUserModal(true);
+                    }}
+                    className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-amber-400 hover:text-amber-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
+                  >
+                    <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span className="text-xs text-center leading-tight">Crear usuario de prueba</span>
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -1366,6 +1511,15 @@ export function NequiManagerContent({
                       <RetroIcon name="communication/conn_dialup_recbin_phone" size={16} alt="" />
                       <span className="retro-user-panel__phone-label">Número:</span>
                       <span className="retro-user-panel__phone-value">{userData.numeroCel}</span>
+                      <button
+                        type="button"
+                        className="retro-user-panel__inline-action-btn"
+                        onClick={openChangePhoneModal}
+                        disabled={showProgressBar}
+                        title="Cambiar número"
+                      >
+                        Cambiar
+                      </button>
                     </p>
                   </div>
                   <div className="retro-user-panel__header-actions">
@@ -1444,7 +1598,15 @@ export function NequiManagerContent({
                     {loading ? <Shimmer className="h-6 w-16" /> : userData.sms}
                   </RetroUserDetailField>
 
-                  <RetroUserDetailField icon="security/key_win" label="Clave" valueVariant="warning">
+                  <RetroUserDetailField
+                    icon="security/key_win"
+                    label="Clave"
+                    valueVariant="warning"
+                    onAction={openChangePinModal}
+                    actionLabel="Cambiar"
+                    actionTitle="Cambiar clave"
+                    actionDisabled={showProgressBar}
+                  >
                     {loading ? <Shimmer className="h-6 w-20" /> : userData.pin || 'No disponible'}
                   </RetroUserDetailField>
 
@@ -1454,6 +1616,18 @@ export function NequiManagerContent({
                     valueVariant={
                       loading ? 'muted' : userData.device_linked ? 'success' : 'danger'
                     }
+                    onAction={
+                      userData.device_linked
+                        ? () => {
+                            if (!userData) return;
+                            handleUserAction('unlink', userData.numeroCel, userData.username);
+                          }
+                        : undefined
+                    }
+                    actionLabel="Desvincular"
+                    actionTitle="Desvincular dispositivo"
+                    actionDisabled={showProgressBar}
+                    actionVariant="danger"
                   >
                     {loading ? <Shimmer className="h-5 w-24" /> : userData.device_status}
                   </RetroUserDetailField>
@@ -1464,6 +1638,18 @@ export function NequiManagerContent({
                     valueVariant={
                       loading ? 'muted' : userData.vip_status === 'VIP' ? 'warning' : 'muted'
                     }
+                    onAction={() => {
+                      if (!userData) return;
+                      if (userData.vip_status === 'VIP') {
+                        setShowCancelVipConfirmModal(true);
+                      } else {
+                        setShowUpgradeVipConfirmModal(true);
+                      }
+                    }}
+                    actionLabel={userData.vip_status === 'VIP' ? 'Cancelar VIP' : 'Activar VIP'}
+                    actionTitle={userData.vip_status === 'VIP' ? 'Cancelar VIP' : 'Activar VIP'}
+                    actionDisabled={showProgressBar}
+                    actionVariant={userData.vip_status === 'VIP' ? 'danger' : 'default'}
                   >
                     {loading ? <Shimmer className="h-5 w-16" /> : userData.vip_status}
                   </RetroUserDetailField>
@@ -1535,36 +1721,6 @@ export function NequiManagerContent({
                     }`}
                   >
                     {userData.baneado ? 'Habilitar usuario' : 'Inhabilitar usuario'}
-                  </button>
-
-                  {userData.device_linked && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!userData) return;
-                        handleUserAction('unlink', userData.numeroCel, userData.username);
-                      }}
-                      disabled={showProgressBar}
-                      className="retro-user-actions__btn retro-user-actions__btn--danger"
-                    >
-                      Desvincular dispositivo
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!userData) return;
-                      if (userData.vip_status === 'VIP') {
-                        setShowCancelVipConfirmModal(true);
-                      } else {
-                        setShowUpgradeVipConfirmModal(true);
-                      }
-                    }}
-                    disabled={showProgressBar}
-                    className="retro-user-actions__btn"
-                  >
-                    {userData.vip_status === 'VIP' ? 'Cancelar VIP' : 'Actualizar a VIP'}
                   </button>
 
                   <button
@@ -1760,46 +1916,6 @@ export function NequiManagerContent({
                     autoFocus
                   />
                 </div>
-
-                <div>
-                  <label htmlFor="editPhoneNumber" className="retro-manager-modal__label">
-                    Número de usuario
-                  </label>
-                  <input
-                    type="text"
-                    id="editPhoneNumber"
-                    value={editPhoneNumber}
-                    onChange={(e) => {
-                      // Permitir solo números
-                      const numericValue = e.target.value.replace(/\D/g, '');
-                      setEditPhoneNumber(numericValue);
-                    }}
-                    className="retro-manager-modal__input"
-                    placeholder="Ingrese el número de usuario"
-                    maxLength={10}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="editPin" className="retro-manager-modal__label">
-                    PIN de seguridad
-                  </label>
-                  <input
-                    type="text"
-                    id="editPin"
-                    value={editPin}
-                    onChange={(e) => {
-                      // Permitir solo números y limitar a 4 dígitos máximo
-                      const numericValue = e.target.value.replace(/\D/g, '');
-                      if (numericValue.length <= 4) {
-                        setEditPin(numericValue);
-                      }
-                    }}
-                    className="retro-manager-modal__input"
-                    placeholder="Ingrese el PIN (4 dígitos)"
-                    maxLength={4}
-                  />
-                </div>
               </div>
 
               <hr className="retro-manager-modal__divider" />
@@ -1820,9 +1936,122 @@ export function NequiManagerContent({
         </RetroModal>
       )}
 
+      {showChangePinModal && userData && (
+        <RetroModal
+          open
+          title="Cambiar clave"
+          onClose={closeChangePinModal}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+              <p className="retro-manager-modal__text retro-manager-modal__text--muted" style={{ textAlign: 'center' }}>
+                Usuario: <strong>{userData.username}</strong>
+              </p>
+
+              <div className="retro-manager-modal__form">
+                <div>
+                  <label htmlFor="changePinValue" className="retro-manager-modal__label">
+                    Nueva clave (4 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    id="changePinValue"
+                    value={changePinValue}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/\D/g, '');
+                      if (numericValue.length <= 4) {
+                        setChangePinValue(numericValue);
+                      }
+                    }}
+                    className="retro-manager-modal__input"
+                    placeholder="Ej: 1234"
+                    maxLength={4}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="retro-manager-modal__actions">
+                <button
+                  onClick={closeChangePinModal}
+                  className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmChangePin}
+                  disabled={!changePinValue.trim() || changePinValue.length !== 4 || showProgressBar}
+                  className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+                >
+                  Guardar clave
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
+      {showChangePhoneModal && userData && (
+        <RetroModal
+          open
+          title="Cambiar número"
+          onClose={closeChangePhoneModal}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+              <p className="retro-manager-modal__text retro-manager-modal__text--muted" style={{ textAlign: 'center' }}>
+                Usuario: <strong>{userData.username}</strong>
+              </p>
+
+              <div className="retro-manager-modal__form">
+                <div>
+                  <label htmlFor="changePhoneValue" className="retro-manager-modal__label">
+                    Nuevo número de usuario
+                  </label>
+                  <input
+                    type="text"
+                    id="changePhoneValue"
+                    value={changePhoneValue}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/\D/g, '');
+                      if (numericValue.length <= 10) {
+                        setChangePhoneValue(numericValue);
+                      }
+                    }}
+                    className="retro-manager-modal__input"
+                    placeholder="Ej: 3000000000"
+                    maxLength={10}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="retro-manager-modal__actions">
+                <button
+                  onClick={closeChangePhoneModal}
+                  className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmChangePhone}
+                  disabled={!changePhoneValue.trim() || changePhoneValue.length !== 10 || showProgressBar}
+                  className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+                >
+                  Guardar número
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
       <RetroManagerProgressModal
         open={showProgressBar || searching}
-        message={searching ? 'Buscando usuario...' : 'Procesando operación...'}
+        message={
+          searching
+            ? 'Buscando usuario...'
+            : showCreateUserModal || showCreateTestUserModal
+              ? 'Creando usuario...'
+              : 'Procesando operación...'
+        }
+        zIndex={140}
       />
 
       {showSmsConfirmationModal && smsConfirmationData && (
@@ -1839,11 +2068,11 @@ export function NequiManagerContent({
               </RetroModalBanner>
 
               <RetroModalMessagePanel
-                onCopy={() => {
+                onCopy={async () => {
                   const isSubtraction = smsConfirmationData.oldSms > smsConfirmationData.newSms;
                   const smsDifference = Math.abs(smsConfirmationData.newSms - smsConfirmationData.oldSms);
                   const message = `📱 SMS ${isSubtraction ? 'restados' : 'agregados'} correctamente!\n\n👤 Usuario: ${smsConfirmationData.username}\n${isSubtraction ? '➖' : '➕'} SMS ${isSubtraction ? 'restados' : 'agregados'}: ${smsDifference}\n📊 SMS anteriores: ${smsConfirmationData.oldSms}\n📱 Nuevos SMS: ${smsConfirmationData.newSms}\n✅ ¡Operación completada exitosamente!`;
-                  navigator.clipboard.writeText(message);
+                  await copyTextToClipboard(message);
                 }}
               >
                 <div className="retro-manager-modal__message-rich">
@@ -2318,6 +2547,100 @@ export function NequiManagerContent({
         </RetroModal>
       )}
 
+      {showCreateTestUserModal && (
+        <RetroModal
+          open
+          title="Crear usuario de prueba"
+          onClose={closeCreateTestUserModal}
+          zIndex={130}
+          bodyClassName="retro-manager-modal__body"
+        >
+              <div className="retro-manager-modal__form">
+                <div>
+                  <label htmlFor="testUserPhone" className="retro-manager-modal__label">
+                    Número de usuario
+                  </label>
+                  <input
+                    type="text"
+                    id="testUserPhone"
+                    value={newUserPhone}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      if (value.length <= 10) {
+                        setNewUserPhone(value);
+                      }
+                    }}
+                    className="retro-manager-modal__input"
+                    placeholder="Ej: 3000000000"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="testUserPin" className="retro-manager-modal__label">
+                    PIN de seguridad (4 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    id="testUserPin"
+                    value={newUserPin}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      if (value.length <= 4) {
+                        setNewUserPin(value);
+                      }
+                    }}
+                    className="retro-manager-modal__input"
+                    placeholder="Ej: 1234"
+                    maxLength={4}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="testUserInitialBalance" className="retro-manager-modal__label">
+                    Saldo inicial
+                  </label>
+                  <RetroSelect
+                    id="testUserInitialBalance"
+                    value={testUserInitialBalance}
+                    options={[...TEST_USER_BALANCE_OPTIONS]}
+                    onChange={setTestUserInitialBalance}
+                  />
+                </div>
+
+                <div className="text-center mt-2">
+                  <button
+                    type="button"
+                    onClick={fillRandomTestUserFields}
+                    className="retro-manager-btn retro-manager-btn--secondary"
+                  >
+                    Generar aleatorio
+                  </button>
+                </div>
+
+                <p className="retro-manager-modal__text retro-manager-modal__text--muted" style={{ textAlign: 'center' }}>
+                  Los usuarios de prueba no descuentan saldo del administrador.
+                </p>
+              </div>
+
+              <div className="retro-manager-modal__actions">
+                <button
+                  onClick={closeCreateTestUserModal}
+                  className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={createTestUser}
+                  disabled={!newUserPhone.trim() || !newUserPin.trim() || newUserPin.length !== 4 || showProgressBar}
+                  className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+                >
+                  {showProgressBar ? 'Creando...' : 'Crear usuario de prueba'}
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
       {showUserNotificationModal && userData && (
         <RetroModal
           open
@@ -2394,7 +2717,7 @@ export function NequiManagerContent({
                 Usuario creado correctamente
               </RetroModalBanner>
 
-              <RetroModalMessagePanel onCopy={copyUserCreatedMessage}>
+              <RetroModalMessagePanel copyText={userCreatedMessage}>
                 <pre>{userCreatedMessage}</pre>
               </RetroModalMessagePanel>
 

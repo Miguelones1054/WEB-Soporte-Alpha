@@ -52,7 +52,13 @@ function getOperationTypeLabel(operationType: string): string {
       return 'Restar SMS';
     case 'CREATE_USER':
     case 'CREATE_USER_BANCOLOMBIA':
+    case 'CREATE_TEST_USER':
+    case 'CREATE_TEST_USER_BANCOLOMBIA':
       return 'Crear usuario';
+    case 'ASSIGN_PROMO_NEQUI':
+      return 'Asignar paquete Nequi';
+    case 'ASSIGN_PROMO_BANCOLOMBIA':
+      return 'Asignar paquete BC';
     case 'USER_NOTIFICATION_BANCOLOMBIA':
       return 'Notificación';
     default:
@@ -76,6 +82,10 @@ function getOperationTypeClass(operationType: string): string {
       'USER_NOTIFICATION_BANCOLOMBIA',
       'CREATE_USER',
       'CREATE_USER_BANCOLOMBIA',
+      'CREATE_TEST_USER',
+      'CREATE_TEST_USER_BANCOLOMBIA',
+      'ASSIGN_PROMO_NEQUI',
+      'ASSIGN_PROMO_BANCOLOMBIA',
     ].includes(operationType)
   ) {
     return 'retro-registros__type-badge--action';
@@ -163,8 +173,15 @@ export function RegistrosSectionContent() {
       'UPGRADE_VIP',
       'CANCEL_VIP',
       'USER_NOTIFICATION_BANCOLOMBIA',
+      'ASSIGN_PROMO_NEQUI',
+      'ASSIGN_PROMO_BANCOLOMBIA',
     ];
-    const userCreationTypes = ['CREATE_USER', 'CREATE_USER_BANCOLOMBIA'];
+    const userCreationTypes = [
+      'CREATE_USER',
+      'CREATE_USER_BANCOLOMBIA',
+      'CREATE_TEST_USER',
+      'CREATE_TEST_USER_BANCOLOMBIA',
+    ];
 
     switch (activeFilter) {
       case 'BALANCE':
@@ -289,7 +306,7 @@ export function RegistrosSectionContent() {
               ],
               [
                 'USER_CREATIONS',
-                `Creados (${operations.filter((op) => ['CREATE_USER', 'CREATE_USER_BANCOLOMBIA'].includes(op.operation_type)).length})`,
+                `Creados (${operations.filter((op) => ['CREATE_USER', 'CREATE_USER_BANCOLOMBIA', 'CREATE_TEST_USER', 'CREATE_TEST_USER_BANCOLOMBIA'].includes(op.operation_type)).length})`,
               ],
             ] as const
           ).map(([key, label]) => (

@@ -3,6 +3,7 @@
 import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes, useCallback, useEffect, useRef, useState } from 'react';
 import { RetroIcon } from '../RetroIcon';
 import type { RetroIconName } from '../../../assets/icons/win98/registry';
+import { copyTextToClipboard } from '../../../lib/copyToClipboard';
 
 export function RetroModalIntro({
   children,
@@ -139,14 +140,18 @@ export function RetroModalBanner({
 export function RetroModalMessagePanel({
   children,
   onCopy,
+  copyText,
 }: {
   children: ReactNode;
-  onCopy: () => void | Promise<void>;
+  onCopy?: () => void | Promise<void>;
+  copyText?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [pressing, setPressing] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messageBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return () => {
@@ -157,18 +162,27 @@ export function RetroModalMessagePanel({
 
   const handleCopy = useCallback(async () => {
     setPressing(true);
+    setCopyError(false);
     if (pressTimeoutRef.current) clearTimeout(pressTimeoutRef.current);
     pressTimeoutRef.current = setTimeout(() => setPressing(false), 150);
 
     try {
-      await onCopy();
+      if (onCopy) {
+        await onCopy();
+      } else {
+        const text = (copyText ?? messageBoxRef.current?.innerText ?? '').trim();
+        await copyTextToClipboard(text);
+      }
       setCopied(true);
       if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
       feedbackTimeoutRef.current = setTimeout(() => setCopied(false), 2800);
     } catch (err) {
       console.error('Error al copiar:', err);
+      setCopyError(true);
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = setTimeout(() => setCopyError(false), 2800);
     }
-  }, [onCopy]);
+  }, [onCopy, copyText]);
 
   return (
     <div className="retro-manager-modal__message-wrap">
@@ -199,8 +213,15 @@ export function RetroModalMessagePanel({
         >
           Mensaje copiado exitosamente
         </span>
+        <span
+          className={`retro-manager-modal__copy-feedback retro-manager-modal__copy-feedback--error${copyError ? ' retro-manager-modal__copy-feedback--visible' : ''}`}
+          role="alert"
+          aria-live="assertive"
+        >
+          No se pudo copiar el mensaje
+        </span>
       </div>
-      <div className="retro-manager-modal__message-box">{children}</div>
+      <div ref={messageBoxRef} className="retro-manager-modal__message-box">{children}</div>
     </div>
   );
 }

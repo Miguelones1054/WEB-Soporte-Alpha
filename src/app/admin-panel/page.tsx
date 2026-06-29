@@ -9,9 +9,11 @@ import { AppHubHome } from './views/AppHubHome';
 import { NequiAppView } from './views/NequiAppView';
 import { BancolombiaAppView } from './views/BancolombiaAppView';
 import { GananciasSectionView } from './views/GananciasSectionView';
+import { OwnerGananciasSectionView } from './views/OwnerGananciasSectionView';
 import { EstadisticasSectionView } from './views/EstadisticasSectionView';
 import { FacturacionSmsSectionView } from './views/FacturacionSmsSectionView';
 import { RegistrosSectionView } from './views/RegistrosSectionView';
+import { PaquetesSectionView } from './views/PaquetesSectionView';
 import { TarifasSectionView } from './views/TarifasSectionView';
 import { AdminGestionSectionView } from './views/AdminGestionSectionView';
 import { AjustesSectionView } from './views/AjustesSectionView';
@@ -41,12 +43,16 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <BancolombiaAppView adminInfo={adminInfo} onBack={goHome} />;
       case 'ganancias':
         return <GananciasSectionView onClose={goHome} />;
+      case 'ganancias-admins':
+        return <OwnerGananciasSectionView onClose={goHome} />;
       case 'estadisticas':
         return <EstadisticasSectionView onClose={goHome} />;
       case 'facturacion-sms':
         return <FacturacionSmsSectionView onClose={goHome} />;
       case 'registros':
         return <RegistrosSectionView onClose={goHome} />;
+      case 'paquetes':
+        return <PaquetesSectionView onClose={goHome} />;
       case 'tarifas':
         return <TarifasSectionView onClose={goHome} />;
       case 'ajustes':

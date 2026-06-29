@@ -14,6 +14,11 @@ export interface RetroUserDetailFieldProps {
   onSubtract?: () => void;
   addTitle?: string;
   subtractTitle?: string;
+  onAction?: () => void;
+  actionLabel?: string;
+  actionTitle?: string;
+  actionDisabled?: boolean;
+  actionVariant?: 'default' | 'danger';
 }
 
 export function RetroUserDetailField({
@@ -26,8 +31,13 @@ export function RetroUserDetailField({
   onSubtract,
   addTitle = 'Agregar',
   subtractTitle = 'Restar',
+  onAction,
+  actionLabel,
+  actionTitle,
+  actionDisabled = false,
+  actionVariant = 'default',
 }: RetroUserDetailFieldProps) {
-  const hasActions = Boolean(onAdd || onSubtract);
+  const hasActions = Boolean(onAdd || onSubtract || onAction);
 
   return (
     <div className="retro-user-field">
@@ -65,6 +75,18 @@ export function RetroUserDetailField({
                 aria-label={addTitle}
               >
                 +
+              </button>
+            )}
+            {onAction && actionLabel && (
+              <button
+                type="button"
+                className={`retro-user-field__action-btn retro-user-field__action-btn--text retro-user-field__action-btn--${actionVariant}`}
+                onClick={onAction}
+                title={actionTitle ?? actionLabel}
+                aria-label={actionTitle ?? actionLabel}
+                disabled={actionDisabled}
+              >
+                {actionLabel}
               </button>
             )}
           </div>

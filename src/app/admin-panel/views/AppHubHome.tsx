@@ -85,6 +85,16 @@ export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
           </span>
           <span className="retro-hub-app-card__label">Bancolombia</span>
         </button>
+        <button
+          type="button"
+          className="retro-hub-app-card"
+          onClick={() => router.push(adminHubHref('paquetes'))}
+        >
+          <span className="retro-hub-app-card__logo-wrap retro-hub-app-card__logo-wrap--icon">
+            <RetroIcon name="misc/package" size={32} className="retro-hub-app-card__logo" alt="" />
+          </span>
+          <span className="retro-hub-app-card__label">Paquetes</span>
+        </button>
       </div>
 
       <p className="text-center text-[11px] m-0 mt-2" style={{ color: 'var(--retro-muted)' }}>

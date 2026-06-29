@@ -330,6 +330,36 @@
   line-height: 1.2;
 }
 
+.retro-user-panel__inline-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  cursor: pointer;
+}
+
+.retro-user-panel__inline-action-btn:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-user-panel__inline-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .retro-user-panel__header-actions {
   display: flex;
   gap: 4px;
@@ -491,6 +521,25 @@
   border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
   box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
   transform: translate(1px, 1px);
+}
+
+.retro-user-field__action-btn--text {
+  width: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.retro-user-field__action-btn--danger {
+  color: #7f0000;
+}
+
+.retro-user-field__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .retro-user-field__value--lg {

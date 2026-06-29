@@ -500,6 +500,18 @@ body:has(.retro-page.retro-admin) {
   padding: 16px !important;
 }
 
+.retro-table tfoot .retro-table__totals-row td {
+  background: var(--retro-surface);
+  font-weight: 700;
+  border-top: 2px solid var(--retro-border-dark);
+}
+
+.retro-table__totals-count {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--retro-muted);
+}
+
 /* Filtros pill → retro */
 .retro-filter-bar {
   display: flex;
@@ -559,6 +571,65 @@ body:has(.retro-page.retro-admin) {
   margin: 10px 0 0;
   font-size: 11px;
   color: var(--retro-muted);
+}
+
+.retro-ganancias-owner-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--retro-text);
+  max-width: 420px;
+}
+
+.retro-ganancias-owner-summary-table {
+  margin-top: 12px;
+}
+
+.retro-ganancias-admin-email {
+  font-size: 10px;
+  color: var(--retro-muted);
+  word-break: break-all;
+}
+
+.retro-ganancias-owner-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: #0000aa;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.retro-ganancias-owner-link:hover {
+  color: #000066;
+}
+
+.retro-ganancias-delete-cell {
+  white-space: nowrap;
+}
+
+.retro-ganancias-delete-btn {
+  padding: 2px 8px;
+  border: 1px solid #aa0000;
+  background: #ffe8e8;
+  color: #aa0000;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.retro-ganancias-delete-btn:hover:not(:disabled) {
+  background: #ffd0d0;
+}
+
+.retro-ganancias-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Modal */

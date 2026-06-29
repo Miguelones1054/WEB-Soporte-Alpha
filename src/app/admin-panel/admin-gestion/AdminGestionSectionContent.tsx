@@ -76,7 +76,13 @@ function getOperationTypeLabel(operationType: string) {
       return 'Retiro admin';
     case 'CREATE_USER':
     case 'CREATE_USER_BANCOLOMBIA':
+    case 'CREATE_TEST_USER':
+    case 'CREATE_TEST_USER_BANCOLOMBIA':
       return 'Crear usuario';
+    case 'ASSIGN_PROMO_NEQUI':
+      return 'Asignar paquete Nequi';
+    case 'ASSIGN_PROMO_BANCOLOMBIA':
+      return 'Asignar paquete BC';
     case 'CREATE_ADMIN':
       return 'Crear admin';
     default:

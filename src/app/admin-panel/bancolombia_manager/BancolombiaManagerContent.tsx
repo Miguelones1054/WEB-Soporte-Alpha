@@ -25,6 +25,8 @@ import {
   RetroAdminBalanceModal,
 } from '../../../components/retro/admin';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { copyTextToClipboard } from '../../../lib/copyToClipboard';
+import { playRetroSound } from '../../../lib/retroSounds';
 
 interface AdminInfo {
   id: number;
@@ -110,6 +112,14 @@ export function BancolombiaManagerContent({
   onBackToHub,
 }: BancolombiaManagerContentProps) {
   const MAX_RECHARGE = 10_000_000;
+  const TEST_USER_BALANCE_OPTIONS = [
+    { value: 0, label: '$0' },
+    { value: 1000, label: '$1.000' },
+    { value: 2000, label: '$2.000' },
+    { value: 3000, label: '$3.000' },
+    { value: 4000, label: '$4.000' },
+    { value: 5000, label: '$5.000' },
+  ] as const;
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
@@ -154,9 +164,11 @@ export function BancolombiaManagerContent({
   } | null>(null);
   const [showNoRefundDialog, setShowNoRefundDialog] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [showCreateTestUserModal, setShowCreateTestUserModal] = useState(false);
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserPin, setNewUserPin] = useState('');
   const [newUserInitialBalance, setNewUserInitialBalance] = useState('');
+  const [testUserInitialBalance, setTestUserInitialBalance] = useState(0);
   const [selectedRandomOption, setSelectedRandomOption] = useState<string | null>(null);
   const [showUserCreatedModal, setShowUserCreatedModal] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState('');
@@ -524,11 +536,7 @@ export function BancolombiaManagerContent({
 
 ✅ Operación completada exitosamente`;
 
-    try {
-      await navigator.clipboard.writeText(message);
-    } catch (err) {
-      console.error('Error al copiar:', err);
-    }
+    await copyTextToClipboard(message);
   };
 
   const closeBalanceConfirmationModal = () => {
@@ -572,6 +580,15 @@ export function BancolombiaManagerContent({
     setNewUserPin(randomPin.toString());
     setNewUserInitialBalance(balance);
     setSelectedRandomOption(optionKey);
+  };
+
+  const fillRandomTestUserFields = () => {
+    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const randomSuffix = Math.floor(Math.random() * 900) + 100;
+    const randomPin = Math.floor(Math.random() * 9000) + 1000;
+
+    setNewUserPhone(`${randomName}${randomSuffix}`);
+    setNewUserPin(randomPin.toString());
   };
 
   const createNewUser = async () => {
@@ -621,6 +638,7 @@ export function BancolombiaManagerContent({
         const deduction = extractAdminBalanceDeduction(result);
         queueAdminBalanceModal(deduction);
         setUserCreatedMessage(result.client_message ?? '');
+        playRetroSound('success');
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -644,15 +662,65 @@ export function BancolombiaManagerContent({
     setSelectedRandomOption(null);
   };
 
-  const copyUserCreatedMessage = async () => {
-    if (userCreatedMessage) {
-      try {
-        await navigator.clipboard.writeText(userCreatedMessage);
-      } catch (err) {
-        console.error('Error al copiar:', err);
+  const closeCreateTestUserModal = () => {
+    setShowCreateTestUserModal(false);
+    setNewUserPhone('');
+    setNewUserPin('');
+    setTestUserInitialBalance(0);
+  };
+
+  const createTestUser = async () => {
+    if (!newUserPhone.trim() || !newUserPin.trim()) {
+      alert('Por favor complete todos los campos');
+      return;
+    }
+
+    if (newUserPin.length !== 4) {
+      alert('El PIN debe tener exactamente 4 dígitos');
+      return;
+    }
+
+    setShowProgressBar(true);
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        alert('Sesión expirada. Por favor inicie sesión nuevamente.');
+        setShowProgressBar(false);
+        return;
       }
+
+      const response = await fetch(`${API_BASE_URL}/bancolombia/user/create-test`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          usuario: newUserPhone.trim(),
+          pin: newUserPin.trim(),
+          balance: testUserInitialBalance,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setUserCreatedMessage(result.client_message ?? '');
+        playRetroSound('success');
+        setShowUserCreatedModal(true);
+        closeCreateTestUserModal();
+      } else {
+        const errorData = await response.json();
+        alert(`Error creando usuario de prueba: ${errorData.detail || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error de conexión. Intente nuevamente.');
+    } finally {
+      setShowProgressBar(false);
     }
   };
+
 
   const closeUserCreatedModal = () => {
     setShowUserCreatedModal(false);
@@ -780,6 +848,7 @@ export function BancolombiaManagerContent({
         newBalance: Number(result.saldo_total ?? 0),
       });
       queueAdminBalanceModal(deduction);
+      playRetroSound('success');
       setShowBalanceConfirmationModal(true);
       await searchUser();
     } catch (e) {
@@ -971,6 +1040,7 @@ export function BancolombiaManagerContent({
               newBalance: result.data?.new_balance ?? result.new_balance ?? 0,
             });
             queueAdminBalanceModal(deduction);
+            playRetroSound('success');
             setShowBalanceConfirmationModal(true);
           }
           return;
@@ -993,6 +1063,7 @@ export function BancolombiaManagerContent({
               newSms,
             });
             queueAdminBalanceModal(deduction);
+            playRetroSound('success');
             setShowSmsConfirmationModal(true);
           }
           return;
@@ -1432,26 +1503,47 @@ export function BancolombiaManagerContent({
 
           {/* Botones de acciones rápidas */}
           {!userData && (
-            <div className="flex justify-center gap-4 mt-4">
+            <div className="flex justify-center gap-4 mt-4 flex-wrap">
               {loading ? (
-                <div className="aspect-square w-32 rounded-lg">
-                  <Shimmer className="h-full w-full rounded-lg" />
-                </div>
+                <>
+                  <div className="aspect-square w-32 rounded-lg">
+                    <Shimmer className="h-full w-full rounded-lg" />
+                  </div>
+                  <div className="aspect-square w-32 rounded-lg">
+                    <Shimmer className="h-full w-full rounded-lg" />
+                  </div>
+                </>
               ) : (
-                <button
-                  onClick={() => {
-                    setNewUserPhone('');
-                    setNewUserPin('');
-                    setNewUserInitialBalance('');
-                    setShowCreateUserModal(true);
-                  }}
-                  className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-yellow-400 hover:text-yellow-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
-                >
-                  <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span className="text-xs text-center leading-tight">Crear nuevo usuario</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setNewUserPhone('');
+                      setNewUserPin('');
+                      setNewUserInitialBalance('');
+                      setShowCreateUserModal(true);
+                    }}
+                    className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-yellow-400 hover:text-yellow-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
+                  >
+                    <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span className="text-xs text-center leading-tight">Crear nuevo usuario</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewUserPhone('');
+                      setNewUserPin('');
+                      setTestUserInitialBalance(0);
+                      setShowCreateTestUserModal(true);
+                    }}
+                    className="aspect-square w-32 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-amber-400 hover:text-amber-300 rounded-lg transition-colors font-medium flex flex-col items-center justify-center p-3"
+                  >
+                    <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span className="text-xs text-center leading-tight">Crear usuario de prueba</span>
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -1556,6 +1648,18 @@ export function BancolombiaManagerContent({
                     valueVariant={
                       loading ? 'muted' : userData.device_linked ? 'success' : 'danger'
                     }
+                    onAction={
+                      userData.device_linked
+                        ? () => {
+                            if (!userData) return;
+                            handleUserAction('unlink', userData.numeroCel, userData.username);
+                          }
+                        : undefined
+                    }
+                    actionLabel="Desvincular"
+                    actionTitle="Desvincular dispositivo"
+                    actionDisabled={showProgressBar}
+                    actionVariant="danger"
                   >
                     {loading ? <Shimmer className="h-5 w-24" /> : userData.device_status}
                   </RetroUserDetailField>
@@ -1628,20 +1732,6 @@ export function BancolombiaManagerContent({
                   >
                     {userData.baneado ? 'Habilitar usuario' : 'Inhabilitar usuario'}
                   </button>
-
-                  {userData.device_linked && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!userData) return;
-                        handleUserAction('unlink', userData.numeroCel, userData.username);
-                      }}
-                      disabled={showProgressBar}
-                      className="retro-user-actions__btn retro-user-actions__btn--danger"
-                    >
-                      Desvincular dispositivo
-                    </button>
-                  )}
 
                   <button
                     type="button"
@@ -1892,7 +1982,14 @@ export function BancolombiaManagerContent({
 
       <RetroManagerProgressModal
         open={showProgressBar || searching}
-        message={searching ? 'Buscando usuario...' : 'Procesando operación...'}
+        message={
+          searching
+            ? 'Buscando usuario...'
+            : showCreateUserModal || showCreateTestUserModal
+              ? 'Creando usuario...'
+              : 'Procesando operación...'
+        }
+        zIndex={140}
       />
 
       {showSmsConfirmationModal && smsConfirmationData && (
@@ -1909,11 +2006,11 @@ export function BancolombiaManagerContent({
               </RetroModalBanner>
 
               <RetroModalMessagePanel
-                onCopy={() => {
+                onCopy={async () => {
                   const isSubtraction = smsConfirmationData.oldSms > smsConfirmationData.newSms;
                   const smsDifference = Math.abs(smsConfirmationData.newSms - smsConfirmationData.oldSms);
                   const message = `📱 SMS ${isSubtraction ? 'restados' : 'agregados'} correctamente!\n\n👤 Usuario: ${smsConfirmationData.username}\n${isSubtraction ? '➖' : '➕'} SMS ${isSubtraction ? 'restados' : 'agregados'}: ${smsDifference}\n📊 SMS anteriores: ${smsConfirmationData.oldSms}\n📱 Nuevos SMS: ${smsConfirmationData.newSms}\n✅ ¡Operación completada exitosamente!`;
-                  navigator.clipboard.writeText(message);
+                  await copyTextToClipboard(message);
                 }}
               >
                 <div className="retro-manager-modal__message-rich">
@@ -2265,6 +2362,96 @@ export function BancolombiaManagerContent({
         </RetroModal>
       )}
 
+      {showCreateTestUserModal && (
+        <RetroModal
+          open
+          title="Crear usuario de prueba"
+          onClose={closeCreateTestUserModal}
+          zIndex={130}
+          bodyClassName="retro-manager-modal__body"
+        >
+              <div className="retro-manager-modal__form">
+                <div>
+                  <label htmlFor="testUserPhone" className="retro-manager-modal__label">
+                    Usuario
+                  </label>
+                  <input
+                    type="text"
+                    id="testUserPhone"
+                    value={newUserPhone}
+                    onChange={(e) => {
+                      setNewUserPhone(e.target.value);
+                    }}
+                    className="retro-manager-modal__input"
+                    placeholder="Ej: usuario123"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="testUserPin" className="retro-manager-modal__label">
+                    PIN de seguridad (4 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    id="testUserPin"
+                    value={newUserPin}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      if (value.length <= 4) {
+                        setNewUserPin(value);
+                      }
+                    }}
+                    className="retro-manager-modal__input"
+                    placeholder="Ej: 1234"
+                    maxLength={4}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="testUserInitialBalance" className="retro-manager-modal__label">
+                    Saldo inicial
+                  </label>
+                  <RetroSelect
+                    id="testUserInitialBalance"
+                    value={testUserInitialBalance}
+                    options={[...TEST_USER_BALANCE_OPTIONS]}
+                    onChange={setTestUserInitialBalance}
+                  />
+                </div>
+
+                <div className="text-center mt-2">
+                  <button
+                    type="button"
+                    onClick={fillRandomTestUserFields}
+                    className="retro-manager-btn retro-manager-btn--secondary"
+                  >
+                    Generar aleatorio
+                  </button>
+                </div>
+
+                <p className="retro-manager-modal__text retro-manager-modal__text--muted" style={{ textAlign: 'center' }}>
+                  Los usuarios de prueba no descuentan saldo del administrador.
+                </p>
+              </div>
+
+              <div className="retro-manager-modal__actions">
+                <button
+                  onClick={closeCreateTestUserModal}
+                  className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={createTestUser}
+                  disabled={!newUserPhone.trim() || !newUserPin.trim() || newUserPin.length !== 4 || showProgressBar}
+                  className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+                >
+                  {showProgressBar ? 'Creando...' : 'Crear usuario de prueba'}
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
       {showUserNotificationModal && userData && (
         <RetroModal
           open
@@ -2341,7 +2528,7 @@ export function BancolombiaManagerContent({
                 Usuario creado correctamente
               </RetroModalBanner>
 
-              <RetroModalMessagePanel onCopy={copyUserCreatedMessage}>
+              <RetroModalMessagePanel copyText={userCreatedMessage}>
                 <pre>{userCreatedMessage}</pre>
               </RetroModalMessagePanel>
 
