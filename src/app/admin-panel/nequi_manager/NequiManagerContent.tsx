@@ -21,6 +21,7 @@ import {
   RetroModalMessagePanel,
   RetroModalAlertCenter,
   RetroAdminBalanceModal,
+  AppGlobalNotificationControl,
 } from '../../../components/retro/admin';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { copyTextToClipboard } from '../../../lib/copyToClipboard';
@@ -1309,6 +1310,7 @@ export function NequiManagerContent({
 
       {/* Contenido principal */}
       <main className={embedded ? 'retro-app-manager__main' : 'flex-1 p-6'}>
+        <AppGlobalNotificationControl app="nequi" embedded={embedded} />
         <div className="max-w-6xl mx-auto space-y-4">
           {/* Campo de Gestión de Usuario */}
           {!userData && (

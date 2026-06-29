@@ -47,6 +47,44 @@
   padding: 0;
 }
 
+.retro-app-manager__global-notify {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto 12px;
+}
+
+.retro-app-manager__global-notify-btn {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--retro-font);
+  color: var(--retro-text);
+  background: linear-gradient(180deg, #e8e8ff 0%, #c8c8ff 55%, #9090e0 100%);
+  border: 2px solid;
+  border-color: #e8e8ff #4040a0 #4040a0 #e8e8ff;
+  box-shadow: 2px 2px 0 #202060;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.retro-app-manager__global-notify-btn:active:not(:disabled) {
+  border-color: #4040a0 #e8e8ff #e8e8ff #4040a0;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.22);
+  transform: translate(1px, 1px);
+}
+
+.retro-app-manager__global-notify-btn:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
 .retro-app-manager .max-w-6xl {
   max-width: 100%;
   margin-left: 0;

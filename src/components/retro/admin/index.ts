@@ -43,6 +43,12 @@ export type { RetroAdminBalanceModalProps } from './RetroAdminBalanceModal';
 export { CreatePaqueteModal } from './CreatePaqueteModal';
 export type { CreatePaqueteModalProps } from './CreatePaqueteModal';
 
+export { AppGlobalNotificationControl } from './AppGlobalNotificationControl';
+export type {
+  AppGlobalNotificationControlProps,
+  AppGlobalNotificationApp,
+} from './AppGlobalNotificationControl';
+
 export { AdminRecargaModal } from './AdminRecargaModal';
 export type { AdminRecargaModalProps } from './AdminRecargaModal';
 
