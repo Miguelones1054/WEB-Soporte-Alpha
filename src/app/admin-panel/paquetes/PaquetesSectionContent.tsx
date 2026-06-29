@@ -27,6 +27,7 @@ import {
   RetroModalField,
   RetroModalInput,
   RetroModalText,
+  RetroModalTextarea,
   RetroModalHighlight,
   RetroModalActions,
   RetroModalBtn,
@@ -38,6 +39,7 @@ import {
 } from '../../../components/retro/admin';
 import { useOptionalAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import type { PromoApp } from '../../../lib/promosShared';
+import { humanizeNotificationError } from '../../../lib/humanizeNotificationError';
 
 const Z_PROMO_DETAIL = 120;
 const Z_PROMO_PROGRESS = 140;
@@ -65,6 +67,10 @@ export function PaquetesSectionContent() {
   const [adminBalanceModalData, setAdminBalanceModalData] = useState<AdminBalanceDeduction | null>(null);
   const [showAppPickerModal, setShowAppPickerModal] = useState(false);
   const [createPromoApp, setCreatePromoApp] = useState<PromoApp | null>(null);
+  const [showAnnounceModal, setShowAnnounceModal] = useState(false);
+  const [announceTitle, setAnnounceTitle] = useState('');
+  const [announceBody, setAnnounceBody] = useState('');
+  const [announcing, setAnnouncing] = useState(false);
 
   const isOwner = hubSession?.adminInfo?.role === 'owner';
 
@@ -117,6 +123,76 @@ export function PaquetesSectionContent() {
     setAssignUser('');
     setAssignPin('');
     setIsNewUser(false);
+    setShowAnnounceModal(false);
+    setAnnounceTitle('');
+    setAnnounceBody('');
+  };
+
+  const openAnnounceModal = () => {
+    if (!selectedPromo) return;
+    setAnnounceTitle(selectedPromo.name);
+    setAnnounceBody(selectedPromo.description);
+    setShowAnnounceModal(true);
+  };
+
+  const handleAnnounce = async () => {
+    if (!selectedPromo) return;
+
+    const title = announceTitle.trim();
+    const body = announceBody.trim();
+    if (!title || !body) {
+      setConfirmMessage('Título y descripción son obligatorios para anunciar');
+      setConfirmType('error');
+      setShowConfirm(true);
+      return;
+    }
+
+    setAnnouncing(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/promos/${selectedPromo.id}/announce`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ title, body }),
+        },
+      );
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          humanizeNotificationError(
+            typeof result.detail === 'string' ? result.detail : 'Error al enviar campaña',
+          ),
+        );
+      }
+
+      playRetroSound('success');
+      setShowAnnounceModal(false);
+      setConfirmMessage(
+        result.message ||
+          `Campaña enviada a ${result.sent ?? 0} dispositivo(s) de ${promoAppLabel(selectedPromo.app)}`,
+      );
+      setConfirmType('success');
+      setShowConfirm(true);
+    } catch (err) {
+      setConfirmMessage(
+        humanizeNotificationError(err instanceof Error ? err.message : 'Error de conexión'),
+      );
+      setConfirmType('error');
+      setShowConfirm(true);
+    } finally {
+      setAnnouncing(false);
+    }
   };
 
   const closeResultAndDetail = () => {
@@ -342,6 +418,11 @@ export function PaquetesSectionContent() {
           {!showAssignForm ? (
             <RetroModalActions center>
               <RetroModalBtn onClick={() => setShowAssignForm(true)}>Asignar promo a un usuario</RetroModalBtn>
+              {isOwner && (
+                <RetroModalBtn variant="secondary" onClick={openAnnounceModal}>
+                  Anunciar
+                </RetroModalBtn>
+              )}
             </RetroModalActions>
           ) : (
             <>
@@ -439,9 +520,67 @@ export function PaquetesSectionContent() {
         </RetroModal>
       )}
 
+      {showAnnounceModal && selectedPromo && (
+        <RetroModal
+          open
+          title="Anunciar paquete"
+          onClose={() => !announcing && setShowAnnounceModal(false)}
+          zIndex={Z_PROMO_DETAIL + 10}
+          width="md"
+          bodyClassName="retro-manager-modal__body"
+          icon="communication/msg_information"
+        >
+          <RetroModalBanner variant="info">
+            Campaña push a todos los usuarios de {promoAppLabel(selectedPromo.app)} con token FCM
+            registrado (vía API, como una campaña de Firebase).
+          </RetroModalBanner>
+
+          <RetroModalForm>
+            <RetroModalField label="Título de la notificación" htmlFor="announcePromoTitle">
+              <RetroModalInput
+                id="announcePromoTitle"
+                value={announceTitle}
+                onChange={(e) => setAnnounceTitle(e.target.value)}
+                maxLength={120}
+                autoFocus
+              />
+            </RetroModalField>
+            <RetroModalField label="Descripción" htmlFor="announcePromoBody">
+              <RetroModalTextarea
+                id="announcePromoBody"
+                value={announceBody}
+                onChange={(e) => setAnnounceBody(e.target.value)}
+                rows={4}
+                maxLength={500}
+              />
+            </RetroModalField>
+          </RetroModalForm>
+
+          <RetroModalActions>
+            <RetroModalBtn
+              variant="secondary"
+              block
+              onClick={() => setShowAnnounceModal(false)}
+              disabled={announcing}
+            >
+              Cancelar
+            </RetroModalBtn>
+            <RetroModalBtn block onClick={() => void handleAnnounce()} disabled={announcing}>
+              {announcing ? 'Enviando campaña...' : 'Enviar a todos'}
+            </RetroModalBtn>
+          </RetroModalActions>
+        </RetroModal>
+      )}
+
       <RetroManagerProgressModal
-        open={processing}
-        message={isNewUser ? 'Creando usuario con paquete...' : 'Asignando paquete...'}
+        open={processing || announcing}
+        message={
+          announcing
+            ? 'Enviando campaña push...'
+            : isNewUser
+              ? 'Creando usuario con paquete...'
+              : 'Asignando paquete...'
+        }
         zIndex={Z_PROMO_PROGRESS}
       />
 
