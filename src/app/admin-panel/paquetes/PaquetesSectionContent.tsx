@@ -19,7 +19,7 @@ import {
   generateRandomNequiCredentials,
 } from '../../../lib/randomUserFields';
 import { playRetroSound } from '../../../lib/retroSounds';
-import { RetroLoadingOverlay, RetroCheckbox } from '../../../components/retro';
+import { RetroLoadingOverlay, RetroCheckbox, RetroIcon } from '../../../components/retro';
 import {
   RetroModal,
   RetroModalBanner,
@@ -63,6 +63,7 @@ export function PaquetesSectionContent() {
   const [confirmType, setConfirmType] = useState<'success' | 'error'>('success');
   const [showConfirm, setShowConfirm] = useState(false);
   const [clientShareMessage, setClientShareMessage] = useState('');
+  const [clientShareIsNewUser, setClientShareIsNewUser] = useState(false);
   const [showClientShareModal, setShowClientShareModal] = useState(false);
   const [adminBalanceModalData, setAdminBalanceModalData] = useState<AdminBalanceDeduction | null>(null);
   const [showAppPickerModal, setShowAppPickerModal] = useState(false);
@@ -71,6 +72,9 @@ export function PaquetesSectionContent() {
   const [announceTitle, setAnnounceTitle] = useState('');
   const [announceBody, setAnnounceBody] = useState('');
   const [announcing, setAnnouncing] = useState(false);
+  const [editingPromo, setEditingPromo] = useState<PromoPackage | null>(null);
+  const [showDeletePromoModal, setShowDeletePromoModal] = useState(false);
+  const [deletingPromo, setDeletingPromo] = useState(false);
 
   const isOwner = hubSession?.adminInfo?.role === 'owner';
 
@@ -180,7 +184,7 @@ export function PaquetesSectionContent() {
       setShowAnnounceModal(false);
       setConfirmMessage(
         result.message ||
-          `Campaña enviada a ${result.sent ?? 0} dispositivo(s) de ${promoAppLabel(selectedPromo.app)}`,
+          'Campaña iniciada. Los usuarios la recibirán en los próximos segundos vía topic FCM.',
       );
       setConfirmType('success');
       setShowConfirm(true);
@@ -199,7 +203,52 @@ export function PaquetesSectionContent() {
     setShowConfirm(false);
     setShowClientShareModal(false);
     setClientShareMessage('');
+    setClientShareIsNewUser(false);
     closeDetail();
+  };
+
+  const openEditPromo = (promo: PromoPackage) => {
+    setEditingPromo(promo);
+  };
+
+  const handleDeletePromo = async () => {
+    if (!selectedPromo) return;
+
+    setDeletingPromo(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/admin/promos/${selectedPromo.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.detail || 'Error al eliminar paquete');
+      }
+
+      playRetroSound('success');
+      setShowDeletePromoModal(false);
+      closeDetail();
+      await fetchPromos();
+      setConfirmMessage(result.message || 'Paquete eliminado correctamente');
+      setConfirmType('success');
+      setShowConfirm(true);
+    } catch (err) {
+      setConfirmMessage(err instanceof Error ? err.message : 'Error de conexión');
+      setConfirmType('error');
+      setShowConfirm(true);
+    } finally {
+      setDeletingPromo(false);
+    }
   };
 
   const fillRandomAssignFields = () => {
@@ -275,6 +324,7 @@ export function PaquetesSectionContent() {
 
       if (typeof result.client_message === 'string' && result.client_message.trim()) {
         setClientShareMessage(result.client_message);
+        setClientShareIsNewUser(Boolean(result.is_new_user));
         setShowClientShareModal(true);
       } else {
         setConfirmMessage(result.message || 'Paquete asignado correctamente');
@@ -321,27 +371,45 @@ export function PaquetesSectionContent() {
       ) : (
         <div className="retro-paquetes__grid">
           {promos.map((promo) => (
-            <button
+            <div
               key={promo.id}
-              type="button"
-              className={`retro-paquetes__card retro-paquetes__card--${promo.app}`}
-              onClick={() => openPromo(promo)}
+              className={`retro-paquetes__card-wrap retro-paquetes__card-wrap--${promo.app}`}
             >
-              <span className="retro-paquetes__card-app">{promoAppLabel(promo.app)}</span>
-              <strong className="retro-paquetes__card-name">{promo.name}</strong>
-              <span className="retro-paquetes__card-includes">{buildPromoIncludesSummary(promo)}</span>
-              <div className="retro-paquetes__card-prices">
-                <span className="retro-paquetes__card-price">
-                  <small>Valor cliente</small>
-                  {formatPromoCurrency(promo.client_value)}
-                </span>
-                <span className="retro-paquetes__card-price retro-paquetes__card-price--admin">
-                  <small>Tu costo</small>
-                  {formatPromoCurrency(promo.admin_cost ?? 0)}
-                </span>
-              </div>
-              <span className="retro-paquetes__card-cta">Pulsar para ver y asignar</span>
-            </button>
+              <button
+                type="button"
+                className="retro-paquetes__card"
+                onClick={() => openPromo(promo)}
+              >
+                <span className="retro-paquetes__card-app">{promoAppLabel(promo.app)}</span>
+                <strong className="retro-paquetes__card-name">{promo.name}</strong>
+                <span className="retro-paquetes__card-includes">{buildPromoIncludesSummary(promo)}</span>
+                <div className="retro-paquetes__card-prices">
+                  <span className="retro-paquetes__card-price">
+                    <small>Valor cliente</small>
+                    {formatPromoCurrency(promo.client_value)}
+                  </span>
+                  <span className="retro-paquetes__card-price retro-paquetes__card-price--admin">
+                    <small>Tu costo</small>
+                    {formatPromoCurrency(promo.admin_cost ?? 0)}
+                  </span>
+                </div>
+                <span className="retro-paquetes__card-cta">Pulsar para ver y asignar</span>
+              </button>
+              {isOwner && (
+                <button
+                  type="button"
+                  className="retro-paquetes__card-edit"
+                  aria-label={`Editar ${promo.name}`}
+                  title="Editar paquete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditPromo(promo);
+                  }}
+                >
+                  <RetroIcon name="office/write_yellow" size={14} alt="" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -388,6 +456,19 @@ export function PaquetesSectionContent() {
         />
       )}
 
+      {editingPromo && (
+        <CreatePaqueteModal
+          open
+          app={editingPromo.app}
+          promo={editingPromo}
+          onClose={() => setEditingPromo(null)}
+          onCreated={() => {
+            setEditingPromo(null);
+            void fetchPromos();
+          }}
+        />
+      )}
+
       {selectedPromo && (
         <RetroModal
           open
@@ -419,9 +500,14 @@ export function PaquetesSectionContent() {
             <RetroModalActions center>
               <RetroModalBtn onClick={() => setShowAssignForm(true)}>Asignar promo a un usuario</RetroModalBtn>
               {isOwner && (
-                <RetroModalBtn variant="secondary" onClick={openAnnounceModal}>
-                  Anunciar
-                </RetroModalBtn>
+                <>
+                  <RetroModalBtn variant="secondary" onClick={openAnnounceModal}>
+                    Anunciar
+                  </RetroModalBtn>
+                  <RetroModalBtn variant="danger" onClick={() => setShowDeletePromoModal(true)}>
+                    Eliminar
+                  </RetroModalBtn>
+                </>
               )}
             </RetroModalActions>
           ) : (
@@ -531,8 +617,8 @@ export function PaquetesSectionContent() {
           icon="communication/msg_information"
         >
           <RetroModalBanner variant="info">
-            Campaña push a todos los usuarios de {promoAppLabel(selectedPromo.app)} con token FCM
-            registrado (vía API, como una campaña de Firebase).
+            Campaña masiva por topic FCM: 1 petición para todos los usuarios (escala a 100k+).
+            La sincronización corre en segundo plano; el panel responde al instante.
           </RetroModalBanner>
 
           <RetroModalForm>
@@ -566,20 +652,59 @@ export function PaquetesSectionContent() {
               Cancelar
             </RetroModalBtn>
             <RetroModalBtn block onClick={() => void handleAnnounce()} disabled={announcing}>
-              {announcing ? 'Enviando campaña...' : 'Enviar a todos'}
+              {announcing ? 'Iniciando campaña...' : 'Enviar a todos'}
+            </RetroModalBtn>
+          </RetroModalActions>
+        </RetroModal>
+      )}
+
+      {showDeletePromoModal && selectedPromo && (
+        <RetroModal
+          open
+          title="Eliminar paquete"
+          onClose={() => !deletingPromo && setShowDeletePromoModal(false)}
+          zIndex={Z_PROMO_DETAIL + 10}
+          width="sm"
+          bodyClassName="retro-manager-modal__body"
+          icon="communication/msg_warning"
+        >
+          <RetroModalText>
+            ¿Eliminar el paquete <strong>{selectedPromo.name}</strong>?
+          </RetroModalText>
+          <RetroModalText muted>
+            Dejará de aparecer para todos los administradores. Las asignaciones ya realizadas no se revierten.
+          </RetroModalText>
+          <RetroModalActions>
+            <RetroModalBtn
+              variant="secondary"
+              block
+              onClick={() => setShowDeletePromoModal(false)}
+              disabled={deletingPromo}
+            >
+              Cancelar
+            </RetroModalBtn>
+            <RetroModalBtn
+              variant="danger"
+              block
+              onClick={() => void handleDeletePromo()}
+              disabled={deletingPromo}
+            >
+              {deletingPromo ? 'Eliminando...' : 'Eliminar paquete'}
             </RetroModalBtn>
           </RetroModalActions>
         </RetroModal>
       )}
 
       <RetroManagerProgressModal
-        open={processing || announcing}
+        open={processing || announcing || deletingPromo}
         message={
-          announcing
-            ? 'Enviando campaña push...'
-            : isNewUser
-              ? 'Creando usuario con paquete...'
-              : 'Asignando paquete...'
+          deletingPromo
+            ? 'Eliminando paquete...'
+            : announcing
+              ? 'Iniciando campaña...'
+              : isNewUser
+                ? 'Creando usuario con paquete...'
+                : 'Asignando paquete...'
         }
         zIndex={Z_PROMO_PROGRESS}
       />
@@ -593,7 +718,11 @@ export function PaquetesSectionContent() {
           width="lg"
           bodyClassName="retro-manager-modal__body"
         >
-          <RetroModalBanner variant="success">Usuario creado con paquete correctamente</RetroModalBanner>
+          <RetroModalBanner variant="success">
+            {clientShareIsNewUser
+              ? 'Usuario creado con paquete correctamente'
+              : 'Paquete asignado correctamente'}
+          </RetroModalBanner>
           <RetroModalMessagePanel copyText={clientShareMessage}>
             <pre>{clientShareMessage}</pre>
           </RetroModalMessagePanel>

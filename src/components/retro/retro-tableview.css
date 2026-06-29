@@ -239,36 +239,92 @@
   padding: 2px;
 }
 
+.retro-paquetes__card-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 168px;
+  overflow: hidden;
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.retro-paquetes__card-wrap:hover {
+  background: #d4d4d4;
+}
+
+.retro-paquetes__card-wrap:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.retro-paquetes__card-edit {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+  background: #ffffe1;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.retro-paquetes__card-edit:hover {
+  background: #fff8c8;
+}
+
+.retro-paquetes__card-edit:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
+}
+
+.retro-paquetes__card-edit .retro-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 button.retro-paquetes__card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  padding: 12px 14px;
+  width: 100%;
+  min-height: 168px;
+  padding: 12px 38px 12px 14px;
   text-align: left;
   font: inherit;
   color: var(--retro-text);
-  background: var(--retro-surface);
-  border: 2px solid;
-  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   cursor: pointer;
-  min-height: 168px;
+  box-sizing: border-box;
 }
 
-button.retro-paquetes__card:hover {
-  background: #d4d4d4;
-}
-
+button.retro-paquetes__card:hover,
 button.retro-paquetes__card:active {
-  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
-  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.15);
-  transform: translate(2px, 2px);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transform: none;
 }
 
 button.retro-paquetes__card:focus-visible {
   outline: 1px dotted #000;
-  outline-offset: 2px;
+  outline-offset: -4px;
 }
 
 .retro-paquetes__card-app {
@@ -282,12 +338,12 @@ button.retro-paquetes__card:focus-visible {
   background: #fff;
 }
 
-.retro-paquetes__card--nequi .retro-paquetes__card-app {
+.retro-paquetes__card-wrap--nequi .retro-paquetes__card-app {
   color: #b0005c;
   background: #ffe8f4;
 }
 
-.retro-paquetes__card--bancolombia .retro-paquetes__card-app {
+.retro-paquetes__card-wrap--bancolombia .retro-paquetes__card-app {
   color: #5c4a00;
   background: #fff8d8;
 }
@@ -296,6 +352,8 @@ button.retro-paquetes__card:focus-visible {
   margin: 0;
   font-size: 13px;
   line-height: 1.25;
+  padding-right: 4px;
+  overflow-wrap: anywhere;
 }
 
 .retro-paquetes__card-includes {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroCheckbox } from '../RetroCheckbox';
 import {
@@ -14,7 +14,7 @@ import {
   RetroManagerProgressModal,
   RetroManagerConfirmModal,
 } from './index';
-import type { PromoApp } from '../../../lib/promosShared';
+import type { PromoApp, PromoPackage } from '../../../lib/promosShared';
 import { promoAppLabel } from '../../../lib/promosShared';
 import { playRetroSound } from '../../../lib/retroSounds';
 
@@ -23,9 +23,11 @@ export interface CreatePaqueteModalProps {
   app: PromoApp;
   onClose: () => void;
   onCreated?: () => void;
+  promo?: PromoPackage | null;
 }
 
-export function CreatePaqueteModal({ open, app, onClose, onCreated }: CreatePaqueteModalProps) {
+export function CreatePaqueteModal({ open, app, onClose, onCreated, promo = null }: CreatePaqueteModalProps) {
+  const isEditMode = Boolean(promo);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [clientValue, setClientValue] = useState('');
@@ -37,6 +39,18 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated }: CreatePaqu
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
+
+  useEffect(() => {
+    if (!open || !promo) return;
+    setName(promo.name);
+    setDescription(promo.description);
+    setClientValue(String(Math.round(promo.client_value)));
+    setSaldo(String(Math.round(promo.saldo)));
+    setSms(String(promo.sms));
+    setIncludesVip(Boolean(promo.includes_vip));
+    setVipIndefinite(!promo.vip_duration_days);
+    setVipDurationDays(promo.vip_duration_days ? String(promo.vip_duration_days) : '30');
+  }, [open, promo]);
 
   const reset = () => {
     setName('');
@@ -92,27 +106,33 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated }: CreatePaqu
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/promos`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+      const payload = {
+        name: name.trim(),
+        description: description.trim(),
+        client_value: clientVal,
+        saldo: saldoVal,
+        sms: smsVal,
+        includes_vip: vip,
+        vip_duration_days: vip && !vipIndefinite ? parseInt(vipDurationDays || '0', 10) || null : null,
+      };
+
+      const response = await fetch(
+        isEditMode && promo
+          ? `${API_BASE_URL}/admin/promos/${promo.id}`
+          : `${API_BASE_URL}/admin/promos`,
+        {
+          method: isEditMode ? 'PUT' : 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(isEditMode ? payload : { app, ...payload }),
         },
-        body: JSON.stringify({
-          app,
-          name: name.trim(),
-          description: description.trim(),
-          client_value: clientVal,
-          saldo: saldoVal,
-          sms: smsVal,
-          includes_vip: vip,
-          vip_duration_days: vip && !vipIndefinite ? parseInt(vipDurationDays || '0', 10) || null : null,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.detail || 'Error al crear paquete');
+        throw new Error(data.detail || (isEditMode ? 'Error al actualizar paquete' : 'Error al crear paquete'));
       }
 
       onCreated?.();
@@ -132,7 +152,7 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated }: CreatePaqu
     <>
       <RetroModal
         open
-        title={`Crear paquete — ${promoAppLabel(app)}`}
+        title={isEditMode ? `Editar paquete — ${promoAppLabel(app)}` : `Crear paquete — ${promoAppLabel(app)}`}
         onClose={handleClose}
         zIndex={130}
         bodyClassName="retro-manager-modal__body"
@@ -225,12 +245,22 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated }: CreatePaqu
             Cancelar
           </RetroModalBtn>
           <RetroModalBtn block onClick={handleSubmit} disabled={processing}>
-            {processing ? 'Creando...' : 'Crear paquete'}
+            {processing
+              ? isEditMode
+                ? 'Guardando...'
+                : 'Creando...'
+              : isEditMode
+                ? 'Guardar cambios'
+                : 'Crear paquete'}
           </RetroModalBtn>
         </RetroModalActions>
       </RetroModal>
 
-      <RetroManagerProgressModal open={processing} message="Creando paquete..." zIndex={140} />
+      <RetroManagerProgressModal
+        open={processing}
+        message={isEditMode ? 'Guardando paquete...' : 'Creando paquete...'}
+        zIndex={140}
+      />
 
       <RetroManagerConfirmModal
         open={showError}
