@@ -14,6 +14,7 @@ import {
   RetroModalField,
   RetroModalInput,
   RetroModalTextarea,
+  RetroModalText,
   RetroModalActions,
   RetroModalBtn,
 } from './RetroManagerModalUI';
@@ -40,6 +41,7 @@ export function AppGlobalNotificationControl({
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [actionUrl, setActionUrl] = useState('');
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
@@ -50,6 +52,7 @@ export function AppGlobalNotificationControl({
     setOpen(false);
     setTitle('');
     setBody('');
+    setActionUrl('');
   };
 
   const handleSend = async () => {
@@ -76,7 +79,11 @@ export function AppGlobalNotificationControl({
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title: trimmedTitle, body: trimmedBody }),
+        body: JSON.stringify({
+          title: trimmedTitle,
+          body: trimmedBody,
+          action_url: actionUrl.trim() || null,
+        }),
       });
 
       const result = await response.json().catch(() => ({}));
@@ -92,6 +99,7 @@ export function AppGlobalNotificationControl({
       setOpen(false);
       setTitle('');
       setBody('');
+      setActionUrl('');
       setConfirmMessage(
         result.message ||
           'Campaña iniciada. Los usuarios la recibirán en los próximos segundos vía topic FCM.',
@@ -160,6 +168,19 @@ export function AppGlobalNotificationControl({
                 rows={4}
               />
             </RetroModalField>
+            <RetroModalField label="URL de acción (opcional)" htmlFor={`globalNotifyUrl-${app}`}>
+              <RetroModalInput
+                id={`globalNotifyUrl-${app}`}
+                type="url"
+                value={actionUrl}
+                onChange={(e) => setActionUrl(e.target.value)}
+                placeholder="https://ejemplo.com o /ruta-interna"
+                maxLength={2048}
+              />
+            </RetroModalField>
+            <RetroModalText muted>
+              Si la defines, se abrirá al tocar la notificación (enlace web o ruta interna de la app).
+            </RetroModalText>
           </RetroModalForm>
 
           <RetroModalActions>
