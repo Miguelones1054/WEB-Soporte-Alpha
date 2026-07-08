@@ -133,6 +133,7 @@ export function NequiManagerContent({
   const [balanceConfirmationData, setBalanceConfirmationData] = useState<{
     type: 'add' | 'subtract';
     username: string;
+    numeroCel: string;
     amount: number;
     newBalance: number;
   } | null>(null);
@@ -493,6 +494,7 @@ export function NequiManagerContent({
     const message = `✨ ¡Saldo ${actionText} correctamente!
 
 👤 Usuario: ${balanceConfirmationData.username}
+📱 Numero: ${balanceConfirmationData.numeroCel}
 💰 Monto ${actionText}: $${formatCurrency(balanceConfirmationData.amount)}
 💵 Nuevo saldo: $${formatCurrency(balanceConfirmationData.newBalance)}
 
@@ -948,6 +950,7 @@ export function NequiManagerContent({
             setBalanceConfirmationData({
               type: 'add',
               username: username,
+              numeroCel: numeroCel,
               amount: amount || 0,
               newBalance: result.data?.new_balance || result.new_balance || 0,
             });
@@ -2381,6 +2384,7 @@ export function NequiManagerContent({
                     ¡Saldo {balanceConfirmationData.type === 'add' ? 'agregado' : 'restado'} correctamente!
                   </p>
                   <p>👤 Usuario: <strong>{balanceConfirmationData.username}</strong></p>
+                  <p>📱 Numero: <strong>{balanceConfirmationData.numeroCel}</strong></p>
                   <p>
                     {balanceConfirmationData.type === 'add' ? '💚' : '❤️'} Monto{' '}
                     {balanceConfirmationData.type === 'add' ? 'agregado' : 'restado'}:{' '}
