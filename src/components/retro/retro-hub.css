@@ -399,9 +399,11 @@
 
 .retro-hub-main {
   flex: 1;
+  min-height: 0;
   min-width: 0;
   padding: 14px;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Drawer móvil */
