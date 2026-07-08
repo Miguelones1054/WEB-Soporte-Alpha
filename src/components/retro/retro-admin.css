@@ -57,7 +57,8 @@ body:has(.retro-page.retro-admin) {
 }
 
 .retro-page.retro-admin .retro-hub-main:has(.retro-hub-content) {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -65,6 +66,10 @@ body:has(.retro-page.retro-admin) {
 .retro-page.retro-admin .retro-hub-main:has(.retro-hub-content) .retro-hub-content {
   flex: 1;
   min-height: 0;
+}
+
+.retro-page.retro-admin .retro-hub-main:has(.retro-hub-content.retro-app-view) {
+  overflow: hidden;
 }
 
 /* Paneles de sección: scroll interno del panel, no de toda la página */
