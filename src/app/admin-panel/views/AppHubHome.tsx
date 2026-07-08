@@ -88,6 +88,23 @@ export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
         <button
           type="button"
           className="retro-hub-app-card"
+          onClick={() => router.push(adminHubHref('daviplata'))}
+        >
+          <span className="retro-hub-app-card__logo-wrap retro-hub-app-card__logo-wrap--daviplata">
+            <img
+              src="/davi_logo.webp"
+              alt="Daviplata Alpha"
+              className="retro-hub-app-card__logo retro-hub-app-card__logo--daviplata"
+            />
+          </span>
+          <span className="retro-hub-app-card__label">Daviplata Alpha</span>
+        </button>
+      </div>
+
+      <div className="retro-hub-secondary-actions">
+        <button
+          type="button"
+          className="retro-hub-app-card retro-hub-app-card--secondary"
           onClick={() => router.push(adminHubHref('paquetes'))}
         >
           <span className="retro-hub-app-card__logo-wrap retro-hub-app-card__logo-wrap--icon">

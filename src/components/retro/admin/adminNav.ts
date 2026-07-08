@@ -42,6 +42,20 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
     ownerOnly: true,
     section: 'admin-gestion',
   },
+  {
+    href: adminHubHref('plantillas-notificaciones'),
+    label: 'Plantillas notificaciones',
+    icon: 'communication/msg_information',
+    ownerOnly: true,
+    section: 'plantillas-notificaciones',
+  },
+  {
+    href: adminHubHref('eventos'),
+    label: 'Eventos',
+    icon: 'communication/envelope_closed',
+    ownerOnly: true,
+    section: 'eventos',
+  },
 ];
 
 /** @deprecated Usar HUB_SIDEBAR_NAV */

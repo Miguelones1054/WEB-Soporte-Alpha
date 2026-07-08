@@ -5,7 +5,7 @@ import { RetroCheckbox } from '../RetroCheckbox';
 import { RetroModal } from './RetroModal';
 import { RetroManagerProgressModal } from './RetroManagerProgressModal';
 import { RetroModalActions, RetroModalBtn } from './RetroManagerModalUI';
-import { getAdminToken } from '../../../lib/sessionStorage';
+import { getAdminToken, getLastRecargaNequi, saveLastRecargaNequi } from '../../../lib/sessionStorage';
 import {
   ADMIN_RECARGA_ESTADOS_FINALES,
   ADMIN_RECARGA_POLL_MS,
@@ -26,6 +26,13 @@ export interface AdminRecargaModalProps {
 
 const MONTO_MIN = 10_000;
 const MONTO_MAX = 10_000_000;
+
+function formatNequiInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+}
 
 export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminRecargaModalProps) {
   const [step, setStep] = useState<RecargaStep>('monto');
@@ -65,6 +72,13 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
   useEffect(() => {
     if (!open) {
       resetFlow();
+      return;
+    }
+
+    const savedNequi = getLastRecargaNequi();
+    if (savedNequi) {
+      setNequiPhone(formatNequiInput(savedNequi));
+      setNequiSelected(true);
     }
   }, [open, resetFlow]);
 
@@ -177,6 +191,7 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
     setProcessing(true);
     setErrorMessage('');
     setMontoCobro(num);
+    saveLastRecargaNequi(nequi);
 
     try {
       const result = await ejecutarRecargaAdmin(token, { valor: num, nequi });
@@ -215,13 +230,6 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
       setErrorMessage(err instanceof Error ? err.message : 'No se pudo crear el cobro');
       setStep('error');
     }
-  };
-
-  const formatNequiInput = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 10);
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
-    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
   };
 
   if (!open) return null;

@@ -8,6 +8,7 @@ import { RetroHubLayout, RetroLoadingOverlay } from '../../components/retro';
 import { AppHubHome } from './views/AppHubHome';
 import { NequiAppView } from './views/NequiAppView';
 import { BancolombiaAppView } from './views/BancolombiaAppView';
+import { DaviplataAppView } from './views/DaviplataAppView';
 import { GananciasSectionView } from './views/GananciasSectionView';
 import { OwnerGananciasSectionView } from './views/OwnerGananciasSectionView';
 import { EstadisticasSectionView } from './views/EstadisticasSectionView';
@@ -17,6 +18,8 @@ import { PaquetesSectionView } from './views/PaquetesSectionView';
 import { TarifasSectionView } from './views/TarifasSectionView';
 import { AdminGestionSectionView } from './views/AdminGestionSectionView';
 import { AjustesSectionView } from './views/AjustesSectionView';
+import { PlantillasNotificacionesSectionView } from './views/PlantillasNotificacionesSectionView';
+import { EventosSectionView } from './views/EventosSectionView';
 
 function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
   const router = useRouter();
@@ -41,6 +44,8 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <NequiAppView adminInfo={adminInfo} onBack={goHome} />;
       case 'bancolombia':
         return <BancolombiaAppView adminInfo={adminInfo} onBack={goHome} />;
+      case 'daviplata':
+        return <DaviplataAppView adminInfo={adminInfo} onBack={goHome} />;
       case 'ganancias':
         return <GananciasSectionView onClose={goHome} />;
       case 'ganancias-admins':
@@ -59,6 +64,10 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <AjustesSectionView onClose={goHome} />;
       case 'admin-gestion':
         return <AdminGestionSectionView onClose={goHome} />;
+      case 'plantillas-notificaciones':
+        return <PlantillasNotificacionesSectionView onClose={goHome} />;
+      case 'eventos':
+        return <EventosSectionView onClose={goHome} />;
       default:
         break;
     }

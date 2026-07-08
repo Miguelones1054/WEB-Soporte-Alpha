@@ -3,6 +3,7 @@ import type { RetroIconName } from '../assets/icons/win98/registry';
 export const ADMIN_HUB_SECTIONS = [
   'nequi',
   'bancolombia',
+  'daviplata',
   'tarifas',
   'estadisticas',
   'registros',
@@ -12,6 +13,8 @@ export const ADMIN_HUB_SECTIONS = [
   'paquetes',
   'ajustes',
   'admin-gestion',
+  'plantillas-notificaciones',
+  'eventos',
 ] as const;
 
 export type AdminHubSection = (typeof ADMIN_HUB_SECTIONS)[number];
@@ -22,6 +25,7 @@ export const HUB_SECTION_META: Record<
 > = {
   nequi: { title: 'Nequi — Gestión de usuarios', icon: 'navigation/program_manager' },
   bancolombia: { title: 'Bancolombia — Gestión de usuarios', icon: 'navigation/computer_explorer' },
+  daviplata: { title: 'Daviplata — Gestión de usuarios', icon: 'communication/envelope_open_sheet' },
   tarifas: { title: 'Tarifas', icon: 'files/briefcase' },
   estadisticas: { title: 'Estadísticas', icon: 'office/chart1' },
   registros: { title: 'Registros de operaciones', icon: 'office/appwizard_list' },
@@ -35,12 +39,23 @@ export const HUB_SECTION_META: Record<
   },
   ajustes: { title: 'Ajustes del sistema', icon: 'system/settings_gear', ownerOnly: true },
   'admin-gestion': { title: 'Gestionar administradores', icon: 'users/address_book_users', ownerOnly: true },
+  'plantillas-notificaciones': {
+    title: 'Plantillas de notificaciones',
+    icon: 'communication/msg_information',
+    ownerOnly: true,
+  },
+  eventos: {
+    title: 'Eventos',
+    icon: 'communication/envelope_closed',
+    ownerOnly: true,
+  },
 };
 
 /** Rutas legacy → sección del hub */
 export const LEGACY_HUB_PATHS: Record<string, AdminHubSection> = {
   '/admin-panel/nequi_manager': 'nequi',
   '/admin-panel/bancolombia_manager': 'bancolombia',
+  '/admin-panel/daviplata_manager': 'daviplata',
   '/admin-panel/tarifas': 'tarifas',
   '/admin-panel/estadisticas': 'estadisticas',
   '/admin-panel/registros': 'registros',
@@ -50,6 +65,8 @@ export const LEGACY_HUB_PATHS: Record<string, AdminHubSection> = {
   '/admin-panel/ganancias-admins': 'ganancias-admins',
   '/admin-panel/ajustes': 'ajustes',
   '/admin-panel/admin-gestion': 'admin-gestion',
+  '/admin-panel/plantillas-notificaciones': 'plantillas-notificaciones',
+  '/admin-panel/eventos': 'eventos',
 };
 
 export function isAdminHubSection(value: string | null | undefined): value is AdminHubSection {

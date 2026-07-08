@@ -19,7 +19,7 @@ import {
   RetroModalBtn,
 } from './RetroManagerModalUI';
 
-export type AppGlobalNotificationApp = 'nequi' | 'bancolombia';
+export type AppGlobalNotificationApp = 'nequi' | 'bancolombia' | 'daviplata';
 
 export interface AppGlobalNotificationControlProps {
   app: AppGlobalNotificationApp;
@@ -29,6 +29,7 @@ export interface AppGlobalNotificationControlProps {
 const APP_LABELS: Record<AppGlobalNotificationApp, string> = {
   nequi: 'Nequi',
   bancolombia: 'Bancolombia',
+  daviplata: 'Daviplata',
 };
 
 export function AppGlobalNotificationControl({

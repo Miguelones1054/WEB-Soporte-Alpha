@@ -621,6 +621,16 @@
   max-width: 720px;
 }
 
+.retro-hub-secondary-actions {
+  display: flex;
+  margin-bottom: 16px;
+  max-width: 720px;
+}
+
+.retro-hub-app-card--secondary {
+  width: min(220px, 100%);
+}
+
 .retro-hub-app-card {
   display: flex;
   flex-direction: column;
@@ -673,6 +683,16 @@
 }
 
 .retro-hub-app-card__logo--bancolombia {
+  padding: 0;
+  object-fit: cover;
+}
+
+.retro-hub-app-card__logo-wrap--daviplata {
+  background: transparent;
+  padding: 0;
+}
+
+.retro-hub-app-card__logo--daviplata {
   padding: 0;
   object-fit: cover;
 }
@@ -735,6 +755,14 @@
   .retro-hub-app-grid {
     grid-template-columns: 1fr;
     max-width: none;
+  }
+
+  .retro-hub-secondary-actions {
+    max-width: none;
+  }
+
+  .retro-hub-app-card--secondary {
+    width: 100%;
   }
 
   .retro-hub-stat-grid {

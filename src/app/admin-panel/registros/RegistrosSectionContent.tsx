@@ -25,7 +25,13 @@ function getOperationTypeLabel(operationType: string): string {
   switch (operationType) {
     case 'ADD_BALANCE':
       return 'Recarga';
+    case 'ADD_BALANCE_BANCOLOMBIA':
+    case 'ADD_BALANCE_BANCOLOMBIA_MANUAL':
+    case 'ADD_BALANCE_DAVIPLATA':
+    case 'ADD_BALANCE_DAVIPLATA_MANUAL':
+      return 'Recarga';
     case 'SUBTRACT_BALANCE':
+    case 'SUBTRACT_BALANCE_DAVIPLATA':
       return 'Retiro';
     case 'ADD_ADMIN_BALANCE':
       return 'Recarga admin';
@@ -52,8 +58,10 @@ function getOperationTypeLabel(operationType: string): string {
       return 'Restar SMS';
     case 'CREATE_USER':
     case 'CREATE_USER_BANCOLOMBIA':
+    case 'CREATE_USER_DAVIPLATA':
     case 'CREATE_TEST_USER':
     case 'CREATE_TEST_USER_BANCOLOMBIA':
+    case 'CREATE_TEST_USER_DAVIPLATA':
       return 'Crear usuario';
     case 'ASSIGN_PROMO_NEQUI':
       return 'Asignar paquete Nequi';
@@ -82,8 +90,10 @@ function getOperationTypeClass(operationType: string): string {
       'USER_NOTIFICATION_BANCOLOMBIA',
       'CREATE_USER',
       'CREATE_USER_BANCOLOMBIA',
+      'CREATE_USER_DAVIPLATA',
       'CREATE_TEST_USER',
       'CREATE_TEST_USER_BANCOLOMBIA',
+      'CREATE_TEST_USER_DAVIPLATA',
       'ASSIGN_PROMO_NEQUI',
       'ASSIGN_PROMO_BANCOLOMBIA',
     ].includes(operationType)
@@ -161,7 +171,16 @@ export function RegistrosSectionContent() {
   const getFilteredOperations = () => {
     if (activeFilter === 'ALL') return operations;
 
-    const balanceTypes = ['ADD_BALANCE', 'SUBTRACT_BALANCE'];
+    const balanceTypes = [
+      'ADD_BALANCE',
+      'SUBTRACT_BALANCE',
+      'ADD_BALANCE_BANCOLOMBIA',
+      'ADD_BALANCE_BANCOLOMBIA_MANUAL',
+      'SUBTRACT_BALANCE_BANCOLOMBIA',
+      'ADD_BALANCE_DAVIPLATA',
+      'ADD_BALANCE_DAVIPLATA_MANUAL',
+      'SUBTRACT_BALANCE_DAVIPLATA',
+    ];
     const adminBalanceTypes = ['ADD_ADMIN_BALANCE', 'ADD_ADMIN_BALANCE_WOMPI', 'SUBTRACT_ADMIN_BALANCE'];
     const smsTypes = ['ADD_SMS', 'SUBTRACT_SMS'];
     const userActionTypes = [
@@ -179,8 +198,10 @@ export function RegistrosSectionContent() {
     const userCreationTypes = [
       'CREATE_USER',
       'CREATE_USER_BANCOLOMBIA',
+      'CREATE_USER_DAVIPLATA',
       'CREATE_TEST_USER',
       'CREATE_TEST_USER_BANCOLOMBIA',
+      'CREATE_TEST_USER_DAVIPLATA',
     ];
 
     switch (activeFilter) {
@@ -306,7 +327,7 @@ export function RegistrosSectionContent() {
               ],
               [
                 'USER_CREATIONS',
-                `Creados (${operations.filter((op) => ['CREATE_USER', 'CREATE_USER_BANCOLOMBIA', 'CREATE_TEST_USER', 'CREATE_TEST_USER_BANCOLOMBIA'].includes(op.operation_type)).length})`,
+                `Creados (${operations.filter((op) => ['CREATE_USER', 'CREATE_USER_BANCOLOMBIA', 'CREATE_USER_DAVIPLATA', 'CREATE_TEST_USER', 'CREATE_TEST_USER_BANCOLOMBIA', 'CREATE_TEST_USER_DAVIPLATA'].includes(op.operation_type)).length})`,
               ],
             ] as const
           ).map(([key, label]) => (
