@@ -5,18 +5,26 @@ import { RetroCheckbox } from '../RetroCheckbox';
 import { RetroModal } from './RetroModal';
 import { RetroManagerProgressModal } from './RetroManagerProgressModal';
 import { RetroModalActions, RetroModalBtn } from './RetroManagerModalUI';
-import { getAdminToken, getLastRecargaNequi, saveLastRecargaNequi } from '../../../lib/sessionStorage';
+import {
+  getAdminToken,
+  getLastRecargaDaviplata,
+  getLastRecargaNequi,
+  saveLastRecargaDaviplata,
+  saveLastRecargaNequi,
+} from '../../../lib/sessionStorage';
 import {
   ADMIN_RECARGA_ESTADOS_FINALES,
   ADMIN_RECARGA_POLL_MS,
+  type AdminRecargaMetodo,
   ejecutarRecargaAdmin,
   fetchAdminRecargaTransaccion,
   formatCop,
   mensajeErrorRecargaAdmin,
+  validarDocumentoDaviplata,
   validarNequiReal,
 } from '../../../lib/adminRecargaApi';
 
-type RecargaStep = 'monto' | 'metodo' | 'nequi' | 'esperando' | 'exito' | 'error';
+type RecargaStep = 'monto' | 'metodo' | 'datos' | 'esperando' | 'exito' | 'error';
 
 export interface AdminRecargaModalProps {
   open: boolean;
@@ -26,6 +34,8 @@ export interface AdminRecargaModalProps {
 
 const MONTO_MIN = 10_000;
 const MONTO_MAX = 10_000_000;
+
+const DOC_TIPOS = ['CC', 'CE', 'NIT', 'PP', 'TI'] as const;
 
 function formatNequiInput(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 10);
@@ -37,13 +47,16 @@ function formatNequiInput(value: string) {
 export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminRecargaModalProps) {
   const [step, setStep] = useState<RecargaStep>('monto');
   const [monto, setMonto] = useState('');
-  const [nequiSelected, setNequiSelected] = useState(false);
+  const [metodo, setMetodo] = useState<AdminRecargaMetodo | null>(null);
   const [nequiPhone, setNequiPhone] = useState('');
+  const [documentoTipo, setDocumentoTipo] = useState<string>('CC');
+  const [documentoNumero, setDocumentoNumero] = useState('');
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [transaccionId, setTransaccionId] = useState<string | null>(null);
   const [montoCobro, setMontoCobro] = useState(0);
-  const [pollingMessage, setPollingMessage] = useState('Esperando confirmación del pago en Nequi…');
+  const [otpUrl, setOtpUrl] = useState<string | null>(null);
+  const [pollingMessage, setPollingMessage] = useState('Esperando confirmación del pago…');
   const [successBalance, setSuccessBalance] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -54,13 +67,16 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
     }
     setStep('monto');
     setMonto('');
-    setNequiSelected(false);
+    setMetodo(null);
     setNequiPhone('');
+    setDocumentoTipo('CC');
+    setDocumentoNumero('');
     setProcessing(false);
     setErrorMessage('');
     setTransaccionId(null);
     setMontoCobro(0);
-    setPollingMessage('Esperando confirmación del pago en Nequi…');
+    setOtpUrl(null);
+    setPollingMessage('Esperando confirmación del pago…');
     setSuccessBalance(null);
   }, []);
 
@@ -78,7 +94,11 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
     const savedNequi = getLastRecargaNequi();
     if (savedNequi) {
       setNequiPhone(formatNequiInput(savedNequi));
-      setNequiSelected(true);
+    }
+    const savedDv = getLastRecargaDaviplata();
+    if (savedDv) {
+      setDocumentoTipo(savedDv.tipo);
+      setDocumentoNumero(savedDv.documento);
     }
   }, [open, resetFlow]);
 
@@ -106,16 +126,16 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
   };
 
   const handleContinuarMetodo = () => {
-    if (!nequiSelected) {
-      setErrorMessage('Selecciona Nequi como método de pago');
+    if (!metodo) {
+      setErrorMessage('Selecciona un método de pago');
       return;
     }
     setErrorMessage('');
-    setStep('nequi');
+    setStep('datos');
   };
 
   const iniciarPolling = useCallback(
-    (txId: string) => {
+    (txId: string, metodoPago: AdminRecargaMetodo, montoPesos: number, referencia?: string) => {
       if (pollRef.current) clearInterval(pollRef.current);
 
       const poll = async () => {
@@ -126,8 +146,16 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
           const result = await fetchAdminRecargaTransaccion(token, txId);
           const estado = result.estado;
 
+          if (result.otp_url) {
+            setOtpUrl(result.otp_url);
+          }
+
           if (estado === 'PENDING') {
-            setPollingMessage('Confirma el cobro en tu app Nequi…');
+            setPollingMessage(
+              metodoPago === 'DAVIPLATA'
+                ? 'Confirma el OTP de Daviplata…'
+                : 'Confirma el cobro en tu app Nequi…',
+            );
             return;
           }
 
@@ -147,7 +175,7 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
               }
             } else {
               setErrorMessage(
-                mensajeErrorRecargaAdmin(estado, result.status_message, result.detail),
+                mensajeErrorRecargaAdmin(estado, result.status_message, result.detail, metodoPago),
               );
               setStep('error');
             }
@@ -171,14 +199,8 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
 
   const handleIniciarCobro = async () => {
     const num = parseMonto();
-    const nequi = nequiPhone.trim().replace(/\s/g, '');
-
-    if (num == null) {
-      setErrorMessage('Monto inválido');
-      return;
-    }
-    if (!validarNequiReal(nequi)) {
-      setErrorMessage('Ingresa un Nequi válido de 10 dígitos (empieza por 3)');
+    if (num == null || !metodo) {
+      setErrorMessage('Monto o método inválido');
       return;
     }
 
@@ -188,43 +210,48 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
       return;
     }
 
+    if (metodo === 'NEQUI') {
+      const nequi = nequiPhone.trim().replace(/\s/g, '');
+      if (!validarNequiReal(nequi)) {
+        setErrorMessage('Ingresa un Nequi válido de 10 dígitos (empieza por 3)');
+        return;
+      }
+      saveLastRecargaNequi(nequi);
+      setProcessing(true);
+      setErrorMessage('');
+      setMontoCobro(num);
+      setOtpUrl(null);
+
+      try {
+        const result = await ejecutarRecargaAdmin(token, { valor: num, metodo: 'NEQUI', nequi });
+        await manejarResultadoCobro(token, result, 'NEQUI');
+      } catch (err) {
+        setProcessing(false);
+        setErrorMessage(err instanceof Error ? err.message : 'No se pudo crear el cobro');
+        setStep('error');
+      }
+      return;
+    }
+
+    const doc = documentoNumero.trim().replace(/\D/g, '');
+    if (!validarDocumentoDaviplata(doc)) {
+      setErrorMessage('Ingresa un documento válido (5 a 15 dígitos)');
+      return;
+    }
+    saveLastRecargaDaviplata(documentoTipo, doc);
     setProcessing(true);
     setErrorMessage('');
     setMontoCobro(num);
-    saveLastRecargaNequi(nequi);
+    setOtpUrl(null);
 
     try {
-      const result = await ejecutarRecargaAdmin(token, { valor: num, nequi });
-
-      if (result.estado === 'APPROVED') {
-        setProcessing(false);
-        try {
-          const tx = await fetchAdminRecargaTransaccion(token, result.transaccion_id);
-          if (tx.new_balance != null) {
-            setSuccessBalance(tx.new_balance);
-            onRecargaExitosa?.(tx.new_balance);
-          } else {
-            onRecargaExitosa?.();
-          }
-        } catch {
-          onRecargaExitosa?.();
-        }
-        setStep('exito');
-        return;
-      }
-
-      if (result.estado === 'DECLINED' || result.estado === 'VOIDED' || result.estado === 'ERROR') {
-        setProcessing(false);
-        setErrorMessage(
-          mensajeErrorRecargaAdmin(result.estado, result.status_message, result.detail),
-        );
-        setStep('error');
-        return;
-      }
-
-      setTransaccionId(result.transaccion_id);
-      setStep('esperando');
-      iniciarPolling(result.transaccion_id);
+      const result = await ejecutarRecargaAdmin(token, {
+        valor: num,
+        metodo: 'DAVIPLATA',
+        documento_tipo: documentoTipo,
+        documento_numero: doc,
+      });
+      await manejarResultadoCobro(token, result, 'DAVIPLATA');
     } catch (err) {
       setProcessing(false);
       setErrorMessage(err instanceof Error ? err.message : 'No se pudo crear el cobro');
@@ -232,13 +259,61 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
     }
   };
 
+  const manejarResultadoCobro = async (
+    token: string,
+    result: Awaited<ReturnType<typeof ejecutarRecargaAdmin>>,
+    metodoPago: AdminRecargaMetodo,
+  ) => {
+    if (result.otp_url) {
+      setOtpUrl(result.otp_url);
+    }
+
+    if (result.estado === 'APPROVED') {
+      setProcessing(false);
+      try {
+        const tx = await fetchAdminRecargaTransaccion(token, result.transaccion_id);
+        if (tx.new_balance != null) {
+          setSuccessBalance(tx.new_balance);
+          onRecargaExitosa?.(tx.new_balance);
+        } else {
+          onRecargaExitosa?.();
+        }
+      } catch {
+        onRecargaExitosa?.();
+      }
+      setStep('exito');
+      return;
+    }
+
+    if (result.estado === 'DECLINED' || result.estado === 'VOIDED' || result.estado === 'ERROR') {
+      setProcessing(false);
+      setErrorMessage(
+        mensajeErrorRecargaAdmin(result.estado, result.status_message, result.detail, metodoPago),
+      );
+      setStep('error');
+      return;
+    }
+
+    setTransaccionId(result.transaccion_id);
+    setStep('esperando');
+    iniciarPolling(
+      result.transaccion_id,
+      metodoPago,
+      result.monto_pesos ?? result.saldo_acreditar ?? montoCobro ?? 0,
+      result.referencia,
+    );
+  };
+
   if (!open) return null;
+
+  const processingLabel =
+    metodo === 'DAVIPLATA' ? 'Generando cobro Daviplata…' : 'Generando cobro Nequi…';
 
   return (
     <>
       <RetroManagerProgressModal
         open={processing && step !== 'esperando'}
-        message="Generando cobro Nequi…"
+        message={processingLabel}
         zIndex={130}
       />
 
@@ -304,10 +379,24 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
             <div className="retro-manager-modal__checkbox-row">
               <RetroCheckbox
                 label="Nequi (cobro push)"
-                checked={nequiSelected}
-                onChange={(e) => setNequiSelected(e.target.checked)}
+                checked={metodo === 'NEQUI'}
+                onChange={(e) => {
+                  if (e.target.checked) setMetodo('NEQUI');
+                }}
               />
             </div>
+            <div className="retro-manager-modal__checkbox-row">
+              <RetroCheckbox
+                label="Daviplata (OTP por cédula)"
+                checked={metodo === 'DAVIPLATA'}
+                onChange={(e) => {
+                  if (e.target.checked) setMetodo('DAVIPLATA');
+                }}
+              />
+            </div>
+            <p className="retro-manager-modal__text" style={{ fontSize: '12px', opacity: 0.8 }}>
+              Wompi no envía push a Daviplata: pide documento y confirma con OTP por SMS.
+            </p>
             {errorMessage && (
               <p className="retro-manager-modal__text" style={{ color: 'var(--retro-danger, #c00)' }}>
                 {errorMessage}
@@ -317,7 +406,7 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
               <RetroModalBtn variant="secondary" onClick={() => setStep('monto')}>
                 Atrás
               </RetroModalBtn>
-              <RetroModalBtn variant="primary" onClick={handleContinuarMetodo} disabled={!nequiSelected}>
+              <RetroModalBtn variant="primary" onClick={handleContinuarMetodo} disabled={!metodo}>
                 Continuar
               </RetroModalBtn>
             </RetroModalActions>
@@ -325,7 +414,7 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
         </RetroModal>
       )}
 
-      {step === 'nequi' && (
+      {step === 'datos' && metodo === 'NEQUI' && (
         <RetroModal
           open
           title="Nequi para cobro"
@@ -372,6 +461,69 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
         </RetroModal>
       )}
 
+      {step === 'datos' && metodo === 'DAVIPLATA' && (
+        <RetroModal
+          open
+          title="Daviplata para cobro"
+          onClose={handleClose}
+          zIndex={120}
+          width="sm"
+          bodyClassName="retro-manager-modal__body"
+          icon="files/briefcase"
+        >
+          <div className="retro-manager-modal__form">
+            <p className="retro-manager-modal__text">
+              Ingresa el documento de tu Daviplata. Wompi enviará un OTP por SMS y podrás
+              confirmar el cobro de <strong>${formatCop(parseMonto() ?? 0)}</strong>.
+            </p>
+            <div>
+              <label htmlFor="recargaDocTipo" className="retro-manager-modal__label">
+                Tipo de documento
+              </label>
+              <select
+                id="recargaDocTipo"
+                value={documentoTipo}
+                onChange={(e) => setDocumentoTipo(e.target.value)}
+                className="retro-manager-modal__input"
+              >
+                {DOC_TIPOS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="recargaDocNum" className="retro-manager-modal__label">
+                Número de documento
+              </label>
+              <input
+                id="recargaDocNum"
+                type="text"
+                inputMode="numeric"
+                value={documentoNumero}
+                onChange={(e) => setDocumentoNumero(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                placeholder="1234567890"
+                className="retro-manager-modal__input"
+              />
+            </div>
+            {errorMessage && (
+              <p className="retro-manager-modal__text" style={{ color: 'var(--retro-danger, #c00)' }}>
+                {errorMessage}
+              </p>
+            )}
+            <RetroModalActions>
+              <RetroModalBtn variant="secondary" onClick={() => setStep('metodo')}>
+                Atrás
+              </RetroModalBtn>
+              <RetroModalBtn variant="primary" onClick={() => void handleIniciarCobro()}>
+                Generar cobro
+              </RetroModalBtn>
+            </RetroModalActions>
+          </div>
+        </RetroModal>
+      )}
+
       {step === 'esperando' && (
         <RetroModal
           open
@@ -393,9 +545,32 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
               </div>
             </div>
             <p className="retro-manager-progress__message">{pollingMessage}</p>
-            <p className="retro-manager-modal__text">
-              Abre tu app Nequi y aprueba el cobro de <strong>${formatCop(montoCobro)}</strong>.
-            </p>
+            {metodo === 'DAVIPLATA' ? (
+              <>
+                <p className="retro-manager-modal__text">
+                  Revisa el SMS con el código OTP e ingrésalo en la página de Wompi para aprobar{' '}
+                  <strong>${formatCop(montoCobro)}</strong>.
+                </p>
+                {otpUrl ? (
+                  <RetroModalActions>
+                    <RetroModalBtn
+                      variant="primary"
+                      onClick={() => window.open(otpUrl, '_blank', 'noopener,noreferrer')}
+                    >
+                      Abrir confirmación OTP
+                    </RetroModalBtn>
+                  </RetroModalActions>
+                ) : (
+                  <p className="retro-manager-modal__text" style={{ fontSize: '12px', opacity: 0.75 }}>
+                    Preparando enlace de confirmación…
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="retro-manager-modal__text">
+                Abre tu app Nequi y aprueba el cobro de <strong>${formatCop(montoCobro)}</strong>.
+              </p>
+            )}
             {transaccionId && (
               <p className="retro-manager-modal__text" style={{ fontSize: '11px', opacity: 0.75 }}>
                 Ref. transacción: {transaccionId.slice(0, 12)}…
@@ -456,7 +631,7 @@ export function AdminRecargaModal({ open, onClose, onRecargaExitosa }: AdminReca
                 variant="primary"
                 onClick={() => {
                   setErrorMessage('');
-                  setStep('nequi');
+                  setStep('datos');
                 }}
               >
                 Reintentar

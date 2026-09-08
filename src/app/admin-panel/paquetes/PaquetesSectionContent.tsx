@@ -16,9 +16,9 @@ import {
 } from '../../../lib/promosShared';
 import {
   generateRandomBancolombiaCredentials,
+  generateRandomDaviplataCredentials,
   generateRandomNequiCredentials,
 } from '../../../lib/randomUserFields';
-import { playRetroSound } from '../../../lib/retroSounds';
 import { RetroLoadingOverlay, RetroCheckbox, RetroIcon } from '../../../components/retro';
 import {
   RetroModal,
@@ -64,6 +64,7 @@ export function PaquetesSectionContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [clientShareMessage, setClientShareMessage] = useState('');
   const [clientShareIsNewUser, setClientShareIsNewUser] = useState(false);
+  const [clientShareNotificationSent, setClientShareNotificationSent] = useState<boolean | null>(null);
   const [showClientShareModal, setShowClientShareModal] = useState(false);
   const [adminBalanceModalData, setAdminBalanceModalData] = useState<AdminBalanceDeduction | null>(null);
   const [showAppPickerModal, setShowAppPickerModal] = useState(false);
@@ -180,7 +181,6 @@ export function PaquetesSectionContent() {
         );
       }
 
-      playRetroSound('success');
       setShowAnnounceModal(false);
       setConfirmMessage(
         result.message ||
@@ -204,6 +204,7 @@ export function PaquetesSectionContent() {
     setShowClientShareModal(false);
     setClientShareMessage('');
     setClientShareIsNewUser(false);
+    setClientShareNotificationSent(null);
     closeDetail();
   };
 
@@ -235,7 +236,6 @@ export function PaquetesSectionContent() {
         throw new Error(result.detail || 'Error al eliminar paquete');
       }
 
-      playRetroSound('success');
       setShowDeletePromoModal(false);
       closeDetail();
       await fetchPromos();
@@ -257,12 +257,19 @@ export function PaquetesSectionContent() {
       const { phone, pin } = generateRandomNequiCredentials();
       setAssignUser(phone);
       setAssignPin(pin);
+    } else if (selectedPromo.app === 'daviplata') {
+      const { phone, pin } = generateRandomDaviplataCredentials();
+      setAssignUser(phone);
+      setAssignPin(pin);
     } else {
       const { usuario, pin } = generateRandomBancolombiaCredentials();
       setAssignUser(usuario);
       setAssignPin(pin);
     }
   };
+
+  const isPhonePromoApp =
+    selectedPromo?.app === 'nequi' || selectedPromo?.app === 'daviplata';
 
   const handleAssign = async () => {
     if (!selectedPromo || !assignUser.trim()) {
@@ -279,8 +286,14 @@ export function PaquetesSectionContent() {
         setShowConfirm(true);
         return;
       }
-      if (selectedPromo.app === 'nequi' && assignUser.length !== 10) {
+      if (isPhonePromoApp && assignUser.length !== 10) {
         setConfirmMessage('El número debe tener 10 dígitos');
+        setConfirmType('error');
+        setShowConfirm(true);
+        return;
+      }
+      if (selectedPromo.app === 'daviplata' && !assignUser.startsWith('3')) {
+        setConfirmMessage('El número Daviplata debe empezar por 3');
         setConfirmType('error');
         setShowConfirm(true);
         return;
@@ -320,14 +333,24 @@ export function PaquetesSectionContent() {
       });
       if (deduction) setAdminBalanceModalData(deduction);
 
-      playRetroSound('success');
 
       if (typeof result.client_message === 'string' && result.client_message.trim()) {
         setClientShareMessage(result.client_message);
         setClientShareIsNewUser(Boolean(result.is_new_user));
+        setClientShareNotificationSent(
+          typeof result.notification_sent === 'boolean' ? result.notification_sent : null,
+        );
         setShowClientShareModal(true);
       } else {
-        setConfirmMessage(result.message || 'Paquete asignado correctamente');
+        const notifNote =
+          result.notification_sent === true
+            ? ' Notificación push enviada al usuario.'
+            : result.notification_sent === false
+              ? ' Sin notificación push (usuario sin token FCM).'
+              : '';
+        setConfirmMessage(
+          `${result.message || 'Paquete asignado correctamente'}${notifNote}`,
+        );
         setConfirmType('success');
         setShowConfirm(true);
       }
@@ -443,6 +466,15 @@ export function PaquetesSectionContent() {
             >
               Bancolombia
             </RetroModalBtn>
+            <RetroModalBtn
+              variant="secondary"
+              onClick={() => {
+                setShowAppPickerModal(false);
+                setCreatePromoApp('daviplata');
+              }}
+            >
+              Daviplata
+            </RetroModalBtn>
           </RetroModalActions>
         </RetroModal>
       )}
@@ -524,12 +556,12 @@ export function PaquetesSectionContent() {
 
                 <RetroModalField
                   label={
-                    isNewUser
-                      ? selectedPromo.app === 'nequi'
+                    isPhonePromoApp
+                      ? isNewUser
                         ? 'Número del nuevo usuario (10 dígitos)'
-                        : 'Login del nuevo usuario'
-                      : selectedPromo.app === 'nequi'
-                        ? 'Número de usuario (10 dígitos)'
+                        : 'Número de usuario (10 dígitos)'
+                      : isNewUser
+                        ? 'Login del nuevo usuario'
                         : 'Usuario login'
                   }
                   htmlFor="assignPromoUser"
@@ -539,13 +571,13 @@ export function PaquetesSectionContent() {
                     value={assignUser}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (selectedPromo.app === 'nequi') {
+                      if (isPhonePromoApp) {
                         setAssignUser(value.replace(/\D/g, '').slice(0, 10));
                       } else {
                         setAssignUser(value);
                       }
                     }}
-                    placeholder={selectedPromo.app === 'nequi' ? '3000000000' : 'usuario123'}
+                    placeholder={isPhonePromoApp ? '3000000000' : 'usuario123'}
                     autoFocus
                   />
                 </RetroModalField>
@@ -722,6 +754,11 @@ export function PaquetesSectionContent() {
             {clientShareIsNewUser
               ? 'Usuario creado con paquete correctamente'
               : 'Paquete asignado correctamente'}
+            {clientShareNotificationSent === true
+              ? ' · Notificación push enviada'
+              : clientShareNotificationSent === false
+                ? ' · Sin push (sin token FCM)'
+                : ''}
           </RetroModalBanner>
           <RetroModalMessagePanel copyText={clientShareMessage}>
             <pre>{clientShareMessage}</pre>

@@ -10,7 +10,6 @@ import { NequiAppView } from './views/NequiAppView';
 import { BancolombiaAppView } from './views/BancolombiaAppView';
 import { DaviplataAppView } from './views/DaviplataAppView';
 import { GananciasSectionView } from './views/GananciasSectionView';
-import { OwnerGananciasSectionView } from './views/OwnerGananciasSectionView';
 import { EstadisticasSectionView } from './views/EstadisticasSectionView';
 import { FacturacionSmsSectionView } from './views/FacturacionSmsSectionView';
 import { RegistrosSectionView } from './views/RegistrosSectionView';
@@ -20,6 +19,8 @@ import { AdminGestionSectionView } from './views/AdminGestionSectionView';
 import { AjustesSectionView } from './views/AjustesSectionView';
 import { PlantillasNotificacionesSectionView } from './views/PlantillasNotificacionesSectionView';
 import { EventosSectionView } from './views/EventosSectionView';
+import { AlertasSectionView } from './views/AlertasSectionView';
+import { ApiSectionView } from './views/ApiSectionView';
 
 function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
   const router = useRouter();
@@ -34,8 +35,14 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
   };
 
   if (activeSection) {
-    const meta = HUB_SECTION_META[activeSection];
+    const meta = (HUB_SECTION_META as any)[activeSection];
+    if (!meta) return <AppHubHome adminInfo={adminInfo} />;
+
     if (meta.ownerOnly && adminInfo?.role !== 'owner') {
+      return <AppHubHome adminInfo={adminInfo} />;
+    }
+
+    if (meta.notForPartner && adminInfo?.role === 'partner') {
       return <AppHubHome adminInfo={adminInfo} />;
     }
 
@@ -49,7 +56,8 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
       case 'ganancias':
         return <GananciasSectionView onClose={goHome} />;
       case 'ganancias-admins':
-        return <OwnerGananciasSectionView onClose={goHome} />;
+        // Unificado: la vista del propietario ahora vive dentro de "Ganancias".
+        return <GananciasSectionView onClose={goHome} />;
       case 'estadisticas':
         return <EstadisticasSectionView onClose={goHome} />;
       case 'facturacion-sms':
@@ -68,6 +76,10 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <PlantillasNotificacionesSectionView onClose={goHome} />;
       case 'eventos':
         return <EventosSectionView onClose={goHome} />;
+      case 'alertas':
+        return <AlertasSectionView onClose={goHome} />;
+      case 'api':
+        return <ApiSectionView onClose={goHome} />;
       default:
         break;
     }

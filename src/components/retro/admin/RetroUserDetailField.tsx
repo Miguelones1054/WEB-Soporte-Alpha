@@ -13,6 +13,8 @@ export interface RetroUserDetailFieldProps {
   onAdd?: () => void;
   onSubtract?: () => void;
   addTitle?: string;
+  addLabel?: string;
+  addButtonVariant?: 'default' | 'warning';
   subtractTitle?: string;
   onAction?: () => void;
   actionLabel?: string;
@@ -30,6 +32,8 @@ export function RetroUserDetailField({
   onAdd,
   onSubtract,
   addTitle = 'Agregar',
+  addLabel = '+',
+  addButtonVariant = 'default',
   subtractTitle = 'Restar',
   onAction,
   actionLabel,
@@ -69,12 +73,14 @@ export function RetroUserDetailField({
             {onAdd && (
               <button
                 type="button"
-                className="retro-user-field__action-btn"
+                className={`retro-user-field__action-btn ${
+                  addButtonVariant === 'warning' ? 'retro-user-field__action-btn--warning' : ''
+                } ${addLabel !== '+' ? 'retro-user-field__action-btn--wide' : ''}`}
                 onClick={onAdd}
                 title={addTitle}
                 aria-label={addTitle}
               >
-                +
+                {addLabel}
               </button>
             )}
             {onAction && actionLabel && (

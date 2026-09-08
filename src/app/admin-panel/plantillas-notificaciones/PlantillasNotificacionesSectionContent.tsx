@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { humanizeNotificationError } from '../../../lib/humanizeNotificationError';
-import { playRetroSound } from '../../../lib/retroSounds';
 import {
   NOTIFICATION_TEMPLATE_APP_LABELS,
   type NotificationTemplate,
@@ -169,7 +168,6 @@ export function PlantillasNotificacionesSectionContent() {
         throw new Error(data.detail || 'No se pudo guardar la plantilla');
       }
 
-      playRetroSound('success');
       setShowFormModal(false);
       if (isEdit && data.template) {
         setSelectedTemplate(data.template);
@@ -209,7 +207,6 @@ export function PlantillasNotificacionesSectionContent() {
         throw new Error(data.detail || 'No se pudo eliminar la plantilla');
       }
 
-      playRetroSound('success');
       closeDetail();
       setShowDeleteModal(false);
       await fetchTemplates();
@@ -254,7 +251,6 @@ export function PlantillasNotificacionesSectionContent() {
         );
       }
 
-      playRetroSound('success');
       closeDetail();
       showResult(
         result.message ||
@@ -358,7 +354,6 @@ export function PlantillasNotificacionesSectionContent() {
         );
       }
 
-      playRetroSound('success');
       setShowSendUserModal(false);
       setSendUserTarget('');
       showResult(result.message || 'Notificación enviada correctamente', 'success');

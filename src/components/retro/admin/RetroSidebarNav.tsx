@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import type { AdminInfo } from '../../../hooks/useAdminSession';
 import { parseAdminHubSection } from '../../../lib/adminHubSections';
 import { RetroIcon } from '../RetroIcon';
+import { AdminBalanceMeter } from './AdminBalanceMeter';
 import type { RetroNavItem } from './adminNav';
 
 interface RetroSidebarNavProps {
@@ -28,9 +29,11 @@ function RetroSidebarNavFallback({
   adminInfo,
   items,
 }: Pick<RetroSidebarNavProps, 'adminInfo' | 'items'>) {
-  const visibleItems = items.filter(
-    (item) => !item.ownerOnly || adminInfo?.role === 'owner'
-  );
+  const visibleItems = items.filter((item) => {
+    if (item.ownerOnly && adminInfo?.role !== 'owner') return false;
+    if (item.notForPartner && adminInfo?.role === 'partner') return false;
+    return true;
+  });
 
   return (
     <>
@@ -46,11 +49,16 @@ function RetroSidebarNavFallback({
 
       <div className="retro-hub-sidebar__balance">
         <span className="retro-hub-sidebar__balance-label">Fondos</span>
-        <span className="retro-hub-sidebar__balance-value">
-          {adminInfo?.balance != null
-            ? `$${Number(adminInfo.balance).toLocaleString('es-CO')}`
-            : '$0'}
-        </span>
+        {adminInfo ? (
+          <AdminBalanceMeter
+            balance={adminInfo.balance ?? 0}
+            topeDeuda={adminInfo.tope_deuda ?? 0}
+            compact
+            showTope={false}
+          />
+        ) : (
+          <span className="retro-hub-sidebar__balance-value">$0</span>
+        )}
       </div>
 
       <div className="retro-hub-sidebar__nav-box">
@@ -84,9 +92,11 @@ function RetroSidebarNavInner({
   );
   const normalizedPath = pathname.replace(/\/$/, '') || '/';
 
-  const visibleItems = items.filter(
-    (item) => !item.ownerOnly || adminInfo?.role === 'owner'
-  );
+  const visibleItems = items.filter((item) => {
+    if (item.ownerOnly && adminInfo?.role !== 'owner') return false;
+    if (item.notForPartner && adminInfo?.role === 'partner') return false;
+    return true;
+  });
 
   const isActive = (href: string) => {
     if (href.startsWith('/admin-panel?section=') || href.startsWith('/admin-panel?app=')) {
@@ -118,11 +128,16 @@ function RetroSidebarNavInner({
 
       <div className="retro-hub-sidebar__balance">
         <span className="retro-hub-sidebar__balance-label">Fondos</span>
-        <span className="retro-hub-sidebar__balance-value">
-          {adminInfo?.balance != null
-            ? `$${Number(adminInfo.balance).toLocaleString('es-CO')}`
-            : '$0'}
-        </span>
+        {adminInfo ? (
+          <AdminBalanceMeter
+            balance={adminInfo.balance ?? 0}
+            topeDeuda={adminInfo.tope_deuda ?? 0}
+            compact
+            showTope={false}
+          />
+        ) : (
+          <span className="retro-hub-sidebar__balance-value">$0</span>
+        )}
       </div>
 
       <div className="retro-hub-sidebar__nav-box">

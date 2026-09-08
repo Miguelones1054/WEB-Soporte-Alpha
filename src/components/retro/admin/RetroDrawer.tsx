@@ -5,6 +5,7 @@ import { ReactNode } from 'react';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import type { AdminInfo } from '../../../hooks/useAdminSession';
 import { RetroButton } from '../RetroButton';
+import { AdminBalanceMeter } from './AdminBalanceMeter';
 import type { RetroNavItem } from './adminNav';
 
 export interface RetroDrawerProps {
@@ -30,9 +31,11 @@ export function RetroDrawer({
 
   if (!open) return null;
 
-  const visibleItems = navItems.filter(
-    (item) => !item.ownerOnly || adminInfo?.role === 'owner'
-  );
+  const visibleItems = navItems.filter((item) => {
+    if (item.ownerOnly && adminInfo?.role !== 'owner') return false;
+    if (item.notForPartner && adminInfo?.role === 'partner') return false;
+    return true;
+  });
 
   return (
     <div className="retro-drawer-root" role="dialog" aria-modal="true" aria-label="Menú">
@@ -74,11 +77,16 @@ export function RetroDrawer({
 
           <div className="retro-drawer__balance retro-drawer__box">
             <p className="retro-drawer__box-title">Fondos</p>
-            <p className="retro-drawer__balance-value">
-              {loading || !adminInfo
-                ? '...'
-                : `COP $${Number(adminInfo.balance).toLocaleString('es-CO')}`}
-            </p>
+            {adminInfo ? (
+              <AdminBalanceMeter
+                balance={adminInfo.balance ?? 0}
+                topeDeuda={adminInfo.tope_deuda ?? 0}
+                compact
+                showTope={false}
+              />
+            ) : (
+              <p className="retro-drawer__balance-value">...</p>
+            )}
           </div>
 
           {extraContent}

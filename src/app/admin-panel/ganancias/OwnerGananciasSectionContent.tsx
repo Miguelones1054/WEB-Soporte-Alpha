@@ -158,9 +158,9 @@ export function OwnerGananciasSectionContent() {
         onDeleteOperation={handleDeleteRequest}
         infoAlert={
           <RetroAlert variant="info">
-            Vista exclusiva del propietario. Consulta las ganancias de cada administrador con los
-            mismos filtros de fecha que tu panel personal. Solo tú puedes eliminar movimientos de
-            ganancia desde esta vista.
+            Vista del propietario. Las recargas Wompi del panel cuentan como ingreso tuyo: las
+            ves en <strong>Todos</strong> y al filtrar tu usuario owner. No se suman a la
+            ganancia de los demás admins.
           </RetroAlert>
         }
         toolbar={

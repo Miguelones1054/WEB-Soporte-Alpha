@@ -37,9 +37,14 @@ export const OPERATION_LABELS: Record<string, string> = {
   CREATE_TEST_USER_BANCOLOMBIA: 'Usuario prueba BC',
   ASSIGN_PROMO_NEQUI: 'Paquete Nequi',
   ASSIGN_PROMO_BANCOLOMBIA: 'Paquete Bancolombia',
+  ASSIGN_PROMO_DAVIPLATA: 'Paquete Daviplata',
   UPGRADE_VIP: 'Actualización VIP',
+  UPGRADE_VIP_DAVIPLATA: 'Actualización VIP Daviplata',
+  UPGRADE_VIP_BANCOLOMBIA: 'Actualización VIP Bancolombia',
   ADD_SMS: 'Agregar SMS',
   ADD_SMS_BANCOLOMBIA: 'Agregar SMS BC',
+  ADD_ADMIN_BALANCE_WOMPI: 'Recarga panel (Wompi)',
+  ADMIN_EGRESO: 'Egreso',
 };
 
 export function getOperationLabel(type: string): string {
@@ -48,6 +53,11 @@ export function getOperationLabel(type: string): string {
 
 export function formatGananciaCurrency(amount: number): string {
   return amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+export function formatSignedGananciaCurrency(amount: number): string {
+  const formatted = formatGananciaCurrency(Math.abs(amount));
+  return amount < 0 ? `-$${formatted}` : `$${formatted}`;
 }
 
 export function formatGananciaDate(dateString: string): string {

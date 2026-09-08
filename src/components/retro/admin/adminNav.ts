@@ -7,6 +7,7 @@ export interface RetroNavItem {
   label: string;
   icon?: RetroIconName;
   ownerOnly?: boolean;
+  notForPartner?: boolean;
   external?: boolean;
   section?: AdminHubSection;
 }
@@ -22,11 +23,11 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
   { href: '/admin-panel', label: 'Panel principal', icon: 'navigation/homepage' },
   ...MANAGER_NAV_ITEMS,
   {
-    href: adminHubHref('ganancias-admins'),
-    label: 'Ganancias admins',
-    icon: 'office/bar_graph',
-    ownerOnly: true,
-    section: 'ganancias-admins',
+    href: adminHubHref('estadisticas'),
+    label: 'Estadísticas',
+    icon: 'office/chart1',
+    section: 'estadisticas',
+    notForPartner: true,
   },
   {
     href: adminHubHref('ajustes'),
@@ -55,6 +56,20 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
     icon: 'communication/envelope_closed',
     ownerOnly: true,
     section: 'eventos',
+  },
+  {
+    href: adminHubHref('alertas'),
+    label: 'Alertas',
+    icon: 'communication/msg_warning',
+    section: 'alertas',
+    notForPartner: true,
+  },
+  {
+    href: adminHubHref('api'),
+    label: 'API',
+    icon: 'security/key_world',
+    section: 'api',
+    notForPartner: true,
   },
 ];
 

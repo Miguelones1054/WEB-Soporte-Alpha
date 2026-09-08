@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useOptionalAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { API_BASE_URL } from '../../../lib/constants';
 import { humanizeNotificationError } from '../../../lib/humanizeNotificationError';
-import { playRetroSound } from '../../../lib/retroSounds';
 import { RetroModal } from './RetroModal';
 import { RetroManagerProgressModal } from './RetroManagerProgressModal';
 import { RetroManagerConfirmModal } from './RetroManagerConfirmModal';
@@ -37,6 +37,8 @@ export function AppGlobalNotificationControl({
   embedded = true,
 }: AppGlobalNotificationControlProps) {
   const router = useRouter();
+  const session = useOptionalAdminSessionContext();
+  const isPartner = session?.adminInfo?.role === 'partner';
   const appLabel = APP_LABELS[app];
 
   const [open, setOpen] = useState(false);
@@ -96,7 +98,6 @@ export function AppGlobalNotificationControl({
         );
       }
 
-      playRetroSound('success');
       setOpen(false);
       setTitle('');
       setBody('');
@@ -117,6 +118,8 @@ export function AppGlobalNotificationControl({
       setSending(false);
     }
   };
+
+  if (isPartner) return null;
 
   return (
     <>

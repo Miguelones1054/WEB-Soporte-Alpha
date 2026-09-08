@@ -16,7 +16,6 @@ import {
 } from './index';
 import type { PromoApp, PromoPackage } from '../../../lib/promosShared';
 import { promoAppLabel } from '../../../lib/promosShared';
-import { playRetroSound } from '../../../lib/retroSounds';
 
 export interface CreatePaqueteModalProps {
   open: boolean;
@@ -88,10 +87,16 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated, promo = null
     }
 
     const saldoVal = parseAmount(saldo);
-    const smsVal = parseInt(sms.replace(/\D/g, '') || '0', 10);
-    const vip = app === 'nequi' && includesVip;
+    const smsVal = app === 'daviplata' ? 0 : parseInt(sms.replace(/\D/g, '') || '0', 10);
+    const vip = includesVip;
 
-    if (saldoVal <= 0 && smsVal <= 0 && !vip) {
+    if (app === 'daviplata') {
+      if (saldoVal <= 0 && !vip) {
+        setErrorMessage('El paquete Daviplata debe incluir saldo y/o VIP');
+        setShowError(true);
+        return;
+      }
+    } else if (saldoVal <= 0 && smsVal <= 0 && !vip) {
       setErrorMessage('El paquete debe incluir saldo, mensajes y/o VIP');
       setShowError(true);
       return;
@@ -113,7 +118,10 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated, promo = null
         saldo: saldoVal,
         sms: smsVal,
         includes_vip: vip,
-        vip_duration_days: vip && !vipIndefinite ? parseInt(vipDurationDays || '0', 10) || null : null,
+        vip_duration_days:
+          app === 'nequi' && vip && !vipIndefinite
+            ? parseInt(vipDurationDays || '0', 10) || null
+            : null,
       };
 
       const response = await fetch(
@@ -136,7 +144,6 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated, promo = null
       }
 
       onCreated?.();
-      playRetroSound('success');
       handleClose();
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Error de conexión');
@@ -198,43 +205,43 @@ export function CreatePaqueteModal({ open, app, onClose, onCreated, promo = null
             />
           </RetroModalField>
 
-          <RetroModalField label="Mensajes incluidos" htmlFor="promoSms">
-            <RetroModalInput
-              id="promoSms"
-              value={sms}
-              onChange={(e) => setSms(e.target.value.replace(/\D/g, ''))}
-              placeholder="0"
-              inputMode="numeric"
-            />
-          </RetroModalField>
+          {app !== 'daviplata' && (
+            <RetroModalField label="Mensajes incluidos" htmlFor="promoSms">
+              <RetroModalInput
+                id="promoSms"
+                value={sms}
+                onChange={(e) => setSms(e.target.value.replace(/\D/g, ''))}
+                placeholder="0"
+                inputMode="numeric"
+              />
+            </RetroModalField>
+          )}
 
-          {app === 'nequi' && (
+          <RetroCheckbox
+            label={
+              app === 'bancolombia' || app === 'daviplata' ? 'Incluye VIP (1 mes)' : 'Incluye VIP'
+            }
+            checked={includesVip}
+            onChange={(e) => setIncludesVip(e.target.checked)}
+          />
+
+          {app === 'nequi' && includesVip && (
             <>
               <RetroCheckbox
-                label="Incluye VIP"
-                checked={includesVip}
-                onChange={(e) => setIncludesVip(e.target.checked)}
+                label="Duración VIP indefinida"
+                checked={vipIndefinite}
+                onChange={(e) => setVipIndefinite(e.target.checked)}
               />
-
-              {includesVip && (
-                <>
-                  <RetroCheckbox
-                    label="Duración VIP indefinida"
-                    checked={vipIndefinite}
-                    onChange={(e) => setVipIndefinite(e.target.checked)}
+              {!vipIndefinite && (
+                <RetroModalField label="Duración VIP (días)" htmlFor="promoVipDays">
+                  <RetroModalInput
+                    id="promoVipDays"
+                    value={vipDurationDays}
+                    onChange={(e) => setVipDurationDays(e.target.value.replace(/\D/g, ''))}
+                    placeholder="30"
+                    inputMode="numeric"
                   />
-                  {!vipIndefinite && (
-                    <RetroModalField label="Duración VIP (días)" htmlFor="promoVipDays">
-                      <RetroModalInput
-                        id="promoVipDays"
-                        value={vipDurationDays}
-                        onChange={(e) => setVipDurationDays(e.target.value.replace(/\D/g, ''))}
-                        placeholder="30"
-                        inputMode="numeric"
-                      />
-                    </RetroModalField>
-                  )}
-                </>
+                </RetroModalField>
               )}
             </>
           )}

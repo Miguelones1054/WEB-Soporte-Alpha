@@ -4,15 +4,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import {
-  RetroInteractiveTable,
   RetroLoadingOverlay,
   RetroSelect,
+  RetroInteractiveTable,
   type RetroTableColumn,
 } from '../../../components/retro';
 import {
   RetroModal,
   RetroManagerConfirmModal,
   RetroManagerProgressModal,
+  AdminBalanceMeter,
+  formatAdminCop,
 } from '../../../components/retro/admin';
 
 interface Admin {
@@ -23,6 +25,7 @@ interface Admin {
   active: boolean;
   balance: number;
   porcentaje?: number | null;
+  tope_deuda?: number | null;
 }
 
 interface AdminOperation {
@@ -40,15 +43,11 @@ interface AdminOperation {
 const ROLE_OPTIONS = [
   { value: 'admin', label: 'Administrador' },
   { value: 'owner', label: 'Propietario' },
+  { value: 'partner', label: 'Partner' },
 ];
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount ?? 0);
+  return formatAdminCop(amount);
 }
 
 function formatDate(dateString?: string) {
@@ -74,6 +73,8 @@ function getOperationTypeLabel(operationType: string) {
       return 'Recarga Wompi';
     case 'SUBTRACT_ADMIN_BALANCE':
       return 'Retiro admin';
+    case 'ADMIN_EGRESO':
+      return 'Egreso';
     case 'CREATE_USER':
     case 'CREATE_USER_BANCOLOMBIA':
     case 'CREATE_USER_DAVIPLATA':
@@ -85,6 +86,8 @@ function getOperationTypeLabel(operationType: string) {
       return 'Asignar paquete Nequi';
     case 'ASSIGN_PROMO_BANCOLOMBIA':
       return 'Asignar paquete BC';
+    case 'ASSIGN_PROMO_DAVIPLATA':
+      return 'Asignar paquete Daviplata';
     case 'CREATE_ADMIN':
       return 'Crear admin';
     default:
@@ -93,8 +96,10 @@ function getOperationTypeLabel(operationType: string) {
 }
 
 function getOperationTypeClass(operationType: string) {
+  if (operationType === 'ADMIN_EGRESO' || operationType.includes('SUBTRACT')) {
+    return 'retro-admin-gestion__op-type--subtract';
+  }
   if (operationType.includes('ADD')) return 'retro-admin-gestion__op-type--add';
-  if (operationType.includes('SUBTRACT')) return 'retro-admin-gestion__op-type--subtract';
   return 'retro-admin-gestion__op-type--neutral';
 }
 
@@ -110,6 +115,7 @@ export function AdminGestionSectionContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [amount, setAmount] = useState('');
+  const [concepto, setConcepto] = useState('');
   const [operationType, setOperationType] = useState<'add' | 'subtract'>('add');
   const [processing, setProcessing] = useState(false);
 
@@ -118,10 +124,12 @@ export function AdminGestionSectionContent() {
   const [newAdminName, setNewAdminName] = useState('');
   const [newAdminRole, setNewAdminRole] = useState('admin');
   const [newAdminPorcentaje, setNewAdminPorcentaje] = useState('61');
+  const [newAdminTopeDeuda, setNewAdminTopeDeuda] = useState('0');
 
   const [editAdminName, setEditAdminName] = useState('');
   const [editAdminRole, setEditAdminRole] = useState('admin');
   const [editAdminPorcentaje, setEditAdminPorcentaje] = useState('');
+  const [editAdminTopeDeuda, setEditAdminTopeDeuda] = useState('0');
   const [editAdminPassword, setEditAdminPassword] = useState('');
   const [editAdminActive, setEditAdminActive] = useState(true);
 
@@ -134,6 +142,7 @@ export function AdminGestionSectionContent() {
   const [operationsAdmin, setOperationsAdmin] = useState<Admin | null>(null);
   const [adminOperations, setAdminOperations] = useState<AdminOperation[]>([]);
   const [operationsLoading, setOperationsLoading] = useState(false);
+  const [showAdminRecargaModal, setShowAdminRecargaModal] = useState(false);
 
   const fetchAdmins = async () => {
     const token = localStorage.getItem('admin_token');
@@ -230,6 +239,7 @@ export function AdminGestionSectionContent() {
   const handleBalanceAdmin = (admin: Admin) => {
     setSelectedAdmin(admin);
     setAmount('');
+    setConcepto('');
     setOperationType('add');
     setShowBalanceModal(true);
   };
@@ -238,6 +248,7 @@ export function AdminGestionSectionContent() {
     setShowBalanceModal(false);
     setSelectedAdmin(null);
     setAmount('');
+    setConcepto('');
   };
 
   const handleOpenEditAdminModal = (admin: Admin) => {
@@ -245,6 +256,7 @@ export function AdminGestionSectionContent() {
     setEditAdminName(admin.name);
     setEditAdminRole(admin.role);
     setEditAdminPorcentaje(admin.porcentaje != null ? String(admin.porcentaje) : '');
+    setEditAdminTopeDeuda(String(admin.tope_deuda ?? 0));
     setEditAdminPassword('');
     setEditAdminActive(admin.active);
     setShowEditAdminModal(true);
@@ -272,6 +284,7 @@ export function AdminGestionSectionContent() {
     setNewAdminName('');
     setNewAdminRole('admin');
     setNewAdminPorcentaje('61');
+    setNewAdminTopeDeuda('0');
     setShowCreateModal(true);
   };
 
@@ -282,6 +295,13 @@ export function AdminGestionSectionContent() {
     setNewAdminName('');
     setNewAdminRole('admin');
     setNewAdminPorcentaje('61');
+    setNewAdminTopeDeuda('0');
+  };
+
+  const parseTopeDeuda = (value: string) => {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed) || parsed < 0) return null;
+    return parsed;
   };
 
   const parsePorcentaje = (value: string) => {
@@ -299,6 +319,12 @@ export function AdminGestionSectionContent() {
     const porcentaje = parsePorcentaje(newAdminPorcentaje);
     if (porcentaje === null) {
       showError('El porcentaje debe ser un número entre 0 y 100');
+      return;
+    }
+
+    const topeDeuda = parseTopeDeuda(newAdminTopeDeuda);
+    if (topeDeuda === null) {
+      showError('El tope de deuda debe ser un número mayor o igual a 0');
       return;
     }
 
@@ -322,6 +348,7 @@ export function AdminGestionSectionContent() {
           name: newAdminName.trim(),
           role: newAdminRole,
           porcentaje,
+          tope_deuda: topeDeuda,
         }),
       });
 
@@ -355,6 +382,12 @@ export function AdminGestionSectionContent() {
       return;
     }
 
+    const topeDeuda = parseTopeDeuda(editAdminTopeDeuda);
+    if (topeDeuda === null) {
+      showError('El tope de deuda debe ser un número mayor o igual a 0');
+      return;
+    }
+
     if (editAdminPassword && editAdminPassword.length < 6) {
       showError('La contraseña debe tener al menos 6 caracteres');
       return;
@@ -367,6 +400,7 @@ export function AdminGestionSectionContent() {
         name: editAdminName.trim(),
         role: editAdminRole,
         porcentaje,
+        tope_deuda: topeDeuda,
         active: editAdminActive,
       };
       if (editAdminPassword.trim()) {
@@ -481,6 +515,12 @@ export function AdminGestionSectionContent() {
       return;
     }
 
+    const conceptoTrim = concepto.trim();
+    if (operationType === 'subtract' && !conceptoTrim) {
+      showError('Ingrese el concepto del egreso');
+      return;
+    }
+
     setProcessing(true);
     try {
       const token = localStorage.getItem('admin_token');
@@ -497,7 +537,10 @@ export function AdminGestionSectionContent() {
         },
         body: JSON.stringify({
           amount: numAmount,
-          reason: `${operationType === 'add' ? 'Recarga' : 'Deducción'} manual por ${user?.name || 'Admin'}`,
+          reason:
+            operationType === 'add'
+              ? `Recarga manual por ${user?.name || 'Admin'}`
+              : conceptoTrim,
         }),
       });
 
@@ -517,93 +560,19 @@ export function AdminGestionSectionContent() {
     }
   };
 
-  const adminColumns = useMemo<RetroTableColumn<Admin>[]>(
-    () => [
-      { key: 'id', header: 'ID', render: (admin) => admin.id },
-      {
-        key: 'name',
-        header: 'Nombre',
-        render: (admin) => admin.name,
-      },
-      {
-        key: 'email',
-        header: 'Email',
-        render: (admin) => admin.email,
-      },
-      {
-        key: 'role',
-        header: 'Rol',
-        render: (admin) => admin.role,
-      },
-      {
-        key: 'status',
-        header: 'Estado',
-        render: (admin) => (
-          <span
-            className={`retro-admin-gestion__badge ${
-              admin.active ? 'retro-admin-gestion__badge--active' : 'retro-admin-gestion__badge--inactive'
-            }`}
-          >
-            {admin.active ? 'Activo' : 'Inactivo'}
-          </span>
-        ),
-      },
-      {
-        key: 'balance',
-        header: 'Saldo',
-        render: (admin) => formatCurrency(admin.balance ?? 0),
-      },
-      {
-        key: 'porcentaje',
-        header: '% Costo',
-        render: (admin) =>
-          admin.porcentaje != null ? `${admin.porcentaje}%` : (
-            <span className="retro-admin-gestion__badge retro-admin-gestion__badge--inactive">Sin definir</span>
-          ),
-      },
-      {
-        key: 'actions',
-        header: 'Acciones',
-        render: (admin) => (
-          <div className="retro-admin-gestion__actions">
-            <button
-              type="button"
-              className="retro-admin-gestion__action-btn"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleBalanceAdmin(admin);
-              }}
-            >
-              Saldo
-            </button>
-            <button
-              type="button"
-              className="retro-admin-gestion__action-btn"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleOpenEditAdminModal(admin);
-              }}
-            >
-              Editar
-            </button>
-            {admin.active && (
-              <button
-                type="button"
-                className="retro-admin-gestion__action-btn retro-admin-gestion__action-btn--danger"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleOpenDeleteModal(admin);
-                }}
-              >
-                Eliminar
-              </button>
-            )}
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
+  const projectedBalance = useMemo(() => {
+    if (!selectedAdmin) return null;
+    const numAmount = parseFloat(amount);
+    if (!amount || Number.isNaN(numAmount) || numAmount <= 0) return null;
+    const current = selectedAdmin.balance ?? 0;
+    return operationType === 'add' ? current + numAmount : current - numAmount;
+  }, [selectedAdmin, amount, operationType]);
+
+  const projectedExceedsTope = useMemo(() => {
+    if (projectedBalance == null || !selectedAdmin || operationType !== 'subtract') return false;
+    const tope = selectedAdmin.tope_deuda ?? 0;
+    return projectedBalance < -tope;
+  }, [projectedBalance, selectedAdmin, operationType]);
 
   const operationColumns = useMemo<RetroTableColumn<AdminOperation>[]>(
     () => [
@@ -658,7 +627,7 @@ export function AdminGestionSectionContent() {
       <div className="retro-admin-gestion">
         <div className="retro-admin-gestion__toolbar">
           <p className="retro-admin-gestion__hint">
-            {admins.length} administrador{admins.length !== 1 ? 'es' : ''} · Clic en fila para ver operaciones
+            {admins.length} administrador{admins.length !== 1 ? 'es' : ''} · Clic en la tarjeta para ver operaciones
           </p>
           <button
             type="button"
@@ -669,13 +638,98 @@ export function AdminGestionSectionContent() {
           </button>
         </div>
 
-        <RetroInteractiveTable
-          columns={adminColumns}
-          rows={admins}
-          getRowKey={(admin) => String(admin.id)}
-          emptyMessage="No hay administradores para mostrar."
-          onRowClick={handleViewOperations}
-        />
+        {admins.length === 0 ? (
+          <p className="retro-admin-gestion__empty">No hay administradores para mostrar.</p>
+        ) : (
+          <div className="retro-admin-gestion__grid">
+            {admins.map((admin) => (
+              <div
+                key={admin.id}
+                className="retro-admin-gestion__card"
+                role="button"
+                tabIndex={0}
+                onClick={() => handleViewOperations(admin)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleViewOperations(admin);
+                  }
+                }}
+              >
+                <div className="retro-admin-gestion__card-head">
+                  <div>
+                    <p className="retro-admin-gestion__card-name">{admin.name}</p>
+                    <p className="retro-admin-gestion__card-email">{admin.email}</p>
+                  </div>
+                  <div className="retro-admin-gestion__card-meta">
+                    <span className="retro-admin-gestion__badge">{admin.role}</span>
+                    <span
+                      className={`retro-admin-gestion__badge ${
+                        admin.active
+                          ? 'retro-admin-gestion__badge--active'
+                          : 'retro-admin-gestion__badge--inactive'
+                      }`}
+                    >
+                      {admin.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                </div>
+
+                <AdminBalanceMeter balance={admin.balance ?? 0} topeDeuda={admin.tope_deuda ?? 0} />
+
+                <div className="retro-admin-gestion__card-stats">
+                  <div>
+                    <p className="retro-admin-gestion__card-stat-label">% Costo</p>
+                    <p className="retro-admin-gestion__card-stat-value">
+                      {admin.porcentaje != null ? `${admin.porcentaje}%` : 'Sin definir'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="retro-admin-gestion__card-stat-label">Tope de deuda</p>
+                    <p className="retro-admin-gestion__card-stat-value">
+                      {formatCurrency(admin.tope_deuda ?? 0)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="retro-admin-gestion__actions">
+                  <button
+                    type="button"
+                    className="retro-admin-gestion__action-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleBalanceAdmin(admin);
+                    }}
+                  >
+                    Saldo
+                  </button>
+                  <button
+                    type="button"
+                    className="retro-admin-gestion__action-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleOpenEditAdminModal(admin);
+                    }}
+                  >
+                    Editar
+                  </button>
+                  {admin.active && (
+                    <button
+                      type="button"
+                      className="retro-admin-gestion__action-btn retro-admin-gestion__action-btn--danger"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOpenDeleteModal(admin);
+                      }}
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {showBalanceModal && selectedAdmin && (
@@ -695,9 +749,10 @@ export function AdminGestionSectionContent() {
               <p className="retro-admin-gestion__info-box-meta">{selectedAdmin.email}</p>
               <hr className="retro-admin-gestion__info-box-divider" />
               <p className="retro-admin-gestion__info-box-label">Saldo actual</p>
-              <p className="retro-admin-gestion__info-box-value retro-admin-gestion__info-box-value--balance">
-                {formatCurrency(selectedAdmin.balance ?? 0)}
-              </p>
+              <AdminBalanceMeter
+                balance={selectedAdmin.balance ?? 0}
+                topeDeuda={selectedAdmin.tope_deuda ?? 0}
+              />
             </div>
 
             <div>
@@ -738,6 +793,37 @@ export function AdminGestionSectionContent() {
                 min={0}
               />
             </div>
+
+            {operationType === 'subtract' && (
+              <div>
+                <label htmlFor="balanceConcepto" className="retro-manager-modal__label">
+                  Concepto
+                </label>
+                <textarea
+                  id="balanceConcepto"
+                  value={concepto}
+                  onChange={(e) => setConcepto(e.target.value)}
+                  placeholder="Motivo del egreso (se verá en ganancias del admin)"
+                  className="retro-manager-modal__textarea"
+                  rows={3}
+                  maxLength={200}
+                />
+              </div>
+            )}
+
+            {projectedBalance != null && (
+              <p
+                className={`retro-admin-gestion__preview ${
+                  projectedExceedsTope || projectedBalance < 0
+                    ? 'retro-admin-gestion__preview--warn'
+                    : 'retro-admin-gestion__preview--ok'
+                }`}
+              >
+                {projectedExceedsTope
+                  ? `Supera el tope de deuda (${formatCurrency(selectedAdmin.tope_deuda ?? 0)}). Resultado: ${formatCurrency(projectedBalance)}`
+                  : `Saldo resultante: ${formatCurrency(projectedBalance)}`}
+              </p>
+            )}
           </div>
 
           <hr className="retro-manager-modal__divider" />
@@ -753,7 +839,12 @@ export function AdminGestionSectionContent() {
             <button
               type="button"
               onClick={handleBalanceOperation}
-              disabled={processing || !amount}
+              disabled={
+                processing ||
+                !amount ||
+                projectedExceedsTope ||
+                (operationType === 'subtract' && !concepto.trim())
+              }
               className={`retro-manager-btn retro-manager-btn--block ${
                 operationType === 'add' ? 'retro-manager-btn--primary' : 'retro-manager-btn--danger'
               }`}
@@ -849,6 +940,24 @@ export function AdminGestionSectionContent() {
                 Porcentaje del valor cliente que paga el administrador por operación.
               </p>
             </div>
+
+            <div>
+              <label htmlFor="newAdminTopeDeuda" className="retro-manager-modal__label">
+                Tope de deuda (COP)
+              </label>
+              <input
+                id="newAdminTopeDeuda"
+                type="number"
+                min={0}
+                value={newAdminTopeDeuda}
+                onChange={(e) => setNewAdminTopeDeuda(e.target.value)}
+                placeholder="0"
+                className="retro-manager-modal__input"
+              />
+              <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+                Cuánto puede quedar en negativo si le restas saldo. 0 = no puede endeudarse.
+              </p>
+            </div>
           </div>
 
           <hr className="retro-manager-modal__divider" />
@@ -933,6 +1042,23 @@ export function AdminGestionSectionContent() {
                 onChange={(e) => setEditAdminPorcentaje(e.target.value)}
                 className="retro-manager-modal__input"
               />
+            </div>
+
+            <div>
+              <label htmlFor="editAdminTopeDeuda" className="retro-manager-modal__label">
+                Tope de deuda (COP)
+              </label>
+              <input
+                id="editAdminTopeDeuda"
+                type="number"
+                min={0}
+                value={editAdminTopeDeuda}
+                onChange={(e) => setEditAdminTopeDeuda(e.target.value)}
+                className="retro-manager-modal__input"
+              />
+              <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+                Límite de saldo negativo. Al restar no puede pasar de −este monto.
+              </p>
             </div>
 
             <div>
@@ -1066,7 +1192,16 @@ export function AdminGestionSectionContent() {
         title="Error"
         message={errorMessage}
         onClose={() => setShowErrorModal(false)}
+        onRecharge={() => setShowAdminRecargaModal(true)}
         zIndex={140}
+      />
+
+      <AdminRecargaModal
+        open={showAdminRecargaModal}
+        onClose={() => setShowAdminRecargaModal(false)}
+        onRecargaExitosa={() => {
+          void fetchAdmins();
+        }}
       />
 
       <RetroManagerProgressModal open={processing} message="Procesando operación..." zIndex={150} />

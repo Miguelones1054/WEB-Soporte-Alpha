@@ -52,6 +52,8 @@ export type {
 export { AdminRecargaModal } from './AdminRecargaModal';
 export type { AdminRecargaModalProps } from './AdminRecargaModal';
 
+export { AdminBalanceMeter, formatAdminCop, balanceTone } from './AdminBalanceMeter';
+
 export { RetroHubLayout } from './RetroHubLayout';
 export type { RetroHubLayoutProps } from './RetroHubLayout';
 

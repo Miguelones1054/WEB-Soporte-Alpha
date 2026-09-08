@@ -1,4 +1,4 @@
-import { DARKLIVERY_API_BASE } from './constants';
+import { DARKLIVERY_API_BASE, API_BASE_URL } from './constants';
 
 export type AdminRecargaEstado =
   | 'PENDING'
@@ -7,6 +7,8 @@ export type AdminRecargaEstado =
   | 'VOIDED'
   | 'ERROR'
   | string;
+
+export type AdminRecargaMetodo = 'NEQUI' | 'DAVIPLATA';
 
 export const ADMIN_RECARGA_ESTADOS_FINALES: AdminRecargaEstado[] = [
   'APPROVED',
@@ -20,11 +22,16 @@ export interface AdminRecargaResponse {
   transaccion_id: string;
   monto_pesos: number;
   saldo_acreditar: number;
-  telefono_nequi_cobro: string;
+  telefono_nequi_cobro?: string;
+  documento_tipo?: string;
+  documento_numero?: string;
+  otp_url?: string | null;
+  otp_listo?: boolean;
   estado: AdminRecargaEstado;
   admin_id?: number;
   admin_email?: string;
   tipo?: string;
+  metodo_pago?: string;
   status_message?: string;
   detail?: string;
 }
@@ -37,6 +44,11 @@ export interface AdminRecargaTransaccionResponse {
   detail?: string;
   monto_pesos?: number;
   telefono_nequi?: string;
+  documento_tipo?: string;
+  documento_numero?: string;
+  otp_url?: string | null;
+  otp_listo?: boolean;
+  metodo_pago?: string;
   new_balance?: number;
   previous_balance?: number;
   saldo_acreditar?: number;
@@ -58,12 +70,15 @@ export function mensajeErrorRecargaAdmin(
   estado: string,
   statusMessage?: string,
   detail?: string,
+  metodo: AdminRecargaMetodo = 'NEQUI',
 ): string {
   if (estado === 'ERROR' && esAdminNequiClienteNoExiste(statusMessage ?? detail)) {
     return ADMIN_NEQUI_CLIENTE_NO_EXISTE_MENSAJE;
   }
   if (estado === 'DECLINED') {
-    return 'El pago fue rechazado en Nequi';
+    return metodo === 'DAVIPLATA'
+      ? 'El pago fue rechazado en Daviplata'
+      : 'El pago fue rechazado en Nequi';
   }
   if (statusMessage?.trim()) {
     return statusMessage.trim();
@@ -77,6 +92,11 @@ export function mensajeErrorRecargaAdmin(
 export function validarNequiReal(numero: string): boolean {
   const n = numero.trim().replace(/\s/g, '');
   return /^3\d{9}$/.test(n);
+}
+
+export function validarDocumentoDaviplata(numero: string): boolean {
+  const n = numero.trim().replace(/\D/g, '');
+  return n.length >= 5 && n.length <= 15;
 }
 
 export function formatCop(amount: number): string {
@@ -106,12 +126,25 @@ async function parseJsonResponse<T>(res: Response): Promise<T> {
 
 export async function ejecutarRecargaAdmin(
   adminToken: string,
-  params: { valor: number; nequi: string },
+  params:
+    | { valor: number; metodo: 'NEQUI'; nequi: string }
+    | {
+        valor: number;
+        metodo: 'DAVIPLATA';
+        documento_tipo: string;
+        documento_numero: string;
+      },
 ): Promise<AdminRecargaResponse> {
   const qs = new URLSearchParams({
     valor: String(params.valor),
-    nequi: params.nequi,
+    metodo: params.metodo,
   });
+  if (params.metodo === 'NEQUI') {
+    qs.set('nequi', params.nequi);
+  } else {
+    qs.set('documento_tipo', params.documento_tipo);
+    qs.set('documento_numero', params.documento_numero);
+  }
   const res = await fetch(`${DARKLIVERY_API_BASE}/admin-alpha/recargar?${qs}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${adminToken}` },

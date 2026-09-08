@@ -14,6 +14,7 @@ import {
   type GananciaOperation,
   formatGananciaCurrency,
   formatGananciaDate,
+  formatSignedGananciaCurrency,
   gananciaOperationKey,
   getOperationLabel,
 } from './gananciasShared';
@@ -177,18 +178,18 @@ export function GananciasDashboard({
       <div className="retro-stat-grid">
         <div className="retro-stat-card">
           <p className="retro-stat-card__label">{periodLabel}</p>
-          <p className="retro-stat-card__value retro-text-ok">
+          <p className={`retro-stat-card__value ${periodValue < 0 ? 'retro-text-error' : 'retro-text-ok'}`}>
             <span className="retro-stat-card__value-row">
-              <span>${formatGananciaCurrency(periodValue)}</span>
+              <span>{formatSignedGananciaCurrency(periodValue)}</span>
               <RetroIcon name="office/calendar" size={16} alt="" />
             </span>
           </p>
         </div>
         <div className="retro-stat-card">
           <p className="retro-stat-card__label">Ganancia histórica</p>
-          <p className="retro-stat-card__value retro-text-ok">
+          <p className={`retro-stat-card__value ${totalHistorico < 0 ? 'retro-text-error' : 'retro-text-ok'}`}>
             <span className="retro-stat-card__value-row">
-              <span>${formatGananciaCurrency(totalHistorico)}</span>
+              <span>{formatSignedGananciaCurrency(totalHistorico)}</span>
               <RetroIcon name="office/bar_graph" size={16} alt="" />
             </span>
           </p>
@@ -216,7 +217,7 @@ export function GananciasDashboard({
                 <th>Fecha</th>
                 {showAdminColumn && <th>Administrador</th>}
                 <th>Tipo</th>
-                <th>Usuario</th>
+                <th>Usuario / concepto</th>
                 <th>Valor cliente</th>
                 <th>Costo admin</th>
                 <th>Ganancia</th>
@@ -245,11 +246,24 @@ export function GananciasDashboard({
                       </td>
                     )}
                     <td>{getOperationLabel(op.operation_type)}</td>
-                    <td>{op.target_user || '—'}</td>
+                    <td>
+                      {op.operation_type === 'ADMIN_EGRESO' ? (
+                        <>
+                          <div>{op.reason || 'Egreso'}</div>
+                          {op.target_user ? (
+                            <div className="retro-ganancias-admin-email">por {op.target_user}</div>
+                          ) : null}
+                        </>
+                      ) : (
+                        op.target_user || '—'
+                      )}
+                    </td>
                     <td>${formatGananciaCurrency(op.valor_cliente || 0)}</td>
                     <td>${formatGananciaCurrency(op.costo_admin || 0)}</td>
-                    <td className="retro-text-ok">${formatGananciaCurrency(op.ganancia || 0)}</td>
-                    <td>{op.porcentaje}%</td>
+                    <td className={op.ganancia < 0 ? 'retro-text-error' : 'retro-text-ok'}>
+                      {formatSignedGananciaCurrency(op.ganancia || 0)}
+                    </td>
+                    <td>{op.operation_type === 'ADMIN_EGRESO' ? '—' : `${op.porcentaje}%`}</td>
                     {canDelete && (
                       <td className="retro-ganancias-delete-cell">
                         <button
@@ -284,8 +298,8 @@ export function GananciasDashboard({
                   <td>
                     <strong>${formatGananciaCurrency(columnTotals.costoAdmin)}</strong>
                   </td>
-                  <td className="retro-text-ok">
-                    <strong>${formatGananciaCurrency(columnTotals.ganancia)}</strong>
+                  <td className={columnTotals.ganancia < 0 ? 'retro-text-error' : 'retro-text-ok'}>
+                    <strong>{formatSignedGananciaCurrency(columnTotals.ganancia)}</strong>
                   </td>
                   <td>—</td>
                   {canDelete && <td>—</td>}

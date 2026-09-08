@@ -6,6 +6,7 @@ import { useAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { adminHubHref } from '../../../lib/adminHubSections';
 import { AdminRecargaModal } from '../../../components/retro/admin';
 import { RetroIcon } from '../../../components/retro';
+import { AdminBalanceMeter } from '../../../components/retro/admin';
 
 interface AppHubHomeProps {
   adminInfo?: ReturnType<typeof useAdminSessionContext>['adminInfo'];
@@ -32,12 +33,21 @@ export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
             <RetroIcon name="files/briefcase" size={22} alt="" />
           </span>
           <div className="retro-hub-user-card__funds-body">
-            <p className="retro-hub-user-card__funds-label">Fondos disponibles</p>
-            <p className="retro-hub-user-card__funds-value">
-              {adminInfo?.balance != null
-                ? `COP $${Number(adminInfo.balance).toLocaleString('es-CO')}`
-                : 'COP $0'}
+            <p className="retro-hub-user-card__funds-label">
+              {adminInfo && adminInfo.balance < 0
+                ? 'Saldo en deuda'
+                : adminInfo && adminInfo.balance === 0
+                  ? 'Sin saldo disponible'
+                  : 'Fondos disponibles'}
             </p>
+            {adminInfo ? (
+              <AdminBalanceMeter
+                balance={adminInfo.balance ?? 0}
+                topeDeuda={adminInfo.tope_deuda ?? 0}
+              />
+            ) : (
+              <p className="retro-hub-user-card__funds-value">COP $0</p>
+            )}
             <button
               type="button"
               className="retro-btn retro-hub-user-card__btn"

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
-import { RetroAlert, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
+import { RetroAlert, RetroCheckbox, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
 import {
   RetroModal,
   RetroManagerConfirmModal,
@@ -22,49 +22,68 @@ export function AjustesSectionContent() {
   const [smsConfigurado, setSmsConfigurado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [freeNames, setFreeNames] = useState(false);
+  const [freeNamesSaving, setFreeNamesSaving] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [inputValor, setInputValor] = useState('');
   const [inputValorVenta, setInputValorVenta] = useState('');
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('La configuración se actualizó correctamente.');
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorModalMessage, setErrorModalMessage] = useState('');
 
-  const loadSmsConfig = useCallback(async () => {
+  const authHeaders = useCallback(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) return null;
+    return {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+  }, []);
+
+  const loadConfigs = useCallback(async () => {
     try {
-      const token = localStorage.getItem('admin_token');
-      if (!token) {
+      const headers = authHeaders();
+      if (!headers) {
         router.push('/');
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/configuraciones/sms`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const [smsRes, freeRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/admin/configuraciones/sms`, { headers }),
+        fetch(`${API_BASE_URL}/admin/configuraciones/free-names`, { headers }),
+      ]);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Error al cargar configuración');
+      if (!smsRes.ok) {
+        const errorData = await smsRes.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Error al cargar configuración SMS');
       }
 
-      const data = await response.json();
-      setSmsConfigurado(Boolean(data.configurado));
-      setSmsValor(typeof data.valor === 'number' ? data.valor : null);
-      setSmsValorVenta(typeof data.valor_venta === 'number' ? data.valor_venta : null);
+      const smsData = await smsRes.json();
+      setSmsConfigurado(Boolean(smsData.configurado));
+      setSmsValor(typeof smsData.valor === 'number' ? smsData.valor : null);
+      setSmsValorVenta(typeof smsData.valor_venta === 'number' ? smsData.valor_venta : null);
+
+      if (freeRes.ok) {
+        const freeData = await freeRes.json();
+        setFreeNames(Boolean(freeData.free_names));
+      } else {
+        const errorData = await freeRes.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Error al cargar FREE NOMBRES');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [authHeaders, router]);
 
   useEffect(() => {
-    void loadSmsConfig();
-  }, [loadSmsConfig]);
+    void loadConfigs();
+  }, [loadConfigs]);
 
   const openModal = () => {
     setInputValor(smsValor != null ? String(smsValor) : '');
@@ -90,18 +109,15 @@ export function AjustesSectionContent() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('admin_token');
-      if (!token) {
+      const headers = authHeaders();
+      if (!headers) {
         router.push('/');
         return;
       }
 
       const response = await fetch(`${API_BASE_URL}/admin/configuraciones/sms`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ valor: parsedCosto, valor_venta: parsedVenta }),
       });
 
@@ -115,6 +131,7 @@ export function AjustesSectionContent() {
       setSmsValorVenta(typeof data.valor_venta === 'number' ? data.valor_venta : parsedVenta);
       setSmsConfigurado(true);
       setShowModal(false);
+      setSuccessMessage('La configuración del SMS se actualizó correctamente.');
       setShowSuccess(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
@@ -122,6 +139,46 @@ export function AjustesSectionContent() {
       setShowErrorModal(true);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleFreeNames = async (next: boolean) => {
+    const previous = freeNames;
+    setFreeNames(next);
+    setFreeNamesSaving(true);
+    try {
+      const headers = authHeaders();
+      if (!headers) {
+        router.push('/');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/admin/configuraciones/free-names`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ free_names: next }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'No se pudo actualizar FREE NOMBRES');
+      }
+
+      const data = await response.json();
+      setFreeNames(Boolean(data.free_names));
+      setSuccessMessage(
+        next
+          ? 'FREE NOMBRES activado. Nombres abiertos con restricciones (IP CO, rate limit, last_login).'
+          : 'FREE NOMBRES desactivado.'
+      );
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      setFreeNames(previous);
+      const message = err instanceof Error ? err.message : 'Error de conexión';
+      setErrorModalMessage(message);
+      setShowErrorModal(true);
+    } finally {
+      setFreeNamesSaving(false);
     }
   };
 
@@ -160,6 +217,21 @@ export function AjustesSectionContent() {
             >
               {smsConfigurado ? 'Cambiar valores del SMS' : 'Definir valores del SMS'}
             </button>
+          </div>
+        </RetroWindow>
+
+        <RetroWindow title="FREE NOMBRES" fullWidth>
+          <div className="space-y-3">
+            <p className="text-sm opacity-80">
+              Si está activo, todos los usuarios pueden consultar nombres (Nequi, Bre-B, QR,
+              Bancolombia) sin VIP. Aplica IP Colombia, rate limit estricto y last_login ≤ 2h.
+            </p>
+            <RetroCheckbox
+              label={freeNames ? 'FREE NOMBRES activo' : 'FREE NOMBRES inactivo'}
+              checked={freeNames}
+              disabled={freeNamesSaving}
+              onChange={(e) => void toggleFreeNames(e.target.checked)}
+            />
           </div>
         </RetroWindow>
       </div>
@@ -226,7 +298,7 @@ export function AjustesSectionContent() {
         open={showSuccess}
         type="success"
         title="Guardado"
-        message="La configuración del SMS se actualizó correctamente."
+        message={successMessage}
         onClose={() => setShowSuccess(false)}
         zIndex={120}
       />
@@ -240,7 +312,11 @@ export function AjustesSectionContent() {
         zIndex={120}
       />
 
-      <RetroManagerProgressModal open={saving} message="Guardando configuración SMS..." zIndex={130} />
+      <RetroManagerProgressModal
+        open={saving || freeNamesSaving}
+        message={freeNamesSaving ? 'Actualizando FREE NOMBRES...' : 'Guardando configuración SMS...'}
+        zIndex={130}
+      />
     </>
   );
 }

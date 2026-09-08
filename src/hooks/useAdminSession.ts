@@ -14,6 +14,7 @@ export interface AdminInfo {
   active: boolean;
   balance: number;
   porcentaje?: number | null;
+  tope_deuda?: number | null;
 }
 
 export interface AdminUser {

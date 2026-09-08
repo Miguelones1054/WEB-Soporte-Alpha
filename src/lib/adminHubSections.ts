@@ -15,19 +15,21 @@ export const ADMIN_HUB_SECTIONS = [
   'admin-gestion',
   'plantillas-notificaciones',
   'eventos',
+  'alertas',
+  'api',
 ] as const;
 
 export type AdminHubSection = (typeof ADMIN_HUB_SECTIONS)[number];
 
 export const HUB_SECTION_META: Record<
   AdminHubSection,
-  { title: string; icon: RetroIconName; ownerOnly?: boolean }
+  { title: string; icon: RetroIconName; ownerOnly?: boolean; notForPartner?: boolean }
 > = {
   nequi: { title: 'Nequi — Gestión de usuarios', icon: 'navigation/program_manager' },
   bancolombia: { title: 'Bancolombia — Gestión de usuarios', icon: 'navigation/computer_explorer' },
   daviplata: { title: 'Daviplata — Gestión de usuarios', icon: 'communication/envelope_open_sheet' },
   tarifas: { title: 'Tarifas', icon: 'files/briefcase' },
-  estadisticas: { title: 'Estadísticas', icon: 'office/chart1' },
+  estadisticas: { title: 'Estadísticas', icon: 'office/chart1', notForPartner: true },
   registros: { title: 'Registros de operaciones', icon: 'office/appwizard_list' },
   'facturacion-sms': { title: 'Facturación SMS', icon: 'office/document' },
   ganancias: { title: 'Ganancias del administrador', icon: 'office/bar_graph' },
@@ -49,6 +51,16 @@ export const HUB_SECTION_META: Record<
     icon: 'communication/envelope_closed',
     ownerOnly: true,
   },
+  alertas: {
+    title: 'Alertas',
+    icon: 'communication/msg_warning',
+    notForPartner: true,
+  },
+  api: {
+    title: 'API — Integración por API key',
+    icon: 'security/key_world',
+    notForPartner: true,
+  },
 };
 
 /** Rutas legacy → sección del hub */
@@ -67,6 +79,8 @@ export const LEGACY_HUB_PATHS: Record<string, AdminHubSection> = {
   '/admin-panel/admin-gestion': 'admin-gestion',
   '/admin-panel/plantillas-notificaciones': 'plantillas-notificaciones',
   '/admin-panel/eventos': 'eventos',
+  '/admin-panel/alertas': 'alertas',
+  '/admin-panel/api': 'api',
 };
 
 export function isAdminHubSection(value: string | null | undefined): value is AdminHubSection {

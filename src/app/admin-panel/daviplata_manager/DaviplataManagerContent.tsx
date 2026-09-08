@@ -11,7 +11,6 @@ import {
   type AdminBalanceDeduction,
 } from '../../../lib/adminBalanceDeduction';
 import { humanizeNotificationError, parseApiErrorDetail } from '../../../lib/humanizeNotificationError';
-import { playRetroSound } from '../../../lib/retroSounds';
 import { RetroIcon, RetroSelect } from '../../../components/retro';
 import {
   AppGlobalNotificationControl,
@@ -29,6 +28,7 @@ import {
   RetroModalTextarea,
   RetroUserDetailField,
 } from '../../../components/retro/admin';
+import { vipFinLabel, vipInicioLabel } from '../../../lib/vipVigencia';
 
 export interface DaviplataManagerContentProps {
   embedded?: boolean;
@@ -50,6 +50,10 @@ interface UserData {
   model: string;
   package_name: string;
   has_fcm_token: boolean;
+  /** Estado VIP derivado de Firestore `premium`. */
+  vip_status: string;
+  vip_sub_active?: string | null;
+  vip_expires_at?: string | null;
 }
 
 const QUICK_RECHARGE_OPTIONS = [
@@ -127,7 +131,16 @@ export function DaviplataManagerContent({
   const [selectedRandomOption, setSelectedRandomOption] = useState<string | null>(null);
   const [showUserCreatedModal, setShowUserCreatedModal] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState('');
-  const [pendingShareModal, setPendingShareModal] = useState<'balance' | 'userCreated' | null>(null);
+  const [pendingShareModal, setPendingShareModal] = useState<'balance' | 'userCreated' | 'vip' | null>(null);
+
+  const [showUpgradeVipConfirmModal, setShowUpgradeVipConfirmModal] = useState(false);
+  const [showCancelVipConfirmModal, setShowCancelVipConfirmModal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
+  const [vipModalData, setVipModalData] = useState<{
+    username: string;
+    startDate: string;
+    expiryDate: string;
+  } | null>(null);
 
   const hubSession = useOptionalAdminSessionContext();
   const currentAdminBalance = Number(hubSession?.adminInfo?.balance ?? 0);
@@ -137,6 +150,8 @@ export function DaviplataManagerContent({
       document.title = 'Daviplata Admin';
     }
   }, [embedded]);
+
+  const isPartner = hubSession?.adminInfo?.role === 'partner';
 
   const showResult = (message: string, type: 'success' | 'error' = 'success') => {
     setConfirmMessage(message);
@@ -185,12 +200,15 @@ export function DaviplataManagerContent({
     } else if (pendingShareModal === 'userCreated') {
       setShowUserCreatedModal(true);
       setPendingShareModal(null);
+    } else if (pendingShareModal === 'vip') {
+      setShowVipModal(true);
+      setPendingShareModal(null);
     }
   };
 
   const scheduleShareModalAfterAdmin = (
     deduction: AdminBalanceDeduction | null,
-    shareType: 'balance' | 'userCreated',
+    shareType: 'balance' | 'userCreated' | 'vip',
     openShare: () => void,
   ) => {
     if (deduction) {
@@ -267,6 +285,15 @@ export function DaviplataManagerContent({
           model: String(deviceDetails.model ?? ''),
           package_name: String(deviceDetails.package_name ?? ''),
           has_fcm_token: Boolean(String(deviceDetails.fcm_token || '').trim()),
+          vip_status: raw.premium === true || raw.vip_status === 'VIP' ? 'VIP' : 'No VIP',
+          vip_sub_active:
+            (raw.vip_sub_active as string | null | undefined) ??
+            (json.vip_sub_active as string | null | undefined) ??
+            null,
+          vip_expires_at:
+            (raw.vip_expires_at as string | null | undefined) ??
+            (json.vip_expires_at as string | null | undefined) ??
+            null,
         });
         setUserIdInput(String(raw.numeroCel ?? phone));
       } else if (response.status === 404) {
@@ -320,6 +347,89 @@ export function DaviplataManagerContent({
     setBalanceConfirmationData(null);
   };
 
+  const formatVipDate = (date: Date) => {
+    const formattedDate = date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const formattedTime = date.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    return `${formattedDate} a las ${formattedTime}`;
+  };
+
+  const copyVipMessage = async () => {
+    if (!vipModalData) return;
+
+    const message = `✨ ¡FELICIDADES!
+
+👤 El usuario ${vipModalData.username} ahora es premium
+
+📅 Inicio: ${vipModalData.startDate}
+
+🏆 Tendrá acceso VIP hasta el ${vipModalData.expiryDate}
+
+⭐ ¡Disfruta de todos los beneficios premium! ⭐`;
+
+    await copyTextToClipboard(message);
+  };
+
+  const closeVipModal = () => {
+    setShowVipModal(false);
+    setVipModalData(null);
+    searchUser();
+  };
+
+  const upgradeVip = async () => {
+    if (!userData) return;
+    setShowProgressBar(true);
+    try {
+      const result = await executeJsonRequest(
+        `${API_BASE_URL}/daviplata/user/${encodeURIComponent(userData.numeroCel)}/upgrade-vip`,
+        { method: 'POST' },
+      );
+
+      const start = new Date();
+      const expiry = new Date(start);
+      expiry.setMonth(expiry.getMonth() + 1);
+
+      const deduction = resolveAdminDeduction(result);
+      queueAdminBalanceModal(deduction);
+
+      setVipModalData({
+        username: userData.username || userData.numeroCel,
+        startDate: formatVipDate(start),
+        expiryDate: formatVipDate(expiry),
+      });
+
+      scheduleShareModalAfterAdmin(deduction, 'vip', () => setShowVipModal(true));
+      await searchUser();
+    } catch (error) {
+      showResult(error instanceof Error ? error.message : 'Error al activar VIP', 'error');
+    } finally {
+      setShowProgressBar(false);
+    }
+  };
+
+  const cancelVip = async () => {
+    if (!userData) return;
+    setShowProgressBar(true);
+    try {
+      const result = await executeJsonRequest(
+        `${API_BASE_URL}/daviplata/user/${encodeURIComponent(userData.numeroCel)}/cancel-vip`,
+        { method: 'POST' },
+      );
+      await searchUser();
+      showResult(result.message || 'VIP cancelado correctamente', 'success');
+    } catch (error) {
+      showResult(error instanceof Error ? error.message : 'Error al cancelar VIP', 'error');
+    } finally {
+      setShowProgressBar(false);
+    }
+  };
+
   const handleQuickRecharge = async () => {
     if (!userData || !recargaData) return;
     setShowProgressBar(true);
@@ -338,7 +448,6 @@ export function DaviplataManagerContent({
         amount: Number(result.amount_added ?? 0),
         newBalance: Number(result.saldo_total ?? 0),
       });
-      playRetroSound('success');
       await searchUser(userData.numeroCel);
       scheduleShareModalAfterAdmin(deduction, 'balance', () => setShowBalanceConfirmationModal(true));
     } catch (error) {
@@ -389,11 +498,9 @@ export function DaviplataManagerContent({
           amount,
           newBalance: Number(result.new_balance ?? 0),
         });
-        playRetroSound('success');
         await searchUser(userData.numeroCel);
         scheduleShareModalAfterAdmin(deduction, 'balance', () => setShowBalanceConfirmationModal(true));
       } else {
-        playRetroSound('success');
         await searchUser(userData.numeroCel);
         showResult(result.message || 'Saldo actualizado', 'success');
       }
@@ -427,7 +534,6 @@ export function DaviplataManagerContent({
         { method: 'PUT', body: JSON.stringify(payload) },
       );
       setShowEditModal(false);
-      playRetroSound('success');
       const newPhone = String(result.numero_cel ?? editPhone).trim();
       await searchUser(newPhone);
       showResult(result.message || 'Usuario actualizado correctamente', 'success');
@@ -457,7 +563,6 @@ export function DaviplataManagerContent({
       setShowNotifyModal(false);
       setNotifyTitle('');
       setNotifyBody('');
-      playRetroSound('success');
       showResult(result.message || 'Notificación enviada correctamente', 'success');
     } catch (error) {
       showResult(error instanceof Error ? error.message : 'Error de conexión', 'error');
@@ -475,7 +580,6 @@ export function DaviplataManagerContent({
           `${API_BASE_URL}/daviplata/user/${encodeURIComponent(userData.numeroCel)}/unban`,
           { method: 'POST' },
         );
-        playRetroSound('success');
         await searchUser(userData.numeroCel);
         showResult(result.message || 'Usuario habilitado correctamente', 'success');
       } catch (error) {
@@ -513,7 +617,6 @@ export function DaviplataManagerContent({
         },
       );
       setShowBanModal(false);
-      playRetroSound('success');
       await searchUser(userData.numeroCel);
       showResult(result.message || 'Usuario inhabilitado correctamente', 'success');
     } catch (error) {
@@ -531,7 +634,6 @@ export function DaviplataManagerContent({
         `${API_BASE_URL}/daviplata/user/${encodeURIComponent(userData.numeroCel)}/unlink`,
         { method: 'POST' },
       );
-      playRetroSound('success');
       await searchUser(userData.numeroCel);
       showResult(result.message || 'Dispositivo desvinculado correctamente', 'success');
     } catch (error) {
@@ -619,7 +721,6 @@ export function DaviplataManagerContent({
       const deduction = resolveAdminDeduction(result);
       queueAdminBalanceModal(deduction);
       setUserCreatedMessage(result.client_message ?? '');
-      playRetroSound('success');
       closeCreateUserModal();
       scheduleShareModalAfterAdmin(deduction, 'userCreated', () => setShowUserCreatedModal(true));
     } catch (error) {
@@ -651,7 +752,6 @@ export function DaviplataManagerContent({
         }),
       });
       setUserCreatedMessage(result.client_message ?? '');
-      playRetroSound('success');
       setShowUserCreatedModal(true);
       closeCreateTestUserModal();
     } catch (error) {
@@ -721,7 +821,7 @@ export function DaviplataManagerContent({
             </div>
           )}
 
-          {!userData && (
+          {!userData && !isPartner && (
             <>
               <div className="text-center mt-6 mb-4">
                 <h4 className="text-lg font-medium text-gray-300">Acciones rápidas</h4>
@@ -775,14 +875,16 @@ export function DaviplataManagerContent({
                       </p>
                     </div>
                     <div className="retro-user-panel__header-actions">
-                      <button
-                        type="button"
-                        className="retro-user-panel__icon-btn"
-                        onClick={openEditModal}
-                        title="Editar usuario"
-                      >
-                        <RetroIcon name="users/computer_user_pencil" size={16} alt="Editar" />
-                      </button>
+                      {!isPartner && (
+                        <button
+                          type="button"
+                          className="retro-user-panel__icon-btn"
+                          onClick={openEditModal}
+                          title="Editar usuario"
+                        >
+                          <RetroIcon name="users/computer_user_pencil" size={16} alt="Editar" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -815,9 +917,11 @@ export function DaviplataManagerContent({
                       label="Saldo disponible"
                       valueSize="lg"
                       onAdd={() => openBalanceModal('add')}
-                      onSubtract={() => openBalanceModal('subtract')}
+                      addLabel="Recargar"
+                      addButtonVariant="warning"
+                      onSubtract={isPartner ? undefined : () => openBalanceModal('subtract')}
                       addTitle="Recargar saldo"
-                      subtractTitle="Restar saldo"
+                      subtractTitle={isPartner ? undefined : "Restar saldo"}
                     >
                       {`$${Number(userData.saldo || 0).toLocaleString('es-CO')}`}
                     </RetroUserDetailField>
@@ -826,9 +930,9 @@ export function DaviplataManagerContent({
                       icon="security/key_win"
                       label="Clave"
                       valueVariant="warning"
-                      onAction={openEditModal}
-                      actionLabel="Cambiar"
-                      actionTitle="Cambiar clave"
+                      onAction={isPartner ? undefined : openEditModal}
+                      actionLabel={isPartner ? undefined : "Cambiar"}
+                      actionTitle={isPartner ? undefined : "Cambiar clave"}
                     >
                       {userData.pin || 'No disponible'}
                     </RetroUserDetailField>
@@ -837,12 +941,52 @@ export function DaviplataManagerContent({
                       icon="system/palm_computer"
                       label="Dispositivo"
                       valueVariant={userData.device_linked ? 'success' : 'danger'}
-                      onAction={userData.device_linked ? unlinkDevice : undefined}
-                      actionLabel="Desvincular"
-                      actionTitle="Desvincular dispositivo"
+                      onAction={!isPartner && userData.device_linked ? unlinkDevice : undefined}
+                      actionLabel={isPartner ? undefined : "Desvincular"}
+                      actionTitle={isPartner ? undefined : "Desvincular dispositivo"}
                       actionVariant="danger"
                     >
                       {userData.device_status}
+                    </RetroUserDetailField>
+
+                    <RetroUserDetailField
+                      icon="navigation/world_star"
+                      label="Estado VIP"
+                      valueVariant={userData.vip_status === 'VIP' ? 'warning' : 'muted'}
+                      onAction={() => {
+                        if (userData.vip_status === 'VIP') {
+                          if (isPartner) return;
+                          setShowCancelVipConfirmModal(true);
+                        } else {
+                          setShowUpgradeVipConfirmModal(true);
+                        }
+                      }}
+                      actionLabel={userData.vip_status === 'VIP' ? (isPartner ? undefined : 'Cancelar VIP') : 'Activar VIP'}
+                      actionTitle={userData.vip_status === 'VIP' ? (isPartner ? undefined : 'Cancelar VIP') : 'Activar VIP'}
+                      actionDisabled={showProgressBar || (isPartner && userData.vip_status === 'VIP')}
+                      actionVariant={userData.vip_status === 'VIP' ? 'danger' : 'default'}
+                    >
+                      {userData.vip_status}
+                    </RetroUserDetailField>
+
+                    <RetroUserDetailField
+                      icon="office/calendar"
+                      label="Fecha inicio de vigencia"
+                      valueVariant="muted"
+                    >
+                      {vipInicioLabel(userData.vip_status === 'VIP', userData.vip_sub_active)}
+                    </RetroUserDetailField>
+
+                    <RetroUserDetailField
+                      icon="office/calendar"
+                      label="Fecha fin de vigencia"
+                      valueVariant="muted"
+                    >
+                      {vipFinLabel(
+                        userData.vip_status === 'VIP',
+                        userData.vip_expires_at,
+                        userData.vip_sub_active,
+                      )}
                     </RetroUserDetailField>
 
                     <RetroUserDetailField icon="office/document" label="Versión app" valueVariant="muted">
@@ -884,19 +1028,23 @@ export function DaviplataManagerContent({
                   <hr className="retro-user-actions__divider" />
                   <p className="retro-user-actions__section-title">Gestionar usuario</p>
                   <div className="retro-user-actions__buttons">
-                    <button
-                      type="button"
-                      onClick={toggleBanUser}
-                      className={`retro-user-actions__btn ${
-                        userData.baneado ? 'retro-user-actions__btn--success' : 'retro-user-actions__btn--danger'
-                      }`}
-                    >
-                      {userData.baneado ? 'Habilitar usuario' : 'Inhabilitar usuario'}
-                    </button>
+                    {!isPartner && (
+                      <button
+                        type="button"
+                        onClick={toggleBanUser}
+                        className={`retro-user-actions__btn ${
+                          userData.baneado ? 'retro-user-actions__btn--success' : 'retro-user-actions__btn--danger'
+                        }`}
+                      >
+                        {userData.baneado ? 'Habilitar usuario' : 'Inhabilitar usuario'}
+                      </button>
+                    )}
 
-                    <button type="button" onClick={openEditModal} className="retro-user-actions__btn">
-                      Editar usuario
-                    </button>
+                    {!isPartner && (
+                      <button type="button" onClick={openEditModal} className="retro-user-actions__btn">
+                        Editar usuario
+                      </button>
+                    )}
 
                     <button
                       type="button"
@@ -1352,12 +1500,131 @@ export function DaviplataManagerContent({
         </RetroModal>
       )}
 
+      {showUpgradeVipConfirmModal && userData && (
+        <RetroModal
+          open
+          title="Confirmar actualización a VIP"
+          onClose={() => setShowUpgradeVipConfirmModal(false)}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+          <div className="retro-manager-modal__intro">
+            <p className="retro-manager-modal__text">
+              ¿Seguro que deseas actualizar a VIP al usuario
+            </p>
+            <p className="retro-manager-modal__highlight">
+              {userData.username || userData.numeroCel}
+            </p>
+            <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+              Se descontará el costo VIP de tu saldo de administrador.
+            </p>
+          </div>
+
+          <div className="retro-manager-modal__actions">
+            <button
+              onClick={() => setShowUpgradeVipConfirmModal(false)}
+              className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                setShowUpgradeVipConfirmModal(false);
+                void upgradeVip();
+              }}
+              className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+            >
+              Sí, actualizar
+            </button>
+          </div>
+        </RetroModal>
+      )}
+
+      {showCancelVipConfirmModal && userData && (
+        <RetroModal
+          open
+          title="Confirmar cancelación de VIP"
+          onClose={() => setShowCancelVipConfirmModal(false)}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+          <div className="retro-manager-modal__intro">
+            <p className="retro-manager-modal__text">
+              ¿Seguro que deseas cancelar el VIP del usuario
+            </p>
+            <p className="retro-manager-modal__highlight">
+              {userData.username || userData.numeroCel}
+            </p>
+            <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+              El usuario perderá los beneficios VIP de inmediato.
+            </p>
+          </div>
+
+          <div className="retro-manager-modal__actions">
+            <button
+              onClick={() => setShowCancelVipConfirmModal(false)}
+              className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                setShowCancelVipConfirmModal(false);
+                void cancelVip();
+              }}
+              className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+            >
+              Sí, cancelar VIP
+            </button>
+          </div>
+        </RetroModal>
+      )}
+
+      {showVipModal && vipModalData && (
+        <RetroModal
+          open
+          title="Comparte este mensaje con el cliente"
+          onClose={closeVipModal}
+          zIndex={130}
+          width="lg"
+          bodyClassName="retro-manager-modal__body"
+        >
+          <RetroModalBanner variant="success">
+            Usuario actualizado a VIP correctamente
+          </RetroModalBanner>
+
+          <RetroModalMessagePanel onCopy={copyVipMessage}>
+            <div className="retro-manager-modal__message-rich">
+              <div className="retro-manager-modal__message-emoji">✨</div>
+              <p className="retro-manager-modal__message-title">¡FELICIDADES!</p>
+              <p>
+                👤 El usuario <strong>{vipModalData.username}</strong> ahora es premium
+              </p>
+              <p>
+                📅 Inicio: <strong>{vipModalData.startDate}</strong>
+              </p>
+              <p>
+                🏆 Tendrá acceso VIP hasta el <strong>{vipModalData.expiryDate}</strong>
+              </p>
+              <p>⭐ ¡Disfruta de todos los beneficios premium! ⭐</p>
+            </div>
+          </RetroModalMessagePanel>
+
+          <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
+            <button onClick={closeVipModal} className="retro-manager-btn retro-manager-btn--primary">
+              Cerrar
+            </button>
+          </div>
+        </RetroModal>
+      )}
+
       <RetroManagerConfirmModal
         open={confirmOpen}
         type={confirmType}
         title="Daviplata Alpha"
         message={confirmMessage}
         onClose={() => setConfirmOpen(false)}
+        onRecharge={() => setShowRecargaModal(true)}
       />
 
       <RetroAdminBalanceModal

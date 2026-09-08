@@ -34,3 +34,8 @@ export function generateRandomBancolombiaCredentials(): { usuario: string; pin: 
   const randomSuffix = Math.floor(Math.random() * 900) + 100;
   return { usuario: `${randomName}${randomSuffix}`, pin: randomPin4() };
 }
+
+/** Celular colombiano móvil (empieza en 3), igual que generateRandomNequiCredentials. */
+export function generateRandomDaviplataCredentials(): { phone: string; pin: string } {
+  return generateRandomNequiCredentials();
+}

@@ -27,7 +27,7 @@ import {
 } from '../../../components/retro/admin';
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { copyTextToClipboard } from '../../../lib/copyToClipboard';
-import { playRetroSound } from '../../../lib/retroSounds';
+import { vipFinLabel, vipInicioLabel } from '../../../lib/vipVigencia';
 
 interface AdminInfo {
   id: number;
@@ -57,6 +57,10 @@ interface UserData {
   type: string;
   /** Campo Firestore `sms` (SMS disponibles del usuario). */
   sms: number;
+  /** Estado VIP derivado de Firestore `premium`. */
+  vip_status: string;
+  vip_sub_active?: string | null;
+  vip_expires_at?: string | null;
 }
 
 // Función para formatear números grandes
@@ -174,6 +178,13 @@ export function BancolombiaManagerContent({
   const [showUserCreatedModal, setShowUserCreatedModal] = useState(false);
   const [userCreatedMessage, setUserCreatedMessage] = useState('');
   const [adminBalanceModalData, setAdminBalanceModalData] = useState<AdminBalanceDeduction | null>(null);
+  const [showVipModal, setShowVipModal] = useState(false);
+  const [vipModalData, setVipModalData] = useState<{
+    username: string;
+    expiryDate: string;
+  } | null>(null);
+  const [showUpgradeVipConfirmModal, setShowUpgradeVipConfirmModal] = useState(false);
+  const [showCancelVipConfirmModal, setShowCancelVipConfirmModal] = useState(false);
   const [editUserData, setEditUserData] = useState<{
     username: string;
     pin: string;
@@ -187,6 +198,8 @@ export function BancolombiaManagerContent({
   const hubSession = useOptionalAdminSessionContext();
 
   useScrollLock(!embedded && isDrawerOpen);
+
+  const isPartner = adminInfo?.role === 'partner';
 
   const queueAdminBalanceModal = (deduction: AdminBalanceDeduction | null) => {
     applyAdminBalanceDeduction<AdminInfo>(deduction, {
@@ -364,6 +377,15 @@ export function BancolombiaManagerContent({
           role: raw.role || 'regular',
           type: raw.type || 'regular',
           sms: Number(raw.sms ?? 0) || 0,
+          vip_status: raw.premium === true || raw.vip_status === 'VIP' ? 'VIP' : 'No VIP',
+          vip_sub_active:
+            (raw.vip_sub_active as string | null | undefined) ??
+            (json.vip_sub_active as string | null | undefined) ??
+            null,
+          vip_expires_at:
+            (raw.vip_expires_at as string | null | undefined) ??
+            (json.vip_expires_at as string | null | undefined) ??
+            null,
         };
         setUserData(data);
         setSearchError(null);
@@ -472,6 +494,15 @@ export function BancolombiaManagerContent({
           role: raw.role || 'regular',
           type: raw.type || 'regular',
           sms: Number(raw.sms ?? 0) || 0,
+          vip_status: raw.premium === true || raw.vip_status === 'VIP' ? 'VIP' : 'No VIP',
+          vip_sub_active:
+            (raw.vip_sub_active as string | null | undefined) ??
+            (json.vip_sub_active as string | null | undefined) ??
+            null,
+          vip_expires_at:
+            (raw.vip_expires_at as string | null | undefined) ??
+            (json.vip_expires_at as string | null | undefined) ??
+            null,
         };
         setUserData(data);
         setSearchError(null);
@@ -523,6 +554,26 @@ export function BancolombiaManagerContent({
     setBanReason('');
     setIsTemporaryBan(false);
     setBanDays(1);
+  };
+
+  const copyVipMessage = async () => {
+    if (!vipModalData) return;
+
+    const message = `✨ ¡FELICIDADES!
+
+👤 El usuario ${vipModalData.username} ahora es premium
+
+🏆 Tendrá acceso VIP hasta el ${vipModalData.expiryDate}
+
+⭐ ¡Disfruta de todos los beneficios premium! ⭐`;
+
+    await copyTextToClipboard(message);
+  };
+
+  const closeVipModal = () => {
+    setShowVipModal(false);
+    setVipModalData(null);
+    searchUser();
   };
 
   const copyBalanceMessage = async () => {
@@ -639,7 +690,6 @@ export function BancolombiaManagerContent({
         const deduction = extractAdminBalanceDeduction(result);
         queueAdminBalanceModal(deduction);
         setUserCreatedMessage(result.client_message ?? '');
-        playRetroSound('success');
         setShowUserCreatedModal(true);
         closeCreateUserModal();
       } else {
@@ -707,7 +757,6 @@ export function BancolombiaManagerContent({
       if (response.ok) {
         const result = await response.json();
         setUserCreatedMessage(result.client_message ?? '');
-        playRetroSound('success');
         setShowUserCreatedModal(true);
         closeCreateTestUserModal();
       } else {
@@ -849,7 +898,6 @@ export function BancolombiaManagerContent({
         newBalance: Number(result.saldo_total ?? 0),
       });
       queueAdminBalanceModal(deduction);
-      playRetroSound('success');
       setShowBalanceConfirmationModal(true);
       await searchUser();
     } catch (e) {
@@ -943,7 +991,7 @@ export function BancolombiaManagerContent({
     openSubtractModal();
   };
 
-  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
+  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'upgrade_vip' | 'cancel_vip' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
       alert('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -955,7 +1003,7 @@ export function BancolombiaManagerContent({
     setShowProgressBar(true);
 
     try {
-      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : action === 'add_sms' ? 'add-sms' : action === 'subtract_sms' ? 'subtract-sms' : '';
+      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'upgrade_vip' ? 'upgrade-vip' : action === 'cancel_vip' ? 'cancel-vip' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : action === 'add_sms' ? 'add-sms' : action === 'subtract_sms' ? 'subtract-sms' : '';
 
       if (action === 'update_user') {
         endpoint = '';
@@ -966,6 +1014,8 @@ export function BancolombiaManagerContent({
         (action === 'ban' ||
           action === 'unban' ||
           action === 'unlink' ||
+          action === 'upgrade_vip' ||
+          action === 'cancel_vip' ||
           action === 'add_balance' ||
           action === 'subtract_balance' ||
           action === 'add_sms' ||
@@ -1001,6 +1051,8 @@ export function BancolombiaManagerContent({
           : action === 'ban' ||
               action === 'unban' ||
               action === 'unlink' ||
+              action === 'upgrade_vip' ||
+              action === 'cancel_vip' ||
               action === 'add_balance' ||
               action === 'subtract_balance' ||
               action === 'add_sms' ||
@@ -1024,6 +1076,42 @@ export function BancolombiaManagerContent({
         const result = await response.json();
         message = result.message;
 
+        if (action === 'upgrade_vip') {
+          const expiryDate = new Date();
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
+          const formattedDate = expiryDate.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+          });
+          const formattedTime = expiryDate.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const deduction = extractAdminBalanceDeduction(result);
+          queueAdminBalanceModal(deduction);
+
+          setVipModalData({
+            username: username,
+            expiryDate: `${formattedDate} a las ${formattedTime}`,
+          });
+          setShowVipModal(true);
+
+          setShowProgressBar(false);
+          await searchUser();
+          return;
+        }
+
+        if (action === 'cancel_vip') {
+          setShowProgressBar(false);
+          await searchUser();
+          setConfirmationMessage(message || 'VIP cancelado correctamente');
+          setConfirmationType('success');
+          setShowConfirmationModal(true);
+          return;
+        }
+
         // Si es una acción de balance exitosa
         if ((action === 'add_balance' || action === 'subtract_balance') && result) {
           setShowProgressBar(false);
@@ -1041,7 +1129,6 @@ export function BancolombiaManagerContent({
               newBalance: result.data?.new_balance ?? result.new_balance ?? 0,
             });
             queueAdminBalanceModal(deduction);
-            playRetroSound('success');
             setShowBalanceConfirmationModal(true);
           }
           return;
@@ -1064,7 +1151,6 @@ export function BancolombiaManagerContent({
               newSms,
             });
             queueAdminBalanceModal(deduction);
-            playRetroSound('success');
             setShowSmsConfirmationModal(true);
           }
           return;
@@ -1493,7 +1579,7 @@ export function BancolombiaManagerContent({
           )}
 
           {/* Subtítulo Acciones rápidas */}
-          {!userData && (
+          {!userData && !isPartner && (
             <div className="text-center mt-6 mb-4">
               {loading ? (
                 <Shimmer className="h-6 w-48 mx-auto" />
@@ -1504,7 +1590,7 @@ export function BancolombiaManagerContent({
           )}
 
           {/* Botones de acciones rápidas */}
-          {!userData && (
+          {!userData && !isPartner && (
             <div className="flex justify-center gap-4 mt-4 flex-wrap">
               {loading ? (
                 <>
@@ -1580,11 +1666,25 @@ export function BancolombiaManagerContent({
                     <button
                       type="button"
                       className="retro-user-panel__icon-btn"
-                      onClick={openEditModal}
-                      title="Editar usuario"
+                      onClick={() =>
+                        router.push(
+                          `/admin-panel/bancolombia-movements?usuario=${encodeURIComponent(userData.usuarioLogin)}`,
+                        )
+                      }
+                      title="Ver movimientos"
                     >
-                      <RetroIcon name="users/computer_user_pencil" size={16} alt="Editar" />
+                      <RetroIcon name="office/document" size={16} alt="Movimientos" />
                     </button>
+                    {!isPartner && (
+                      <button
+                        type="button"
+                        className="retro-user-panel__icon-btn"
+                        onClick={openEditModal}
+                        title="Editar usuario"
+                      >
+                        <RetroIcon name="users/computer_user_pencil" size={16} alt="Editar" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1617,9 +1717,11 @@ export function BancolombiaManagerContent({
                     label="Saldo total"
                     valueSize="lg"
                     onAdd={handleSaldoIncrement}
-                    onSubtract={handleSaldoDecrement}
+                    addLabel="Recargar"
+                    addButtonVariant="warning"
+                    onSubtract={isPartner ? undefined : handleSaldoDecrement}
                     addTitle="Recargar saldo"
-                    subtractTitle="Restar saldo"
+                    subtractTitle={isPartner ? undefined : "Restar saldo"}
                   >
                     {loading ? (
                       <Shimmer className="h-8 w-32" />
@@ -1633,9 +1735,9 @@ export function BancolombiaManagerContent({
                     label="SMS"
                     valueVariant="success"
                     onAdd={handleSmsIncrement}
-                    onSubtract={handleSmsDecrement}
+                    onSubtract={isPartner ? undefined : handleSmsDecrement}
                     addTitle="Agregar SMS"
-                    subtractTitle="Restar SMS"
+                    subtractTitle={isPartner ? undefined : "Restar SMS"}
                   >
                     {loading ? <Shimmer className="h-6 w-16" /> : (userData.sms ?? 0)}
                   </RetroUserDetailField>
@@ -1651,19 +1753,70 @@ export function BancolombiaManagerContent({
                       loading ? 'muted' : userData.device_linked ? 'success' : 'danger'
                     }
                     onAction={
-                      userData.device_linked
+                      !isPartner && userData.device_linked
                         ? () => {
                             if (!userData) return;
                             handleUserAction('unlink', userData.numeroCel, userData.username);
                           }
                         : undefined
                     }
-                    actionLabel="Desvincular"
-                    actionTitle="Desvincular dispositivo"
+                    actionLabel={isPartner ? undefined : 'Desvincular'}
+                    actionTitle={isPartner ? undefined : 'Desvincular dispositivo'}
                     actionDisabled={showProgressBar}
                     actionVariant="danger"
                   >
                     {loading ? <Shimmer className="h-5 w-24" /> : userData.device_status}
+                  </RetroUserDetailField>
+
+                  <RetroUserDetailField
+                    icon="navigation/world_star"
+                    label="Estado VIP"
+                    valueVariant={
+                      loading ? 'muted' : userData.vip_status === 'VIP' ? 'warning' : 'muted'
+                    }
+                    onAction={() => {
+                      if (!userData) return;
+                      if (userData.vip_status === 'VIP') {
+                        if (isPartner) return;
+                        setShowCancelVipConfirmModal(true);
+                      } else {
+                        setShowUpgradeVipConfirmModal(true);
+                      }
+                    }}
+                    actionLabel={userData.vip_status === 'VIP' ? (isPartner ? undefined : 'Cancelar VIP') : 'Activar VIP'}
+                    actionTitle={userData.vip_status === 'VIP' ? (isPartner ? undefined : 'Cancelar VIP') : 'Activar VIP'}
+                    actionDisabled={showProgressBar || (isPartner && userData.vip_status === 'VIP')}
+                    actionVariant={userData.vip_status === 'VIP' ? 'danger' : 'default'}
+                  >
+                    {loading ? <Shimmer className="h-5 w-16" /> : userData.vip_status}
+                  </RetroUserDetailField>
+
+                  <RetroUserDetailField
+                    icon="office/calendar"
+                    label="Fecha inicio de vigencia"
+                    valueVariant="muted"
+                  >
+                    {loading ? (
+                      <Shimmer className="h-5 w-36" />
+                    ) : (
+                      vipInicioLabel(userData.vip_status === 'VIP', userData.vip_sub_active)
+                    )}
+                  </RetroUserDetailField>
+
+                  <RetroUserDetailField
+                    icon="office/calendar"
+                    label="Fecha fin de vigencia"
+                    valueVariant="muted"
+                  >
+                    {loading ? (
+                      <Shimmer className="h-5 w-36" />
+                    ) : (
+                      vipFinLabel(
+                        userData.vip_status === 'VIP',
+                        userData.vip_expires_at,
+                        userData.vip_sub_active,
+                      )
+                    )}
                   </RetroUserDetailField>
                 </div>
               </div>
@@ -1716,24 +1869,26 @@ export function BancolombiaManagerContent({
                 <hr className="retro-user-actions__divider" />
                 <p className="retro-user-actions__section-title">Gestionar usuario</p>
                 <div className="retro-user-actions__buttons">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!userData) return;
-                      if (userData.baneado) {
-                        handleUserAction('unban', userData.numeroCel, userData.username);
-                      } else {
-                        setBanReason('');
-                        setShowBanModal(true);
-                      }
-                    }}
-                    disabled={showProgressBar}
-                    className={`retro-user-actions__btn ${
-                      userData.baneado ? 'retro-user-actions__btn--success' : 'retro-user-actions__btn--danger'
-                    }`}
-                  >
-                    {userData.baneado ? 'Habilitar usuario' : 'Inhabilitar usuario'}
-                  </button>
+                  {!isPartner && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!userData) return;
+                        if (userData.baneado) {
+                          handleUserAction('unban', userData.numeroCel, userData.username);
+                        } else {
+                          setBanReason('');
+                          setShowBanModal(true);
+                        }
+                      }}
+                      disabled={showProgressBar}
+                      className={`retro-user-actions__btn ${
+                        userData.baneado ? 'retro-user-actions__btn--success' : 'retro-user-actions__btn--danger'
+                      }`}
+                    >
+                      {userData.baneado ? 'Habilitar usuario' : 'Inhabilitar usuario'}
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -2068,6 +2223,7 @@ export function BancolombiaManagerContent({
           message={confirmationMessage}
           title={confirmationType === 'error' ? 'Error' : 'Éxito'}
           onClose={() => setShowConfirmationModal(false)}
+          onRecharge={() => setShowRecargaModal(true)}
         />
       )}
 
@@ -2537,6 +2693,124 @@ export function BancolombiaManagerContent({
               <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
                 <button
                   onClick={closeUserCreatedModal}
+                  className="retro-manager-btn retro-manager-btn--primary"
+                >
+                  Cerrar
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
+      {/* Modal de confirmación al actualizar a VIP */}
+      {showUpgradeVipConfirmModal && userData && (
+        <RetroModal
+          open
+          title="Confirmar actualización a VIP"
+          onClose={() => setShowUpgradeVipConfirmModal(false)}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+              <div className="retro-manager-modal__intro">
+                <p className="retro-manager-modal__text">
+                  ¿Seguro que deseas actualizar a VIP al usuario
+                </p>
+                <p className="retro-manager-modal__highlight">
+                  {userData.username || userData.usuarioLogin}
+                </p>
+                <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+                  Se descontará el costo VIP de tu saldo de administrador.
+                </p>
+              </div>
+
+              <div className="retro-manager-modal__actions">
+                <button
+                  onClick={() => setShowUpgradeVipConfirmModal(false)}
+                  className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (!userData) return;
+                    setShowUpgradeVipConfirmModal(false);
+                    handleUserAction('upgrade_vip', userData.numeroCel, userData.username || userData.usuarioLogin);
+                  }}
+                  className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+                >
+                  Sí, actualizar
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
+      {/* Modal de confirmación al cancelar VIP */}
+      {showCancelVipConfirmModal && userData && (
+        <RetroModal
+          open
+          title="Confirmar cancelación de VIP"
+          onClose={() => setShowCancelVipConfirmModal(false)}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+              <div className="retro-manager-modal__intro">
+                <p className="retro-manager-modal__text">
+                  ¿Seguro que deseas cancelar el VIP del usuario
+                </p>
+                <p className="retro-manager-modal__highlight">
+                  {userData.username || userData.usuarioLogin}
+                </p>
+                <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+                  El usuario perderá los beneficios VIP de inmediato.
+                </p>
+              </div>
+
+              <div className="retro-manager-modal__actions">
+                <button
+                  onClick={() => setShowCancelVipConfirmModal(false)}
+                  className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (!userData) return;
+                    setShowCancelVipConfirmModal(false);
+                    handleUserAction('cancel_vip', userData.numeroCel, userData.username || userData.usuarioLogin);
+                  }}
+                  className="retro-manager-btn retro-manager-btn--primary retro-manager-btn--block"
+                >
+                  Sí, cancelar VIP
+                </button>
+              </div>
+        </RetroModal>
+      )}
+
+      {showVipModal && vipModalData && (
+        <RetroModal
+          open
+          title="Comparte este mensaje con el cliente"
+          onClose={closeVipModal}
+          zIndex={130}
+          width="lg"
+          bodyClassName="retro-manager-modal__body"
+        >
+              <RetroModalBanner variant="success">
+                Usuario actualizado a VIP correctamente
+              </RetroModalBanner>
+
+              <RetroModalMessagePanel onCopy={copyVipMessage}>
+                <div className="retro-manager-modal__message-rich">
+                  <div className="retro-manager-modal__message-emoji">✨</div>
+                  <p className="retro-manager-modal__message-title">¡FELICIDADES!</p>
+                  <p>👤 El usuario <strong>{vipModalData.username}</strong> ahora es premium</p>
+                  <p>🏆 Tendrá acceso VIP hasta el <strong>{vipModalData.expiryDate}</strong></p>
+                  <p>⭐ ¡Disfruta de todos los beneficios premium! ⭐</p>
+                </div>
+              </RetroModalMessagePanel>
+
+              <div className="retro-manager-modal__actions retro-manager-modal__actions--center">
+                <button
+                  onClick={closeVipModal}
                   className="retro-manager-btn retro-manager-btn--primary"
                 >
                   Cerrar

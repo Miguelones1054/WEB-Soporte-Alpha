@@ -571,6 +571,22 @@
   letter-spacing: 0.02em;
 }
 
+.retro-user-field__action-btn--warning {
+  background-color: #ffff00;
+  color: #000000;
+  font-weight: bold;
+}
+
+.retro-user-field__action-btn--warning:active {
+  background-color: #dcdc00;
+}
+
+.retro-user-field__action-btn--wide {
+  width: auto;
+  padding: 0 8px;
+  min-width: 60px;
+}
+
 .retro-user-field__action-btn--danger {
   color: #7f0000;
 }

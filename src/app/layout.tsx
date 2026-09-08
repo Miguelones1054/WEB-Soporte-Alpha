@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { RetroSoundProvider } from "../components/retro/RetroSoundProvider";
 import "./globals.css";
 import "../components/retro/retro.css";
 import "../components/retro/retro-scrollbars.css";
@@ -12,6 +11,7 @@ import "../components/retro/retro-tarifas.css";
 import "../components/retro/retro-user-movements.css";
 import "../components/retro/retro-select.css";
 import "../components/retro/retro-manager-modals.css";
+import "../components/retro/retro-api.css";
 
 export const metadata: Metadata = {
   title: "Administración Alpha",
@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <RetroSoundProvider>{children}</RetroSoundProvider>
+        {children}
       </body>
     </html>
   );

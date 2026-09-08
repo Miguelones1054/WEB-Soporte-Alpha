@@ -1,4 +1,4 @@
-export type PromoApp = 'nequi' | 'bancolombia';
+export type PromoApp = 'nequi' | 'bancolombia' | 'daviplata';
 
 export interface PromoPackage {
   id: string;
@@ -23,19 +23,23 @@ export function formatPromoCurrency(amount: number): string {
 }
 
 export function promoAppLabel(app: PromoApp): string {
-  return app === 'nequi' ? 'Nequi' : 'Bancolombia';
+  if (app === 'nequi') return 'Nequi';
+  if (app === 'bancolombia') return 'Bancolombia';
+  return 'Daviplata';
 }
 
 export function buildPromoIncludesSummary(promo: Pick<
   PromoPackage,
-  'saldo' | 'sms' | 'includes_vip' | 'vip_duration_days'
+  'app' | 'saldo' | 'sms' | 'includes_vip' | 'vip_duration_days'
 >): string {
   const parts: string[] = [];
   if (promo.saldo > 0) parts.push(`${formatPromoCurrency(promo.saldo)} en saldo`);
   if (promo.sms > 0) parts.push(`${promo.sms} mensajes`);
   if (promo.includes_vip) {
     parts.push(
-      promo.vip_duration_days
+      promo.app === 'bancolombia' || promo.app === 'daviplata'
+        ? 'VIP 1 mes'
+        : promo.vip_duration_days
         ? `VIP ${promo.vip_duration_days} días`
         : 'VIP indefinido',
     );

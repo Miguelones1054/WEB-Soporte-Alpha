@@ -348,6 +348,11 @@ button.retro-paquetes__card:focus-visible {
   background: #fff8d8;
 }
 
+.retro-paquetes__card-wrap--daviplata .retro-paquetes__card-app {
+  color: #004b8d;
+  background: #e5f2ff;
+}
+
 .retro-paquetes__card-name {
   margin: 0;
   font-size: 13px;

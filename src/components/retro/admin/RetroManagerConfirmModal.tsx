@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-import { playRetroSound } from '../../../lib/retroSounds';
 import { RetroModal } from './RetroModal';
 
 export interface RetroManagerConfirmModalProps {
@@ -9,6 +7,7 @@ export interface RetroManagerConfirmModalProps {
   type: 'success' | 'error';
   message: string;
   onClose: () => void;
+  onRecharge?: () => void;
   zIndex?: number;
   title?: string;
 }
@@ -18,14 +17,10 @@ export function RetroManagerConfirmModal({
   type,
   message,
   onClose,
+  onRecharge,
   zIndex = 110,
   title = 'Resultado',
 }: RetroManagerConfirmModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    playRetroSound(type === 'success' ? 'success' : 'error');
-  }, [open, type]);
-
   return (
     <RetroModal
       open={open}
@@ -42,8 +37,21 @@ export function RetroManagerConfirmModal({
           {type === 'success' ? '✓' : '✕'}
         </div>
         <p className="retro-manager-confirm__message">{message}</p>
-        <div className="retro-manager-confirm__actions">
-          <button type="button" className="retro-manager-btn retro-manager-btn--primary" onClick={onClose}>
+        <div className="retro-manager-confirm__actions" style={{ flexDirection: 'column', gap: '8px' }}>
+          {type === 'error' && message.toLowerCase().includes('insuficiente') && onRecharge && (
+            <button
+              type="button"
+              className="retro-manager-btn retro-manager-btn--primary"
+              style={{ backgroundColor: '#22c55e', color: 'white', borderColor: '#16a34a' }}
+              onClick={() => {
+                onClose();
+                onRecharge();
+              }}
+            >
+              Recargar panel ahora
+            </button>
+          )}
+          <button type="button" className="retro-manager-btn retro-manager-btn--secondary" onClick={onClose}>
             Aceptar
           </button>
         </div>

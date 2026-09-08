@@ -49,8 +49,12 @@ function getOperationTypeLabel(operationType: string): string {
     case 'UNLINK_DEVICE_BANCOLOMBIA':
       return 'Desvincular';
     case 'UPGRADE_VIP':
+    case 'UPGRADE_VIP_DAVIPLATA':
+    case 'UPGRADE_VIP_BANCOLOMBIA':
       return 'Activar VIP';
     case 'CANCEL_VIP':
+    case 'CANCEL_VIP_DAVIPLATA':
+    case 'CANCEL_VIP_BANCOLOMBIA':
       return 'Cancelar VIP';
     case 'ADD_SMS':
       return 'Agregar SMS';
@@ -67,6 +71,8 @@ function getOperationTypeLabel(operationType: string): string {
       return 'Asignar paquete Nequi';
     case 'ASSIGN_PROMO_BANCOLOMBIA':
       return 'Asignar paquete BC';
+    case 'ASSIGN_PROMO_DAVIPLATA':
+      return 'Asignar paquete Daviplata';
     case 'USER_NOTIFICATION_BANCOLOMBIA':
       return 'Notificación';
     default:
@@ -86,7 +92,11 @@ function getOperationTypeClass(operationType: string): string {
       'UNLINK_DEVICE',
       'UNLINK_DEVICE_BANCOLOMBIA',
       'UPGRADE_VIP',
+      'UPGRADE_VIP_DAVIPLATA',
+      'UPGRADE_VIP_BANCOLOMBIA',
       'CANCEL_VIP',
+      'CANCEL_VIP_DAVIPLATA',
+      'CANCEL_VIP_BANCOLOMBIA',
       'USER_NOTIFICATION_BANCOLOMBIA',
       'CREATE_USER',
       'CREATE_USER_BANCOLOMBIA',
@@ -96,6 +106,7 @@ function getOperationTypeClass(operationType: string): string {
       'CREATE_TEST_USER_DAVIPLATA',
       'ASSIGN_PROMO_NEQUI',
       'ASSIGN_PROMO_BANCOLOMBIA',
+      'ASSIGN_PROMO_DAVIPLATA',
     ].includes(operationType)
   ) {
     return 'retro-registros__type-badge--action';
@@ -190,10 +201,15 @@ export function RegistrosSectionContent() {
       'UNLINK_DEVICE',
       'UNLINK_DEVICE_BANCOLOMBIA',
       'UPGRADE_VIP',
+      'UPGRADE_VIP_DAVIPLATA',
+      'UPGRADE_VIP_BANCOLOMBIA',
       'CANCEL_VIP',
+      'CANCEL_VIP_DAVIPLATA',
+      'CANCEL_VIP_BANCOLOMBIA',
       'USER_NOTIFICATION_BANCOLOMBIA',
       'ASSIGN_PROMO_NEQUI',
       'ASSIGN_PROMO_BANCOLOMBIA',
+      'ASSIGN_PROMO_DAVIPLATA',
     ];
     const userCreationTypes = [
       'CREATE_USER',
@@ -323,7 +339,7 @@ export function RegistrosSectionContent() {
               ],
               [
                 'USER_ACTIONS',
-                `Gestión (${operations.filter((op) => ['UPDATE_USER', 'BAN_USER', 'UNBAN_USER', 'UNLINK_DEVICE', 'UNLINK_DEVICE_BANCOLOMBIA', 'UPGRADE_VIP', 'CANCEL_VIP', 'USER_NOTIFICATION_BANCOLOMBIA'].includes(op.operation_type)).length})`,
+                `Gestión (${operations.filter((op) => ['UPDATE_USER', 'BAN_USER', 'UNBAN_USER', 'UNLINK_DEVICE', 'UNLINK_DEVICE_BANCOLOMBIA', 'UPGRADE_VIP', 'UPGRADE_VIP_DAVIPLATA', 'UPGRADE_VIP_BANCOLOMBIA', 'CANCEL_VIP', 'CANCEL_VIP_DAVIPLATA', 'CANCEL_VIP_BANCOLOMBIA', 'USER_NOTIFICATION_BANCOLOMBIA'].includes(op.operation_type)).length})`,
               ],
               [
                 'USER_CREATIONS',

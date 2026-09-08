@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { humanizeNotificationError } from '../../../lib/humanizeNotificationError';
-import { playRetroSound } from '../../../lib/retroSounds';
 import type { InboxEvent } from '../../../lib/inboxEventsShared';
 import { RetroLoadingOverlay } from '../../../components/retro';
 import {
@@ -163,7 +162,6 @@ export function EventosSectionContent() {
         throw new Error(data.detail || 'No se pudo guardar el evento');
       }
 
-      playRetroSound('success');
       setShowFormModal(false);
       if (isEdit && data.event) {
         setSelectedEvent(data.event);
@@ -198,7 +196,6 @@ export function EventosSectionContent() {
         throw new Error(data.detail || 'No se pudo eliminar el evento');
       }
 
-      playRetroSound('success');
       closeDetail();
       await fetchEvents();
       showResult(data.message || 'Evento eliminado correctamente', 'success');
@@ -236,7 +233,6 @@ export function EventosSectionContent() {
         );
       }
 
-      playRetroSound('success');
       closeDetail();
       showResult(
         result.message ||
