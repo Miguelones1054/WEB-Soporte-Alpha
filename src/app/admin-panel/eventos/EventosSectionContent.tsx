@@ -401,7 +401,7 @@ export function EventosSectionContent() {
           <div className="retro-manager-modal__intro retro-manager-modal__intro--compact">
             <RetroModalText muted>{selectedEvent.description}</RetroModalText>
             <RetroModalText muted>
-              URL de acción: {selectedEvent.url ? selectedEvent.url : 'No configurada'}
+              Url de acción: {selectedEvent.url ? selectedEvent.url : 'No configurada'}
             </RetroModalText>
           </div>
 
