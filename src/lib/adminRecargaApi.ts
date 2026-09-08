@@ -159,6 +159,12 @@ export async function fetchAdminRecargaTransaccion(
   const res = await fetch(`${DARKLIVERY_API_BASE}/admin-alpha/transaccion/${encodeURIComponent(transaccionId)}`, {
     headers: { Authorization: `Bearer ${adminToken}` },
   });
+
+  // Si no se encuentra (404), asumimos que todavía se está procesando en el servidor
+  if (res.status === 404) {
+    return { estado: 'PENDING' };
+  }
+
   return parseJsonResponse<AdminRecargaTransaccionResponse>(res);
 }
 
