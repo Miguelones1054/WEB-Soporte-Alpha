@@ -14,6 +14,7 @@ import {
   RetroManagerConfirmModal,
   RetroManagerProgressModal,
   AdminBalanceMeter,
+  AdminRecargaModal,
   formatAdminCop,
 } from '../../../components/retro/admin';
 
