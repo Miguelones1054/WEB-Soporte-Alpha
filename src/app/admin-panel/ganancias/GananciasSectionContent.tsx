@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroAlert } from '../../../components/retro';
 import { GananciasDashboard } from './GananciasDashboard';
-import type { GananciaOperation } from './gananciasShared';
+import type { GananciaOperation, GananciasDiaMap, GananciasPeriodos } from './gananciasShared';
 
 export function GananciasSectionContent() {
   const router = useRouter();
@@ -13,6 +13,8 @@ export function GananciasSectionContent() {
   const [porcentajeActual, setPorcentajeActual] = useState<number | null>(null);
   const [totalHoy, setTotalHoy] = useState(0);
   const [totalHistorico, setTotalHistorico] = useState(0);
+  const [periodos, setPeriodos] = useState<GananciasPeriodos | null>(null);
+  const [dias, setDias] = useState<GananciasDiaMap>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +47,8 @@ export function GananciasSectionContent() {
       setPorcentajeActual(data.porcentaje_actual ?? null);
       setTotalHoy(data.total_hoy ?? 0);
       setTotalHistorico(data.total_historico ?? 0);
+      setPeriodos(data.periodos ?? null);
+      setDias(data.dias ?? {});
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
       setError(message);
@@ -58,6 +62,8 @@ export function GananciasSectionContent() {
       operations={operations}
       totalHoy={totalHoy}
       totalHistorico={totalHistorico}
+      periodos={periodos}
+      dias={dias}
       loading={loading}
       error={error}
       infoAlert={

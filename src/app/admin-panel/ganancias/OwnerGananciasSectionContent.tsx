@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroAlert, RetroModal, RetroSelect, RetroWindow } from '../../../components/retro';
 import { GananciasDashboard } from './GananciasDashboard';
-import type { AdminGananciasSummary, GananciaOperation } from './gananciasShared';
+import type {
+  AdminGananciasSummary,
+  GananciaOperation,
+  GananciasDiaMap,
+  GananciasPeriodos,
+} from './gananciasShared';
 import {
   formatGananciaCurrency,
   gananciaOperationKey,
@@ -21,6 +26,8 @@ export function OwnerGananciasSectionContent() {
   const [selectedAdmin, setSelectedAdmin] = useState(ALL_ADMINS);
   const [totalHoy, setTotalHoy] = useState(0);
   const [totalHistorico, setTotalHistorico] = useState(0);
+  const [periodos, setPeriodos] = useState<GananciasPeriodos | null>(null);
+  const [dias, setDias] = useState<GananciasDiaMap>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [operationToDelete, setOperationToDelete] = useState<GananciaOperation | null>(null);
@@ -59,6 +66,8 @@ export function OwnerGananciasSectionContent() {
       setAdminsSummary(data.admins_summary || []);
       setTotalHoy(data.total_hoy ?? 0);
       setTotalHistorico(data.total_historico ?? 0);
+      setPeriodos(data.periodos ?? null);
+      setDias(data.dias ?? {});
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
       setError(message);
@@ -66,6 +75,8 @@ export function OwnerGananciasSectionContent() {
       setAdminsSummary([]);
       setTotalHoy(0);
       setTotalHistorico(0);
+      setPeriodos(null);
+      setDias({});
     } finally {
       setLoading(false);
     }
@@ -150,6 +161,8 @@ export function OwnerGananciasSectionContent() {
         operations={operations}
         totalHoy={totalHoy}
         totalHistorico={totalHistorico}
+        periodos={periodos}
+        dias={dias}
         loading={loading}
         error={error}
         showAdminColumn={selectedAdmin === ALL_ADMINS}
@@ -178,7 +191,9 @@ export function OwnerGananciasSectionContent() {
           {selectedAdmin !== ALL_ADMINS && selectedSummary && (
             <p className="retro-ganancias-filter-summary">
               <strong>{selectedSummary.name}</strong> · {selectedSummary.porcentaje ?? '—'}% · Hoy:{' '}
-              <strong>${formatGananciaCurrency(selectedSummary.total_hoy)}</strong> · Histórico:{' '}
+              <strong>${formatGananciaCurrency(selectedSummary.total_hoy)}</strong> · Ayer:{' '}
+              <strong>${formatGananciaCurrency(selectedSummary.total_ayer ?? 0)}</strong> · 3 días:{' '}
+              <strong>${formatGananciaCurrency(selectedSummary.total_3_dias ?? 0)}</strong> · Histórico:{' '}
               <strong>${formatGananciaCurrency(selectedSummary.total_historico)}</strong>
             </p>
           )}
@@ -191,6 +206,8 @@ export function OwnerGananciasSectionContent() {
                     <th>Administrador</th>
                     <th>%</th>
                     <th>Hoy</th>
+                    <th>Ayer</th>
+                    <th>3 días</th>
                     <th>Histórico</th>
                     <th>Ops</th>
                   </tr>
@@ -210,6 +227,8 @@ export function OwnerGananciasSectionContent() {
                       </td>
                       <td>{admin.porcentaje ?? '—'}%</td>
                       <td className="retro-text-ok">${formatGananciaCurrency(admin.total_hoy)}</td>
+                      <td className="retro-text-ok">${formatGananciaCurrency(admin.total_ayer ?? 0)}</td>
+                      <td className="retro-text-ok">${formatGananciaCurrency(admin.total_3_dias ?? 0)}</td>
                       <td className="retro-text-ok">
                         ${formatGananciaCurrency(admin.total_historico)}
                       </td>

@@ -12,6 +12,8 @@ import {
 import { RetroAlert, RetroIcon, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
 import {
   type GananciaOperation,
+  type GananciasDiaMap,
+  type GananciasPeriodos,
   formatGananciaCurrency,
   formatGananciaDate,
   formatSignedGananciaCurrency,
@@ -23,15 +25,42 @@ const TIME_RANGE_OPTIONS: GananciasTimeRange[] = [
   'all',
   'today',
   'yesterday',
+  'last3',
   'week',
   'month',
   'custom',
 ];
 
+function emptyPeriodos(): GananciasPeriodos {
+  const zero = () => ({ ganancia: 0, operaciones: 0 });
+  return {
+    historico: zero(),
+    hoy: zero(),
+    ayer: zero(),
+    ultimos_3_dias: zero(),
+    ultimos_7_dias: zero(),
+    mes: zero(),
+  };
+}
+
+function sumDias(dias: GananciasDiaMap, from: string, to: string) {
+  let ganancia = 0;
+  let operaciones = 0;
+  for (const [day, row] of Object.entries(dias)) {
+    if (day >= from && day <= to) {
+      ganancia += row.ganancia || 0;
+      operaciones += row.operaciones || 0;
+    }
+  }
+  return { ganancia, operaciones };
+}
+
 export interface GananciasDashboardProps {
   operations: GananciaOperation[];
   totalHoy: number;
   totalHistorico: number;
+  periodos?: GananciasPeriodos | null;
+  dias?: GananciasDiaMap;
   loading?: boolean;
   error?: string | null;
   infoAlert?: ReactNode;
@@ -47,6 +76,8 @@ export function GananciasDashboard({
   operations,
   totalHoy,
   totalHistorico,
+  periodos,
+  dias = {},
   loading = false,
   error = null,
   infoAlert,
@@ -109,14 +140,38 @@ export function GananciasDashboard({
     }
   };
 
+  const stored = periodos || emptyPeriodos();
+  const storedPeriod =
+    timeRange === 'all'
+      ? stored.hoy
+      : timeRange === 'today'
+        ? stored.hoy
+        : timeRange === 'yesterday'
+          ? stored.ayer
+          : timeRange === 'last3'
+            ? stored.ultimos_3_dias
+            : timeRange === 'week'
+              ? stored.ultimos_7_dias
+              : timeRange === 'month'
+                ? stored.mes
+                : rangeBounds
+                  ? sumDias(dias, rangeBounds.from, rangeBounds.to)
+                  : { ganancia: totalPeriodo, operaciones: filteredOperations.length };
+
   const periodLabel =
     timeRange === 'all'
       ? 'Ganancia del día'
       : timeRange === 'today'
         ? 'Ganancia de hoy'
-        : 'Ganancia del período';
+        : timeRange === 'yesterday'
+          ? 'Ganancia de ayer'
+          : timeRange === 'last3'
+            ? 'Ganancia de 3 días'
+            : 'Ganancia del período';
 
-  const periodValue = timeRange === 'all' ? totalHoy : totalPeriodo;
+  const periodValue = storedPeriod.ganancia;
+  const periodOps =
+    timeRange === 'all' ? stored.historico.operaciones : storedPeriod.operaciones;
   const tableColSpan = (showAdminColumn ? 8 : 7) + (canDelete ? 1 : 0);
 
   if (loading) {
@@ -198,7 +253,7 @@ export function GananciasDashboard({
           <p className="retro-stat-card__label">Operaciones</p>
           <p className="retro-stat-card__value">
             <span className="retro-stat-card__value-row">
-              <span>{filteredOperations.length}</span>
+              <span>{periodOps}</span>
               <RetroIcon name="office/document" size={16} alt="" />
             </span>
           </p>

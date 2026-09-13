@@ -20,8 +20,26 @@ export interface AdminGananciasSummary {
   porcentaje: number | null;
   total_historico: number;
   total_hoy: number;
+  total_ayer?: number;
+  total_3_dias?: number;
   operaciones: number;
 }
+
+export interface GananciaPeriodo {
+  ganancia: number;
+  operaciones: number;
+}
+
+export interface GananciasPeriodos {
+  historico: GananciaPeriodo;
+  hoy: GananciaPeriodo;
+  ayer: GananciaPeriodo;
+  ultimos_3_dias: GananciaPeriodo;
+  ultimos_7_dias: GananciaPeriodo;
+  mes: GananciaPeriodo;
+}
+
+export type GananciasDiaMap = Record<string, { ganancia: number; operaciones: number }>;
 
 export const OPERATION_LABELS: Record<string, string> = {
   ADD_BALANCE: 'Recarga Nequi',

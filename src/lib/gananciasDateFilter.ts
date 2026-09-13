@@ -1,11 +1,19 @@
 const TZ_COLOMBIA = 'America/Bogota';
 
-export type GananciasTimeRange = 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom';
+export type GananciasTimeRange =
+  | 'all'
+  | 'today'
+  | 'yesterday'
+  | 'last3'
+  | 'week'
+  | 'month'
+  | 'custom';
 
 export const GANANCIAS_TIME_RANGE_LABELS: Record<GananciasTimeRange, string> = {
   all: 'Todo',
   today: 'Hoy',
   yesterday: 'Ayer',
+  last3: 'Últimos 3 días',
   week: 'Últimos 7 días',
   month: 'Este mes',
   custom: 'Rango personalizado',
@@ -66,6 +74,8 @@ export function getRangeBounds(
       const y = shiftDateKey(today, -1);
       return { from: y, to: y };
     }
+    case 'last3':
+      return { from: shiftDateKey(today, -2), to: today };
     case 'week':
       return { from: shiftDateKey(today, -6), to: today };
     case 'month':
