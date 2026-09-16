@@ -57,10 +57,10 @@ interface UserData {
 }
 
 const QUICK_RECHARGE_OPTIONS = [
-  { label: '$1.200.000', tag: '25k' },
-  { label: '$2.600.000', tag: '35k' },
-  { label: '$5.000.000', tag: '45k' },
-  { label: '$10.000.000', tag: '60k' },
+  { label: '$1.200.000', tag: '28k' },
+  { label: '$2.600.000', tag: '38k' },
+  { label: '$5.000.000', tag: '48k' },
+  { label: '$10.000.000', tag: '63k' },
 ] as const;
 
 const MAX_RECHARGE = 10_000_000;

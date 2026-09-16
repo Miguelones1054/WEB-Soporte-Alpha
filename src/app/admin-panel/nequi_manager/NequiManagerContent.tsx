@@ -1786,34 +1786,34 @@ Respuesta: ${securityQuestionData.answer ?? ''}`;
                 <div className="retro-user-actions__grid">
                   <button
                     type="button"
-                    onClick={() => openRecargaModal('25k', '1.200.000')}
+                    onClick={() => openRecargaModal('28k', '1.200.000')}
                     className="retro-user-actions__chip"
                   >
-                    <strong>25k</strong>
+                    <strong>28k</strong>
                     <small>1.200.000</small>
                   </button>
                   <button
                     type="button"
-                    onClick={() => openRecargaModal('35k', '2.600.000')}
+                    onClick={() => openRecargaModal('38k', '2.600.000')}
                     className="retro-user-actions__chip"
                   >
-                    <strong>35k</strong>
+                    <strong>38k</strong>
                     <small>2.600.000</small>
                   </button>
                   <button
                     type="button"
-                    onClick={() => openRecargaModal('45k', '5.000.000')}
+                    onClick={() => openRecargaModal('48k', '5.000.000')}
                     className="retro-user-actions__chip"
                   >
-                    <strong>45k</strong>
+                    <strong>48k</strong>
                     <small>5.000.000</small>
                   </button>
                   <button
                     type="button"
-                    onClick={() => openRecargaModal('60k', '10.000.000')}
+                    onClick={() => openRecargaModal('63k', '10.000.000')}
                     className="retro-user-actions__chip"
                   >
-                    <strong>60k</strong>
+                    <strong>63k</strong>
                     <small>10.000.000</small>
                   </button>
                 </div>
@@ -2661,53 +2661,53 @@ Respuesta: ${securityQuestionData.answer ?? ''}`;
                 <div className="retro-manager-modal__amount-grid">
                   <button
                     type="button"
-                    onClick={() => setQuickBalance('1200000', '25k')}
+                    onClick={() => setQuickBalance('1200000', '28k')}
                     className={
-                      selectedRandomOption === '25k'
+                      selectedRandomOption === '28k'
                         ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
-                    <strong>25k</strong>
+                    <strong>28k</strong>
                     <small>1.200.000</small>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setQuickBalance('2600000', '35k')}
+                    onClick={() => setQuickBalance('2600000', '38k')}
                     className={
-                      selectedRandomOption === '35k'
+                      selectedRandomOption === '38k'
                         ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
-                    <strong>35k</strong>
+                    <strong>38k</strong>
                     <small>2.600.000</small>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setQuickBalance('5000000', '45k')}
+                    onClick={() => setQuickBalance('5000000', '48k')}
                     className={
-                      selectedRandomOption === '45k'
+                      selectedRandomOption === '48k'
                         ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
-                    <strong>45k</strong>
+                    <strong>48k</strong>
                     <small>5.000.000</small>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setQuickBalance('10000000', '60k')}
+                    onClick={() => setQuickBalance('10000000', '63k')}
                     className={
-                      selectedRandomOption === '60k'
+                      selectedRandomOption === '63k'
                         ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                         : 'retro-manager-modal__amount-chip'
                     }
                   >
-                    <strong>60k</strong>
+                    <strong>63k</strong>
                     <small>10.000.000</small>
                   </button>
                 </div>

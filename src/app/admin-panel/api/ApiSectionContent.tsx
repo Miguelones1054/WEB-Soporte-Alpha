@@ -78,7 +78,7 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     intro: 'Operaciones sobre usuarios Bancolombia. El {usuario} es el login del usuario.',
     endpoints: [
       { method: 'GET', path: '/bancolombia/users/{usuario}', description: 'Consultar datos del usuario.' },
-      { method: 'POST', path: '/bancolombia/users/{usuario}/recarga-rapida', description: 'Recarga rápida por tier (25k, 35k, 45k, 60k).', body: '{"tier": "25k"}', cost: true },
+      { method: 'POST', path: '/bancolombia/users/{usuario}/recarga-rapida', description: 'Recarga rápida por tier (28k, 38k, 48k, 63k).', body: '{"tier": "28k"}', cost: true },
       { method: 'POST', path: '/bancolombia/users/{usuario}/add-balance', description: 'Agregar saldo.', body: '{"amount": 50000, "reason": "Recarga"}', cost: true },
       { method: 'POST', path: '/bancolombia/users/{usuario}/subtract-balance', description: 'Restar saldo.', body: '{"amount": 20000, "reason": "Ajuste"}' },
       { method: 'POST', path: '/bancolombia/users/{usuario}/add-sms', description: 'Agregar SMS.', body: '{"amount": 100, "reason": "SMS"}', cost: true },
@@ -102,7 +102,7 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     intro: 'Operaciones sobre usuarios Daviplata. El {numero_cel} es el número de celular (10 dígitos).',
     endpoints: [
       { method: 'GET', path: '/daviplata/users/{numero_cel}', description: 'Consultar datos del usuario.' },
-      { method: 'POST', path: '/daviplata/users/{numero_cel}/recarga-rapida', description: 'Recarga rápida por tier (25k, 35k, 45k, 60k).', body: '{"tier": "25k"}', cost: true },
+      { method: 'POST', path: '/daviplata/users/{numero_cel}/recarga-rapida', description: 'Recarga rápida por tier (28k, 38k, 48k, 63k).', body: '{"tier": "28k"}', cost: true },
       { method: 'POST', path: '/daviplata/users/{numero_cel}/add-balance', description: 'Agregar saldo.', body: '{"amount": 50000, "reason": "Recarga"}', cost: true },
       { method: 'POST', path: '/daviplata/users/{numero_cel}/subtract-balance', description: 'Restar saldo.', body: '{"amount": 20000, "reason": "Ajuste"}' },
       { method: 'POST', path: '/daviplata/users/{numero_cel}/ban', description: 'Bloquear usuario.', body: '{"reason": "Motivo", "is_temporary": false, "ban_days": null}' },
