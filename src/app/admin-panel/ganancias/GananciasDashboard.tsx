@@ -7,6 +7,7 @@ import {
   formatDateKeyEs,
   getRangeBounds,
   isTimestampInRange,
+  toColombiaDateKey,
   todayColombiaDateKey,
 } from '../../../lib/gananciasDateFilter';
 import { RetroAlert, RetroIcon, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
@@ -19,6 +20,7 @@ import {
   formatSignedGananciaCurrency,
   gananciaOperationKey,
   getOperationLabel,
+  sumOperacionesGanancia,
 } from './gananciasShared';
 
 const TIME_RANGE_OPTIONS: GananciasTimeRange[] = [
@@ -30,30 +32,6 @@ const TIME_RANGE_OPTIONS: GananciasTimeRange[] = [
   'month',
   'custom',
 ];
-
-function emptyPeriodos(): GananciasPeriodos {
-  const zero = () => ({ ganancia: 0, operaciones: 0 });
-  return {
-    historico: zero(),
-    hoy: zero(),
-    ayer: zero(),
-    ultimos_3_dias: zero(),
-    ultimos_7_dias: zero(),
-    mes: zero(),
-  };
-}
-
-function sumDias(dias: GananciasDiaMap, from: string, to: string) {
-  let ganancia = 0;
-  let operaciones = 0;
-  for (const [day, row] of Object.entries(dias)) {
-    if (day >= from && day <= to) {
-      ganancia += row.ganancia || 0;
-      operaciones += row.operaciones || 0;
-    }
-  }
-  return { ganancia, operaciones };
-}
 
 export interface GananciasDashboardProps {
   operations: GananciaOperation[];
@@ -74,10 +52,7 @@ export interface GananciasDashboardProps {
 
 export function GananciasDashboard({
   operations,
-  totalHoy,
   totalHistorico,
-  periodos,
-  dias = {},
   loading = false,
   error = null,
   infoAlert,
@@ -101,9 +76,18 @@ export function GananciasDashboard({
   );
 
   const totalPeriodo = useMemo(
-    () => filteredOperations.reduce((sum, op) => sum + (op.ganancia || 0), 0),
+    () => sumOperacionesGanancia(filteredOperations),
     [filteredOperations],
   );
+
+  const todayTotals = useMemo(() => {
+    const today = todayColombiaDateKey();
+    const todays = operations.filter((op) => toColombiaDateKey(op.timestamp) === today);
+    return {
+      ganancia: sumOperacionesGanancia(todays),
+      operaciones: todays.length,
+    };
+  }, [operations]);
 
   const columnTotals = useMemo(
     () =>
@@ -140,23 +124,10 @@ export function GananciasDashboard({
     }
   };
 
-  const stored = periodos || emptyPeriodos();
   const storedPeriod =
-    timeRange === 'all'
-      ? stored.hoy
-      : timeRange === 'today'
-        ? stored.hoy
-        : timeRange === 'yesterday'
-          ? stored.ayer
-          : timeRange === 'last3'
-            ? stored.ultimos_3_dias
-            : timeRange === 'week'
-              ? stored.ultimos_7_dias
-              : timeRange === 'month'
-                ? stored.mes
-                : rangeBounds
-                  ? sumDias(dias, rangeBounds.from, rangeBounds.to)
-                  : { ganancia: totalPeriodo, operaciones: filteredOperations.length };
+    timeRange === 'all' || timeRange === 'today'
+      ? todayTotals
+      : { ganancia: totalPeriodo, operaciones: filteredOperations.length };
 
   const periodLabel =
     timeRange === 'all'
@@ -171,7 +142,9 @@ export function GananciasDashboard({
 
   const periodValue = storedPeriod.ganancia;
   const periodOps =
-    timeRange === 'all' ? stored.historico.operaciones : storedPeriod.operaciones;
+    timeRange === 'all' || timeRange === 'today'
+      ? todayTotals.operaciones
+      : storedPeriod.operaciones;
   const tableColSpan = (showAdminColumn ? 8 : 7) + (canDelete ? 1 : 0);
 
   if (loading) {

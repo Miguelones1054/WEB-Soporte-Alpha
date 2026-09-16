@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
+import {
+  shiftDateKey,
+  toColombiaDateKey,
+  todayColombiaDateKey,
+} from '../../../lib/gananciasDateFilter';
 import { RetroAlert, RetroModal, RetroSelect, RetroWindow } from '../../../components/retro';
 import { GananciasDashboard } from './GananciasDashboard';
 import type {
@@ -15,6 +20,7 @@ import {
   formatGananciaCurrency,
   gananciaOperationKey,
   getOperationLabel,
+  isOwnerIngresoOperation,
 } from './gananciasShared';
 
 const ALL_ADMINS = 'all';
@@ -101,6 +107,50 @@ export function OwnerGananciasSectionContent() {
     () => adminsSummary.find((admin) => admin.email === selectedAdmin),
     [adminsSummary, selectedAdmin],
   );
+
+  const dailyFromOperations = useMemo(() => {
+    const today = todayColombiaDateKey();
+    const yesterday = shiftDateKey(today, -1);
+    const from3 = shiftDateKey(today, -2);
+    const byAdmin: Record<string, { hoy: number; ayer: number; d3: number }> = {};
+    const wompi = { hoy: 0, ayer: 0, d3: 0 };
+    const loaded = { hoy: 0, ayer: 0, d3: 0 };
+
+    const bump = (dest: { hoy: number; ayer: number; d3: number }, day: string, gain: number) => {
+      if (day === today) dest.hoy += gain;
+      if (day === yesterday) dest.ayer += gain;
+      if (day >= from3 && day <= today) dest.d3 += gain;
+    };
+
+    for (const op of operations) {
+      const day = toColombiaDateKey(op.timestamp);
+      const gain = op.ganancia || 0;
+      bump(loaded, day, gain);
+      if (isOwnerIngresoOperation(op.operation_type)) {
+        bump(wompi, day, gain);
+        continue;
+      }
+      const email = (op.admin_email || '').trim().toLowerCase();
+      if (!byAdmin[email]) byAdmin[email] = { hoy: 0, ayer: 0, d3: 0 };
+      bump(byAdmin[email], day, gain);
+    }
+
+    return { byAdmin, wompi, loaded };
+  }, [operations]);
+
+  const dailyForAdmin = (admin: AdminGananciasSummary) => {
+    const daily = dailyFromOperations.byAdmin[(admin.email || '').trim().toLowerCase()] || {
+      hoy: 0,
+      ayer: 0,
+      d3: 0,
+    };
+    const isOwnerRow = (admin.role || '').toLowerCase() === 'owner';
+    return {
+      hoy: daily.hoy + (isOwnerRow ? dailyFromOperations.wompi.hoy : 0),
+      ayer: daily.ayer + (isOwnerRow ? dailyFromOperations.wompi.ayer : 0),
+      d3: daily.d3 + (isOwnerRow ? dailyFromOperations.wompi.d3 : 0),
+    };
+  };
 
   const handleDeleteRequest = (op: GananciaOperation) => {
     setOperationToDelete(op);
@@ -191,9 +241,9 @@ export function OwnerGananciasSectionContent() {
           {selectedAdmin !== ALL_ADMINS && selectedSummary && (
             <p className="retro-ganancias-filter-summary">
               <strong>{selectedSummary.name}</strong> · {selectedSummary.porcentaje ?? '—'}% · Hoy:{' '}
-              <strong>${formatGananciaCurrency(selectedSummary.total_hoy)}</strong> · Ayer:{' '}
-              <strong>${formatGananciaCurrency(selectedSummary.total_ayer ?? 0)}</strong> · 3 días:{' '}
-              <strong>${formatGananciaCurrency(selectedSummary.total_3_dias ?? 0)}</strong> · Histórico:{' '}
+              <strong>${formatGananciaCurrency(dailyFromOperations.loaded.hoy)}</strong> · Ayer:{' '}
+              <strong>${formatGananciaCurrency(dailyFromOperations.loaded.ayer)}</strong> · 3 días:{' '}
+              <strong>${formatGananciaCurrency(dailyFromOperations.loaded.d3)}</strong> · Histórico:{' '}
               <strong>${formatGananciaCurrency(selectedSummary.total_historico)}</strong>
             </p>
           )}
@@ -213,7 +263,9 @@ export function OwnerGananciasSectionContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {adminsSummary.map((admin) => (
+                  {adminsSummary.map((admin) => {
+                    const daily = dailyForAdmin(admin);
+                    return (
                     <tr key={admin.email}>
                       <td>
                         <button
@@ -226,15 +278,16 @@ export function OwnerGananciasSectionContent() {
                         <div className="retro-ganancias-admin-email">{admin.email}</div>
                       </td>
                       <td>{admin.porcentaje ?? '—'}%</td>
-                      <td className="retro-text-ok">${formatGananciaCurrency(admin.total_hoy)}</td>
-                      <td className="retro-text-ok">${formatGananciaCurrency(admin.total_ayer ?? 0)}</td>
-                      <td className="retro-text-ok">${formatGananciaCurrency(admin.total_3_dias ?? 0)}</td>
+                      <td className="retro-text-ok">${formatGananciaCurrency(daily.hoy)}</td>
+                      <td className="retro-text-ok">${formatGananciaCurrency(daily.ayer)}</td>
+                      <td className="retro-text-ok">${formatGananciaCurrency(daily.d3)}</td>
                       <td className="retro-text-ok">
                         ${formatGananciaCurrency(admin.total_historico)}
                       </td>
                       <td>{admin.operaciones}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

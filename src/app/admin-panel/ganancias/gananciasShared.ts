@@ -93,3 +93,11 @@ export function formatGananciaDate(dateString: string): string {
 export function gananciaOperationKey(op: GananciaOperation): string {
   return `${op.admin_email || 'unknown'}:${op.id}`;
 }
+
+export function isOwnerIngresoOperation(type: string): boolean {
+  return type === 'ADD_ADMIN_BALANCE_WOMPI';
+}
+
+export function sumOperacionesGanancia(operations: GananciaOperation[]): number {
+  return operations.reduce((sum, op) => sum + (op.ganancia || 0), 0);
+}
