@@ -17,6 +17,7 @@ import { PaquetesSectionView } from './views/PaquetesSectionView';
 import { TarifasSectionView } from './views/TarifasSectionView';
 import { AdminGestionSectionView } from './views/AdminGestionSectionView';
 import { AjustesSectionView } from './views/AjustesSectionView';
+import { OfertasSectionView } from './views/OfertasSectionView';
 import { PlantillasNotificacionesSectionView } from './views/PlantillasNotificacionesSectionView';
 import { EventosSectionView } from './views/EventosSectionView';
 import { AlertasSectionView } from './views/AlertasSectionView';
@@ -70,6 +71,8 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <TarifasSectionView onClose={goHome} />;
       case 'ajustes':
         return <AjustesSectionView onClose={goHome} />;
+      case 'ofertas':
+        return <OfertasSectionView onClose={goHome} />;
       case 'admin-gestion':
         return <AdminGestionSectionView onClose={goHome} />;
       case 'plantillas-notificaciones':

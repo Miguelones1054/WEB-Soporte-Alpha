@@ -693,3 +693,19 @@ button.retro-paquetes__card:focus-visible {
   border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light) var(--retro-border-darker);
   background: #f7f7f7;
 }
+
+.retro-ofertas__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.retro-ofertas__card--active {
+  outline: 2px solid #008080;
+}
+
+.retro-ofertas__meta {
+  font-size: 10px;
+  color: var(--retro-muted);
+}

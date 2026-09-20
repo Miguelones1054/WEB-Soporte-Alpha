@@ -12,6 +12,7 @@ export const ADMIN_HUB_SECTIONS = [
   'ganancias-admins',
   'paquetes',
   'ajustes',
+  'ofertas',
   'admin-gestion',
   'plantillas-notificaciones',
   'eventos',
@@ -40,6 +41,7 @@ export const HUB_SECTION_META: Record<
     ownerOnly: true,
   },
   ajustes: { title: 'Ajustes del sistema', icon: 'system/settings_gear', ownerOnly: true },
+  ofertas: { title: 'Ofertas y descuentos', icon: 'office/document', ownerOnly: true },
   'admin-gestion': { title: 'Gestionar administradores', icon: 'users/address_book_users', ownerOnly: true },
   'plantillas-notificaciones': {
     title: 'Plantillas de notificaciones',
@@ -76,6 +78,7 @@ export const LEGACY_HUB_PATHS: Record<string, AdminHubSection> = {
   '/admin-panel/paquetes': 'paquetes',
   '/admin-panel/ganancias-admins': 'ganancias-admins',
   '/admin-panel/ajustes': 'ajustes',
+  '/admin-panel/ofertas': 'ofertas',
   '/admin-panel/admin-gestion': 'admin-gestion',
   '/admin-panel/plantillas-notificaciones': 'plantillas-notificaciones',
   '/admin-panel/eventos': 'eventos',

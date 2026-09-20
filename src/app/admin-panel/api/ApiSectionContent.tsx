@@ -45,6 +45,7 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     title: 'Tarifas y simulaciones',
     intro: 'Calcula cuánto te costará una operación antes de ejecutarla (según tu porcentaje). No descuentan saldo.',
     endpoints: [
+      { method: 'GET', path: '/pricing', description: 'Precios vigentes de recarga/VIP y la oferta activa, si hay.' },
       { method: 'GET', path: '/pricing/tarifas', description: 'Tarifas del sistema según tu porcentaje.' },
       { method: 'POST', path: '/pricing/simulate-recarga', description: 'Simula el costo de una recarga.', body: '{"monto": 50000}' },
       { method: 'POST', path: '/pricing/simulate-sms', description: 'Simula el costo de un paquete de SMS.', body: '{"cantidad": 100}' },
@@ -78,7 +79,7 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     intro: 'Operaciones sobre usuarios Bancolombia. El {usuario} es el login del usuario.',
     endpoints: [
       { method: 'GET', path: '/bancolombia/users/{usuario}', description: 'Consultar datos del usuario.' },
-      { method: 'POST', path: '/bancolombia/users/{usuario}/recarga-rapida', description: 'Recarga rápida por tier (28k, 38k, 48k, 63k).', body: '{"tier": "28k"}', cost: true },
+      { method: 'POST', path: '/bancolombia/users/{usuario}/recarga-rapida', description: 'Recarga rápida por tier vigente (consulta GET /pricing).', body: '{"tier": "28k"}', cost: true },
       { method: 'POST', path: '/bancolombia/users/{usuario}/add-balance', description: 'Agregar saldo.', body: '{"amount": 50000, "reason": "Recarga"}', cost: true },
       { method: 'POST', path: '/bancolombia/users/{usuario}/subtract-balance', description: 'Restar saldo.', body: '{"amount": 20000, "reason": "Ajuste"}' },
       { method: 'POST', path: '/bancolombia/users/{usuario}/add-sms', description: 'Agregar SMS.', body: '{"amount": 100, "reason": "SMS"}', cost: true },
@@ -102,7 +103,7 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     intro: 'Operaciones sobre usuarios Daviplata. El {numero_cel} es el número de celular (10 dígitos).',
     endpoints: [
       { method: 'GET', path: '/daviplata/users/{numero_cel}', description: 'Consultar datos del usuario.' },
-      { method: 'POST', path: '/daviplata/users/{numero_cel}/recarga-rapida', description: 'Recarga rápida por tier (28k, 38k, 48k, 63k).', body: '{"tier": "28k"}', cost: true },
+      { method: 'POST', path: '/daviplata/users/{numero_cel}/recarga-rapida', description: 'Recarga rápida por tier vigente (consulta GET /pricing).', body: '{"tier": "28k"}', cost: true },
       { method: 'POST', path: '/daviplata/users/{numero_cel}/add-balance', description: 'Agregar saldo.', body: '{"amount": 50000, "reason": "Recarga"}', cost: true },
       { method: 'POST', path: '/daviplata/users/{numero_cel}/subtract-balance', description: 'Restar saldo.', body: '{"amount": 20000, "reason": "Ajuste"}' },
       { method: 'POST', path: '/daviplata/users/{numero_cel}/ban', description: 'Bloquear usuario.', body: '{"reason": "Motivo", "is_temporary": false, "ban_days": null}' },

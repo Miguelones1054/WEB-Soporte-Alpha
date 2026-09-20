@@ -29,6 +29,8 @@ import {
   RetroUserDetailField,
 } from '../../../components/retro/admin';
 import { vipFinLabel, vipInicioLabel } from '../../../lib/vipVigencia';
+import { formatCreditsLabel } from '../../../lib/pricingShared';
+import { useAdminPricing } from '../../../hooks/useAdminPricing';
 
 export interface DaviplataManagerContentProps {
   embedded?: boolean;
@@ -56,13 +58,6 @@ interface UserData {
   vip_expires_at?: string | null;
 }
 
-const QUICK_RECHARGE_OPTIONS = [
-  { label: '$1.200.000', tag: '28k' },
-  { label: '$2.600.000', tag: '38k' },
-  { label: '$5.000.000', tag: '48k' },
-  { label: '$10.000.000', tag: '63k' },
-] as const;
-
 const MAX_RECHARGE = 10_000_000;
 const TEST_USER_BALANCE_OPTIONS = [
   { value: 0, label: '$0' },
@@ -83,6 +78,7 @@ function formatCurrency(amount: number) {
 export function DaviplataManagerContent({
   embedded = false,
 }: DaviplataManagerContentProps) {
+  const { packages: rechargePackages } = useAdminPricing('daviplata');
   const [userIdInput, setUserIdInput] = useState('');
   const [userData, setUserData] = useState<UserData | null>(null);
   const [searching, setSearching] = useState(false);
@@ -1012,15 +1008,15 @@ export function DaviplataManagerContent({
                 <div className="retro-user-actions__body">
                   <p className="retro-user-actions__section-title">Recargas</p>
                   <div className="retro-user-actions__grid">
-                    {QUICK_RECHARGE_OPTIONS.map((item) => (
+                    {rechargePackages.map((pkg) => (
                       <button
-                        key={item.tag}
+                        key={pkg.credits}
                         type="button"
-                        onClick={() => openRecargaModal(item.tag, item.label)}
+                        onClick={() => openRecargaModal(pkg.tag_base, `$${formatCreditsLabel(pkg.credits)}`)}
                         className="retro-user-actions__chip"
                       >
-                        <strong>{item.tag}</strong>
-                        <small>{item.label.replace('$', '')}</small>
+                        <strong>{pkg.tag}</strong>
+                        <small>{formatCreditsLabel(pkg.credits)}</small>
                       </button>
                     ))}
                   </div>
@@ -1303,19 +1299,19 @@ export function DaviplataManagerContent({
             </div>
 
             <div className="retro-manager-modal__amount-grid">
-              {QUICK_RECHARGE_OPTIONS.map((item) => (
+              {rechargePackages.map((pkg) => (
                 <button
-                  key={item.tag}
+                  key={pkg.credits}
                   type="button"
-                  onClick={() => setQuickBalance(item.label.replace(/\$/g, '').replace(/\./g, ''), item.tag)}
+                  onClick={() => setQuickBalance(String(pkg.credits), pkg.tag_base)}
                   className={
-                    selectedRandomOption === item.tag
+                    selectedRandomOption === pkg.tag_base
                       ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
                       : 'retro-manager-modal__amount-chip'
                   }
                 >
-                  <strong>{item.tag}</strong>
-                  <small>{item.label.replace('$', '')}</small>
+                  <strong>{pkg.tag}</strong>
+                  <small>{formatCreditsLabel(pkg.credits)}</small>
                 </button>
               ))}
             </div>

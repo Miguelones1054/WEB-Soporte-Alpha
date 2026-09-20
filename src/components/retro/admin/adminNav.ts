@@ -37,6 +37,13 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
     section: 'ajustes',
   },
   {
+    href: adminHubHref('ofertas'),
+    label: 'Ofertas',
+    icon: 'office/document',
+    ownerOnly: true,
+    section: 'ofertas',
+  },
+  {
     href: adminHubHref('admin-gestion'),
     label: 'Gestionar administradores',
     icon: 'users/address_book_users',

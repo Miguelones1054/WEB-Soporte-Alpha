@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroInteractiveTable, RetroLoadingOverlay, type RetroTableColumn } from '../../../components/retro';
 import { RetroManagerConfirmModal, RetroManagerProgressModal } from '../../../components/retro/admin';
+import {
+  PRICING_APP_LABELS,
+  PRICING_APPS,
+  type PricingApp,
+} from '../../../lib/pricingShared';
 
 interface TarifaData {
   definicion: string;
@@ -20,6 +25,8 @@ export function TarifasSectionContent() {
   const [porcentaje, setPorcentaje] = useState<number | null>(null);
   const [smsCostoUnitarioStr, setSmsCostoUnitarioStr] = useState<string | null>(null);
   const [smsVentaUnitarioStr, setSmsVentaUnitarioStr] = useState<string | null>(null);
+  const [activeOfferName, setActiveOfferName] = useState<string | null>(null);
+  const [pricingApp, setPricingApp] = useState<PricingApp>('nequi');
   const [tarifasLoading, setTarifasLoading] = useState(true);
   const [simuladorValor, setSimuladorValor] = useState('');
   const [simuladorSmsCantidad, setSimuladorSmsCantidad] = useState('');
@@ -30,12 +37,15 @@ export function TarifasSectionContent() {
   const [resultadoSimulacion, setResultadoSimulacion] = useState<{
     valorAdmin: string;
     valorCliente: string;
+    valorClienteBase?: string;
     ganancia: string;
     tipoRecarga: string;
+    offerName?: string | null;
   } | null>(null);
   const [resultadoSimulacionSms, setResultadoSimulacionSms] = useState<{
     valorAdmin: string;
     valorCliente: string;
+    valorClienteBase?: string;
     ganancia: string;
     costoUnitario: string;
     ventaUnitario: string;
@@ -45,6 +55,7 @@ export function TarifasSectionContent() {
     porcentaje: number;
     porcentajeGanancia: number;
     cantidad: number;
+    offerName?: string | null;
   } | null>(null);
   const router = useRouter();
 
@@ -53,54 +64,60 @@ export function TarifasSectionContent() {
     setShowErrorModal(true);
   };
 
-  useEffect(() => {
-    const loadTarifas = async () => {
-      try {
-        const token = localStorage.getItem('admin_token');
-        if (!token) {
-          router.push('/');
-          return;
-        }
+  const loadTarifas = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
 
-        const response = await fetch(`${API_BASE_URL}/admin/tarifas`, {
+      const response = await fetch(
+        `${API_BASE_URL}/admin/tarifas?app=${encodeURIComponent(pricingApp)}`,
+        {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        });
+        },
+      );
 
-        if (response.ok) {
-          const data = await response.json();
-          const tarifasFormateadas = data.tarifas.map((tarifa: TarifaData) => ({
-            definicion: tarifa.definicion,
-            valor: tarifa.valor,
-            valorClienteFinal: tarifa.valorClienteFinal,
-            ganancia: tarifa.ganancia,
-          }));
-          setTarifas(tarifasFormateadas);
-          setPorcentaje(typeof data.porcentaje === 'number' ? data.porcentaje : null);
-          setSmsCostoUnitarioStr(
-            typeof data.sms_costo_unitario_str === 'string' ? data.sms_costo_unitario_str : null
-          );
-          setSmsVentaUnitarioStr(
-            typeof data.sms_venta_unitario_str === 'string' ? data.sms_venta_unitario_str : null
-          );
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Error obteniendo tarifas del backend', errorData.detail);
-          setTarifas(FALLBACK_TARIFAS);
-        }
-      } catch (error) {
-        console.error('Error cargando tarifas:', error);
+      if (response.ok) {
+        const data = await response.json();
+        const tarifasFormateadas = data.tarifas.map((tarifa: TarifaData) => ({
+          definicion: tarifa.definicion,
+          valor: tarifa.valor,
+          valorClienteFinal: tarifa.valorClienteFinal,
+          ganancia: tarifa.ganancia,
+        }));
+        setTarifas(tarifasFormateadas);
+        setPorcentaje(typeof data.porcentaje === 'number' ? data.porcentaje : null);
+        setSmsCostoUnitarioStr(
+          typeof data.sms_costo_unitario_str === 'string' ? data.sms_costo_unitario_str : null
+        );
+        setSmsVentaUnitarioStr(
+          typeof data.sms_venta_unitario_str === 'string' ? data.sms_venta_unitario_str : null
+        );
+        setActiveOfferName(
+          data.offer && typeof data.offer.name === 'string' ? data.offer.name : null,
+        );
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error obteniendo tarifas del backend', errorData.detail);
         setTarifas(FALLBACK_TARIFAS);
-      } finally {
-        setTarifasLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error cargando tarifas:', error);
+      setTarifas(FALLBACK_TARIFAS);
+    } finally {
+      setTarifasLoading(false);
+    }
+  }, [pricingApp, router]);
 
+  useEffect(() => {
     void loadTarifas();
-  }, [router]);
+  }, [loadTarifas]);
 
   const simularRecarga = async () => {
     const valor = parseFloat(simuladorValor.replace(/\./g, '').replace(/\$/g, ''));
@@ -130,7 +147,7 @@ export function TarifasSectionContent() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ monto: valor }),
+        body: JSON.stringify({ monto: valor, app: pricingApp }),
       });
 
       if (response.ok) {
@@ -138,8 +155,10 @@ export function TarifasSectionContent() {
         setResultadoSimulacion({
           valorAdmin: resultado.valor_admin_str,
           valorCliente: resultado.valor_cliente_str,
+          valorClienteBase: resultado.valor_cliente_base_str,
           ganancia: resultado.ganancia_str,
           tipoRecarga: resultado.descripcion,
+          offerName: resultado.offer?.name || null,
         });
       } else {
         const errorData = await response.json();
@@ -189,6 +208,7 @@ export function TarifasSectionContent() {
         setResultadoSimulacionSms({
           valorAdmin: resultado.valor_admin_str,
           valorCliente: resultado.valor_cliente_str,
+          valorClienteBase: resultado.valor_cliente_base_str,
           ganancia: resultado.ganancia_str,
           costoUnitario: resultado.costo_unitario_str,
           ventaUnitario: resultado.venta_unitario_str,
@@ -198,6 +218,7 @@ export function TarifasSectionContent() {
           porcentaje: resultado.porcentaje,
           porcentajeGanancia: resultado.porcentaje_ganancia,
           cantidad: resultado.cantidad,
+          offerName: resultado.offer?.name || null,
         });
       } else {
         const errorData = await response.json();
@@ -247,9 +268,32 @@ export function TarifasSectionContent() {
   return (
     <>
       <div className="retro-tarifas">
+        <div className="retro-plantillas__tabs" role="tablist" aria-label="App de tarifas">
+          {PRICING_APPS.map((app) => (
+            <button
+              key={app}
+              type="button"
+              role="tab"
+              aria-selected={pricingApp === app}
+              className={`retro-plantillas__tab${pricingApp === app ? ' retro-plantillas__tab--active' : ''}`}
+              onClick={() => {
+                setPricingApp(app);
+                setResultadoSimulacion(null);
+              }}
+            >
+              {PRICING_APP_LABELS[app]}
+            </button>
+          ))}
+        </div>
+        {activeOfferName && (
+          <p className="retro-tarifas__offer">
+            Oferta activa: <strong>{activeOfferName}</strong>. Los valores de la tabla y del
+            simulador ya incluyen el descuento.
+          </p>
+        )}
         <p className="retro-tarifas__intro">
           {porcentaje != null
-            ? `Tarifas calculadas con tu porcentaje de costo (${porcentaje}%). Valor = lo que pagas; ganancia = margen sobre el cliente.${
+            ? `Tarifas de ${PRICING_APP_LABELS[pricingApp]} con tu porcentaje de costo (${porcentaje}%). Valor = lo que pagas; ganancia = margen sobre el cliente.${
                 smsVentaUnitarioStr
                   ? ` SMS venta: ${smsVentaUnitarioStr}/msg; costo base: ${smsCostoUnitarioStr ?? '—'}/msg.`
                   : ''
@@ -265,7 +309,7 @@ export function TarifasSectionContent() {
         />
 
         <fieldset className="retro-tarifas__simulator">
-          <legend>Simulador de recarga</legend>
+          <legend>Simulador de recarga · {PRICING_APP_LABELS[pricingApp]}</legend>
 
           <div className="retro-tarifas__simulator-row">
             <div className="retro-tarifas__simulator-field">
@@ -315,6 +359,11 @@ export function TarifasSectionContent() {
                   <span className="retro-tarifas__result-item-value retro-tarifas__result-item-value--client">
                     {resultadoSimulacion.valorCliente}
                   </span>
+                  {resultadoSimulacion.offerName && resultadoSimulacion.valorClienteBase && (
+                    <span className="retro-tarifas__result-item-label">
+                      Antes: {resultadoSimulacion.valorClienteBase} · {resultadoSimulacion.offerName}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className="retro-tarifas__result-item-label">Ganancia</span>
@@ -386,6 +435,11 @@ export function TarifasSectionContent() {
                   <span className="retro-tarifas__result-item-value retro-tarifas__result-item-value--client">
                     {resultadoSimulacionSms.valorCliente}
                   </span>
+                  {resultadoSimulacionSms.offerName && resultadoSimulacionSms.valorClienteBase && (
+                    <span className="retro-tarifas__result-item-label">
+                      Antes: {resultadoSimulacionSms.valorClienteBase} · {resultadoSimulacionSms.offerName}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className="retro-tarifas__result-item-label">Costo base SMS</span>

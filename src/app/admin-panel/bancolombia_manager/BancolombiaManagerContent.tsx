@@ -28,6 +28,8 @@ import {
 import { useScrollLock } from '../../../hooks/useScrollLock';
 import { copyTextToClipboard } from '../../../lib/copyToClipboard';
 import { vipFinLabel, vipInicioLabel } from '../../../lib/vipVigencia';
+import { formatCreditsLabel } from '../../../lib/pricingShared';
+import { useAdminPricing } from '../../../hooks/useAdminPricing';
 
 interface AdminInfo {
   id: number;
@@ -117,6 +119,7 @@ export function BancolombiaManagerContent({
   onBackToHub,
 }: BancolombiaManagerContentProps) {
   const MAX_RECHARGE = 10_000_000;
+  const { packages: rechargePackages } = useAdminPricing('bancolombia');
   const TEST_USER_BALANCE_OPTIONS = [
     { value: 0, label: '$0' },
     { value: 1000, label: '$1.000' },
@@ -1832,38 +1835,17 @@ export function BancolombiaManagerContent({
               <div className="retro-user-actions__body">
                 <p className="retro-user-actions__section-title">Recargas</p>
                 <div className="retro-user-actions__grid">
-                  <button
-                    type="button"
-                    onClick={() => openRecargaModal('28k', '1.200.000')}
-                    className="retro-user-actions__chip"
-                  >
-                    <strong>28k</strong>
-                    <small>1.200.000</small>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openRecargaModal('38k', '2.600.000')}
-                    className="retro-user-actions__chip"
-                  >
-                    <strong>38k</strong>
-                    <small>2.600.000</small>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openRecargaModal('48k', '5.000.000')}
-                    className="retro-user-actions__chip"
-                  >
-                    <strong>48k</strong>
-                    <small>5.000.000</small>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openRecargaModal('63k', '10.000.000')}
-                    className="retro-user-actions__chip"
-                  >
-                    <strong>63k</strong>
-                    <small>10.000.000</small>
-                  </button>
+                  {rechargePackages.map((pkg) => (
+                    <button
+                      key={pkg.credits}
+                      type="button"
+                      onClick={() => openRecargaModal(pkg.tag_base, formatCreditsLabel(pkg.credits))}
+                      className="retro-user-actions__chip"
+                    >
+                      <strong>{pkg.tag}</strong>
+                      <small>{formatCreditsLabel(pkg.credits)}</small>
+                    </button>
+                  ))}
                 </div>
 
                 <hr className="retro-user-actions__divider" />
@@ -2447,57 +2429,21 @@ export function BancolombiaManagerContent({
                 </div>
 
                 <div className="retro-manager-modal__amount-grid">
-                  <button
-                    type="button"
-                    onClick={() => setQuickBalance('1200000', '28k')}
-                    className={
-                      selectedRandomOption === '28k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
-                        : 'retro-manager-modal__amount-chip'
-                    }
-                  >
-                    <strong>28k</strong>
-                    <small>1.200.000</small>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setQuickBalance('2600000', '38k')}
-                    className={
-                      selectedRandomOption === '38k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
-                        : 'retro-manager-modal__amount-chip'
-                    }
-                  >
-                    <strong>38k</strong>
-                    <small>2.600.000</small>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setQuickBalance('5000000', '48k')}
-                    className={
-                      selectedRandomOption === '48k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
-                        : 'retro-manager-modal__amount-chip'
-                    }
-                  >
-                    <strong>48k</strong>
-                    <small>5.000.000</small>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setQuickBalance('10000000', '63k')}
-                    className={
-                      selectedRandomOption === '63k'
-                        ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
-                        : 'retro-manager-modal__amount-chip'
-                    }
-                  >
-                    <strong>63k</strong>
-                    <small>10.000.000</small>
-                  </button>
+                  {rechargePackages.map((pkg) => (
+                    <button
+                      key={pkg.credits}
+                      type="button"
+                      onClick={() => setQuickBalance(String(pkg.credits), pkg.tag_base)}
+                      className={
+                        selectedRandomOption === pkg.tag_base
+                          ? 'retro-manager-modal__amount-chip retro-manager-modal__amount-chip--selected'
+                          : 'retro-manager-modal__amount-chip'
+                      }
+                    >
+                      <strong>{pkg.tag}</strong>
+                      <small>{formatCreditsLabel(pkg.credits)}</small>
+                    </button>
+                  ))}
                 </div>
               </div>
 

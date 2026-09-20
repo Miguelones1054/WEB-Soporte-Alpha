@@ -5,6 +5,16 @@ import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { RetroAlert, RetroCheckbox, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
 import {
+  FALLBACK_PRICING_PACKAGES,
+  FALLBACK_VIP_PRICE,
+  formatCop,
+  PRICING_APP_LABELS,
+  PRICING_APPS,
+  type AllAppsPricingSnapshot,
+  type PricingApp,
+  type PricingPackage,
+} from '../../../lib/pricingShared';
+import {
   RetroModal,
   RetroManagerConfirmModal,
   RetroManagerProgressModal,
@@ -14,6 +24,29 @@ function formatCurrency(amount: number) {
   return `$${amount.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
+function fallbackAppPricing(): Record<PricingApp, { packages: PricingPackage[]; vipPrice: number }> {
+  const clone = () => FALLBACK_PRICING_PACKAGES.map((item) => ({ ...item }));
+  return {
+    nequi: { packages: clone(), vipPrice: FALLBACK_VIP_PRICE.price_base },
+    bancolombia: { packages: clone(), vipPrice: FALLBACK_VIP_PRICE.price_base },
+    daviplata: { packages: clone(), vipPrice: FALLBACK_VIP_PRICE.price_base },
+  };
+}
+
+function snapshotToAppPricing(data: AllAppsPricingSnapshot) {
+  const next = fallbackAppPricing();
+  for (const app of PRICING_APPS) {
+    const nested = data.apps?.[app];
+    if (nested && Array.isArray(nested.packages) && nested.packages.length === 4) {
+      next[app] = {
+        packages: nested.packages,
+        vipPrice: nested.vip?.price_base ?? next[app].vipPrice,
+      };
+    }
+  }
+  return next;
+}
+
 export function AjustesSectionContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -21,6 +54,17 @@ export function AjustesSectionContent() {
   const [smsValorVenta, setSmsValorVenta] = useState<number | null>(null);
   const [smsConfigurado, setSmsConfigurado] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [byApp, setByApp] = useState(fallbackAppPricing);
+  const [pricingApp, setPricingApp] = useState<PricingApp>('nequi');
+  const packages = byApp[pricingApp].packages;
+  const vipPrice = byApp[pricingApp].vipPrice;
+  const [priceInputs, setPriceInputs] = useState<string[]>(
+    FALLBACK_PRICING_PACKAGES.map((item) => String(item.price_base)),
+  );
+  const [vipInput, setVipInput] = useState(String(FALLBACK_VIP_PRICE.price_base));
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [savingPricing, setSavingPricing] = useState(false);
 
   const [freeNames, setFreeNames] = useState(false);
   const [freeNamesSaving, setFreeNamesSaving] = useState(false);
@@ -51,9 +95,10 @@ export function AjustesSectionContent() {
         return;
       }
 
-      const [smsRes, freeRes] = await Promise.all([
+      const [smsRes, freeRes, pricingRes] = await Promise.all([
         fetch(`${API_BASE_URL}/admin/configuraciones/sms`, { headers }),
         fetch(`${API_BASE_URL}/admin/configuraciones/free-names`, { headers }),
+        fetch(`${API_BASE_URL}/admin/pricing`, { headers }),
       ]);
 
       if (!smsRes.ok) {
@@ -73,6 +118,11 @@ export function AjustesSectionContent() {
         const errorData = await freeRes.json().catch(() => ({}));
         throw new Error(errorData.detail || 'Error al cargar FREE NOMBRES');
       }
+
+      if (pricingRes.ok) {
+        const pricingData = (await pricingRes.json()) as AllAppsPricingSnapshot;
+        setByApp(snapshotToAppPricing(pricingData));
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
       setError(message);
@@ -84,6 +134,66 @@ export function AjustesSectionContent() {
   useEffect(() => {
     void loadConfigs();
   }, [loadConfigs]);
+
+  const openPricingModal = () => {
+    setPriceInputs(packages.map((item) => String(item.price_base)));
+    setVipInput(String(vipPrice));
+    setShowPricingModal(true);
+  };
+
+  const savePricing = async () => {
+    const parsedPrices = priceInputs.map((value) => parseInt(value.replace(/\D/g, ''), 10));
+    const parsedVip = parseInt(vipInput.replace(/\D/g, ''), 10);
+    if (parsedPrices.some((value) => Number.isNaN(value) || value <= 0) || Number.isNaN(parsedVip) || parsedVip <= 0) {
+      setErrorModalMessage('Todos los precios deben ser enteros positivos.');
+      setShowErrorModal(true);
+      return;
+    }
+
+    setSavingPricing(true);
+    try {
+      const headers = authHeaders();
+      if (!headers) {
+        router.push('/');
+        return;
+      }
+      const response = await fetch(`${API_BASE_URL}/admin/owner/pricing`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          app: pricingApp,
+          packages: packages.map((item, index) => ({
+            credits: item.credits,
+            price: parsedPrices[index],
+          })),
+          vip_price: parsedVip,
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'No se pudieron guardar los precios');
+      }
+      const data = (await response.json()) as AllAppsPricingSnapshot;
+      if (Array.isArray(data.packages) && data.packages.length === 4) {
+        setByApp((current) => ({
+          ...current,
+          [pricingApp]: {
+            packages: data.packages ?? current[pricingApp].packages,
+            vipPrice: data.vip?.price_base ?? current[pricingApp].vipPrice,
+          },
+        }));
+      }
+      setShowPricingModal(false);
+      setSuccessMessage(`Precios de recarga y VIP actualizados para ${PRICING_APP_LABELS[pricingApp]}.`);
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error de conexión';
+      setErrorModalMessage(message);
+      setShowErrorModal(true);
+    } finally {
+      setSavingPricing(false);
+    }
+  };
 
   const openModal = () => {
     setInputValor(smsValor != null ? String(smsValor) : '');
@@ -220,6 +330,47 @@ export function AjustesSectionContent() {
           </div>
         </RetroWindow>
 
+        <RetroWindow title="Precios de recarga y VIP" fullWidth>
+          <div className="space-y-3">
+            <div className="retro-plantillas__tabs" role="tablist" aria-label="App de precios">
+              {PRICING_APPS.map((app) => (
+                <button
+                  key={app}
+                  type="button"
+                  role="tab"
+                  aria-selected={pricingApp === app}
+                  className={`retro-plantillas__tab${pricingApp === app ? ' retro-plantillas__tab--active' : ''}`}
+                  disabled={showPricingModal || savingPricing}
+                  onClick={() => setPricingApp(app)}
+                >
+                  {PRICING_APP_LABELS[app]}
+                </button>
+              ))}
+            </div>
+            <div className="retro-stat-grid">
+              {packages.map((pkg) => (
+                <div key={pkg.credits} className="retro-stat-card">
+                  <p className="retro-stat-card__label">
+                    {pkg.tag_base} · {pkg.credits.toLocaleString('es-CO')} créditos
+                  </p>
+                  <p className="retro-stat-card__value">{formatCop(pkg.price_base)}</p>
+                </div>
+              ))}
+              <div className="retro-stat-card">
+                <p className="retro-stat-card__label">VIP</p>
+                <p className="retro-stat-card__value">{formatCop(vipPrice)}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="retro-manager-btn retro-manager-btn--primary"
+              onClick={openPricingModal}
+            >
+              Cambiar precios de {PRICING_APP_LABELS[pricingApp]}
+            </button>
+          </div>
+        </RetroWindow>
+
         <RetroWindow title="FREE NOMBRES" fullWidth>
           <div className="space-y-3">
             <p className="text-sm opacity-80">
@@ -294,6 +445,65 @@ export function AjustesSectionContent() {
         </div>
       </RetroModal>
 
+      <RetroModal
+        open={showPricingModal}
+        title={`Precios de recarga y VIP · ${PRICING_APP_LABELS[pricingApp]}`}
+        onClose={() => !savingPricing && setShowPricingModal(false)}
+        zIndex={110}
+      >
+        <div className="space-y-3">
+          {packages.map((pkg, index) => (
+            <label key={pkg.credits} className="block">
+              <span className="retro-tarifas__simulator-field label">
+                {pkg.credits.toLocaleString('es-CO')} créditos (tag {pkg.tag_base})
+              </span>
+              <input
+                type="text"
+                value={priceInputs[index] ?? ''}
+                disabled={savingPricing}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setPriceInputs((current) => {
+                    const next = [...current];
+                    next[index] = value;
+                    return next;
+                  });
+                }}
+                className="retro-manager-modal__input w-full mt-1"
+              />
+            </label>
+          ))}
+          <label className="block">
+            <span className="retro-tarifas__simulator-field label">Precio VIP (COP)</span>
+            <input
+              type="text"
+              value={vipInput}
+              disabled={savingPricing}
+              onChange={(e) => setVipInput(e.target.value.replace(/[^0-9]/g, ''))}
+              className="retro-manager-modal__input w-full mt-1"
+            />
+          </label>
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              className="retro-manager-btn"
+              disabled={savingPricing}
+              onClick={() => setShowPricingModal(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="retro-manager-btn retro-manager-btn--primary"
+              disabled={savingPricing}
+              onClick={() => void savePricing()}
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      </RetroModal>
+
       <RetroManagerConfirmModal
         open={showSuccess}
         type="success"
@@ -313,8 +523,14 @@ export function AjustesSectionContent() {
       />
 
       <RetroManagerProgressModal
-        open={saving || freeNamesSaving}
-        message={freeNamesSaving ? 'Actualizando FREE NOMBRES...' : 'Guardando configuración SMS...'}
+        open={saving || freeNamesSaving || savingPricing}
+        message={
+          freeNamesSaving
+            ? 'Actualizando FREE NOMBRES...'
+            : savingPricing
+              ? 'Guardando precios...'
+              : 'Guardando configuración SMS...'
+        }
         zIndex={130}
       />
     </>

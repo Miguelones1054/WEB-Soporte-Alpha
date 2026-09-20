@@ -17,6 +17,16 @@
   text-align: center;
 }
 
+.retro-tarifas__offer {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  background: #ffffcc;
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker) var(--retro-border-light);
+}
+
 .retro-tarifas__simulator {
   margin: 0;
   padding: 10px 12px 12px;
