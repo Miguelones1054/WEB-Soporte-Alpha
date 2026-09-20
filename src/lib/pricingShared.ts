@@ -25,6 +25,7 @@ export interface PricingOffer {
   scope: OfferScope;
   discount_type: OfferDiscountType;
   discount_value: number;
+  ends_at?: string | null;
 }
 
 export interface AdminPricingSnapshot {

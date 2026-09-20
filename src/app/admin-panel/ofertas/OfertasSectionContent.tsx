@@ -4,7 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
 import { humanizeNotificationError } from '../../../lib/humanizeNotificationError';
-import type { AdminOffer } from '../../../lib/ofertasShared';
+import {
+  defaultOfferEndsAtLocal,
+  datetimeLocalToIso,
+  formatOfferEndsAt,
+  isOfferExpired,
+  toDatetimeLocalValue,
+  type AdminOffer,
+} from '../../../lib/ofertasShared';
 import {
   OFFER_SCOPE_LABELS,
   formatOfferDiscount,
@@ -56,6 +63,7 @@ export function OfertasSectionContent() {
   const [formScope, setFormScope] = useState<OfferScope>('recarga');
   const [formType, setFormType] = useState<OfferDiscountType>('percent');
   const [formValue, setFormValue] = useState('20');
+  const [formEndsAt, setFormEndsAt] = useState(defaultOfferEndsAtLocal);
   const [formActive, setFormActive] = useState(true);
   const [formAnnounce, setFormAnnounce] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -127,6 +135,7 @@ export function OfertasSectionContent() {
     setFormScope('recarga');
     setFormType('percent');
     setFormValue('20');
+    setFormEndsAt(defaultOfferEndsAtLocal());
     setFormActive(true);
     setFormAnnounce(true);
     setShowFormModal(true);
@@ -140,6 +149,11 @@ export function OfertasSectionContent() {
     setFormScope(selectedOffer.scope);
     setFormType(selectedOffer.discount_type);
     setFormValue(String(selectedOffer.discount_value));
+    setFormEndsAt(
+      selectedOffer.ends_at
+        ? toDatetimeLocalValue(selectedOffer.ends_at)
+        : defaultOfferEndsAtLocal(),
+    );
     setFormActive(selectedOffer.active);
     setFormAnnounce(false);
     setShowFormModal(true);
@@ -150,8 +164,13 @@ export function OfertasSectionContent() {
   const saveOffer = async (forceActive = false) => {
     const name = formName.trim();
     const description = formDescription.trim();
-    if (!name || !description || Number.isNaN(parsedValue) || parsedValue <= 0) {
-      showResult('Completa nombre, descripción y un descuento válido', 'error');
+    const endsAtIso = datetimeLocalToIso(formEndsAt);
+    if (!name || !description || Number.isNaN(parsedValue) || parsedValue <= 0 || !endsAtIso) {
+      showResult('Completa nombre, descripción, descuento y fecha de fin', 'error');
+      return;
+    }
+    if ((forceActive || formActive) && new Date(endsAtIso).getTime() <= Date.now()) {
+      showResult('La fecha de fin de vigencia debe ser posterior a ahora', 'error');
       return;
     }
 
@@ -176,6 +195,7 @@ export function OfertasSectionContent() {
         scope: formScope,
         discount_type: formType,
         discount_value: parsedValue,
+        ends_at: endsAtIso,
         active: willActivate,
       };
       if (!isEdit) payload.announce = formAnnounce;
@@ -292,7 +312,7 @@ export function OfertasSectionContent() {
           <div>
             <h2 className="retro-plantillas__title">Ofertas y descuentos</h2>
             <p className="retro-plantillas__subtitle">
-              Solo puede haber una oferta activa. Aplica a recargas, mensajes, VIP o todas.
+              Solo puede haber una oferta activa. Al vencer la fecha de fin, se apaga sola.
             </p>
           </div>
           <button
@@ -320,14 +340,17 @@ export function OfertasSectionContent() {
                 type="button"
                 className={`retro-plantillas__card retro-ofertas__card${
                   offer.active ? ' retro-ofertas__card--active' : ''
-                }`}
+                }${isOfferExpired(offer) ? ' retro-ofertas__card--expired' : ''}`}
                 onClick={() => setSelectedOffer(offer)}
               >
                 <strong className="retro-plantillas__card-title">{offer.name}</strong>
                 <span className="retro-plantillas__card-desc">{offer.description}</span>
                 <span className="retro-ofertas__meta">
                   {offer.scope_label || OFFER_SCOPE_LABELS[offer.scope]} · {formatOfferDiscount(offer)}
-                  {offer.active ? ' · ACTIVA' : ''}
+                  {offer.active ? ' · ACTIVA' : isOfferExpired(offer) ? ' · VENCIDA' : ''}
+                </span>
+                <span className="retro-ofertas__meta">
+                  {isOfferExpired(offer) ? 'Venció' : 'Vence'} {formatOfferEndsAt(offer.ends_at)}
                 </span>
               </button>
             ))}
@@ -410,6 +433,16 @@ export function OfertasSectionContent() {
                 maxLength={8}
               />
             </RetroModalField>
+            <RetroModalField label="Fin de vigencia" htmlFor="offerEndsAt">
+              <RetroModalInput
+                id="offerEndsAt"
+                type="datetime-local"
+                value={formEndsAt}
+                min={formMode === 'create' ? toDatetimeLocalValue(new Date()) : undefined}
+                disabled={saving}
+                onChange={(e) => setFormEndsAt(e.target.value)}
+              />
+            </RetroModalField>
             <RetroCheckbox
               label="Activar ahora (apaga la oferta actual)"
               checked={formActive}
@@ -432,7 +465,13 @@ export function OfertasSectionContent() {
             </RetroModalBtn>
             <RetroModalBtn
               onClick={() => void saveOffer()}
-              disabled={saving || !formName.trim() || !formDescription.trim() || !formValue.trim()}
+              disabled={
+                saving ||
+                !formName.trim() ||
+                !formDescription.trim() ||
+                !formValue.trim() ||
+                !formEndsAt.trim()
+              }
             >
               {saving ? 'Guardando...' : formMode === 'create' ? 'Crear oferta' : 'Guardar cambios'}
             </RetroModalBtn>
@@ -453,13 +492,19 @@ export function OfertasSectionContent() {
           <RetroModalBanner variant={selectedOffer.active ? 'info' : 'warning'}>
             {selectedOffer.active
               ? 'Esta es la oferta activa. Tarifas, recargas y API ya usan este descuento.'
-              : 'Oferta inactiva. Actívala para que aplique al simulador y a las recargas.'}
+              : isOfferExpired(selectedOffer)
+                ? 'Esta oferta ya venció y se apagó sola. Edítala con una fecha nueva para reactivarla.'
+                : 'Oferta inactiva. Actívala para que aplique al simulador y a las recargas.'}
           </RetroModalBanner>
           <div className="retro-manager-modal__intro retro-manager-modal__intro--compact">
             <RetroModalText muted>{selectedOffer.description}</RetroModalText>
             <RetroModalText muted>
               Alcance: {selectedOffer.scope_label || OFFER_SCOPE_LABELS[selectedOffer.scope]} ·
               Descuento: {formatOfferDiscount(selectedOffer)}
+            </RetroModalText>
+            <RetroModalText muted>
+              {isOfferExpired(selectedOffer) ? 'Venció' : 'Vence'}:{' '}
+              {formatOfferEndsAt(selectedOffer.ends_at)}
             </RetroModalText>
           </div>
           <RetroModalActions center>
