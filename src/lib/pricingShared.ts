@@ -34,6 +34,8 @@ export interface AdminPricingSnapshot {
   vip: {
     price_base: number;
     price_final: number;
+    description?: string;
+    duration_days?: number;
   };
   offer: PricingOffer | null;
 }
