@@ -539,7 +539,7 @@ export function AjustesSectionContent() {
                     );
                   }}
                   className="retro-manager-modal__input w-full mt-1"
-                  placeholder={listaInputType === 'phone' ? 'Ej. 3001234567' : 'Ej. @mi_llave'}
+                  placeholder={listaInputType === 'phone' ? 'Ej. 3001234567' : 'Ej. mi_llave'}
                 />
               </label>
               <button
@@ -583,7 +583,7 @@ export function AjustesSectionContent() {
                   <ul className="mt-2 space-y-1">
                     {listaKeys.map((key) => (
                       <li key={key} className="flex items-center justify-between gap-2 text-sm">
-                        <span>@{key}</span>
+                        <span>{key}</span>
                         <button
                           type="button"
                           className="retro-manager-btn"
