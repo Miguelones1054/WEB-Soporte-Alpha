@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../lib/constants';
+import { useOptionalAdminSessionContext } from '../../../contexts/AdminSessionContext';
 import { RetroAlert, RetroCheckbox, RetroLoadingOverlay, RetroWindow } from '../../../components/retro';
 import {
   FALLBACK_PRICING_PACKAGES,
@@ -49,6 +50,9 @@ function snapshotToAppPricing(data: AllAppsPricingSnapshot) {
 
 export function AjustesSectionContent() {
   const router = useRouter();
+  const hubSession = useOptionalAdminSessionContext();
+  const role = (hubSession?.adminInfo?.role || '').toLowerCase();
+  const isOwner = role === 'owner';
   const [loading, setLoading] = useState(true);
   const [smsValor, setSmsValor] = useState<number | null>(null);
   const [smsValorVenta, setSmsValorVenta] = useState<number | null>(null);
@@ -101,11 +105,30 @@ export function AjustesSectionContent() {
         return;
       }
 
-      const [smsRes, freeRes, pricingRes, listaRes] = await Promise.all([
+      if (role === 'partner') {
+        setError('El rol partner no tiene acceso a Ajustes.');
+        return;
+      }
+
+      const listaRes = await fetch(`${API_BASE_URL}/admin/configuraciones/lista-digna`, {
+        headers,
+      });
+      if (!listaRes.ok) {
+        const errorData = await listaRes.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Error al cargar lista digna');
+      }
+      const listaData = await listaRes.json();
+      setListaPhones(Array.isArray(listaData.phones) ? listaData.phones.map(String) : []);
+      setListaKeys(Array.isArray(listaData.keys) ? listaData.keys.map(String) : []);
+
+      if (!isOwner) {
+        return;
+      }
+
+      const [smsRes, freeRes, pricingRes] = await Promise.all([
         fetch(`${API_BASE_URL}/admin/configuraciones/sms`, { headers }),
         fetch(`${API_BASE_URL}/admin/configuraciones/free-names`, { headers }),
         fetch(`${API_BASE_URL}/admin/pricing`, { headers }),
-        fetch(`${API_BASE_URL}/admin/configuraciones/lista-digna`, { headers }),
       ]);
 
       if (!smsRes.ok) {
@@ -130,22 +153,13 @@ export function AjustesSectionContent() {
         const pricingData = (await pricingRes.json()) as AllAppsPricingSnapshot;
         setByApp(snapshotToAppPricing(pricingData));
       }
-
-      if (listaRes.ok) {
-        const listaData = await listaRes.json();
-        setListaPhones(Array.isArray(listaData.phones) ? listaData.phones.map(String) : []);
-        setListaKeys(Array.isArray(listaData.keys) ? listaData.keys.map(String) : []);
-      } else {
-        const errorData = await listaRes.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Error al cargar lista digna');
-      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, router]);
+  }, [authHeaders, isOwner, role, router]);
 
   useEffect(() => {
     void loadConfigs();
@@ -400,90 +414,94 @@ export function AjustesSectionContent() {
       <div className="retro-admin-container space-y-4">
         {error && <RetroAlert variant="error">{error}</RetroAlert>}
 
-        <RetroWindow title="Configuración de SMS" fullWidth>
-          <div className="space-y-3">
-            <div className="retro-stat-grid">
-              <div className="retro-stat-card">
-                <p className="retro-stat-card__label">Costo por SMS</p>
-                <p className="retro-stat-card__value">
-                  {smsConfigurado && smsValor != null ? formatCurrency(smsValor) : 'Sin configurar'}
-                </p>
-              </div>
-              <div className="retro-stat-card">
-                <p className="retro-stat-card__label">Valor de venta por SMS</p>
-                <p className="retro-stat-card__value">
-                  {smsConfigurado && smsValorVenta != null
-                    ? formatCurrency(smsValorVenta)
-                    : 'Sin configurar'}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="retro-manager-btn retro-manager-btn--primary"
-              onClick={openModal}
-            >
-              {smsConfigurado ? 'Cambiar valores del SMS' : 'Definir valores del SMS'}
-            </button>
-          </div>
-        </RetroWindow>
-
-        <RetroWindow title="Precios de recarga y VIP" fullWidth>
-          <div className="space-y-3">
-            <div className="retro-plantillas__tabs" role="tablist" aria-label="App de precios">
-              {PRICING_APPS.map((app) => (
-                <button
-                  key={app}
-                  type="button"
-                  role="tab"
-                  aria-selected={pricingApp === app}
-                  className={`retro-plantillas__tab${pricingApp === app ? ' retro-plantillas__tab--active' : ''}`}
-                  disabled={showPricingModal || savingPricing}
-                  onClick={() => setPricingApp(app)}
-                >
-                  {PRICING_APP_LABELS[app]}
-                </button>
-              ))}
-            </div>
-            <div className="retro-stat-grid">
-              {packages.map((pkg) => (
-                <div key={pkg.credits} className="retro-stat-card">
-                  <p className="retro-stat-card__label">
-                    {pkg.tag_base} · {pkg.credits.toLocaleString('es-CO')} créditos
-                  </p>
-                  <p className="retro-stat-card__value">{formatCop(pkg.price_base)}</p>
+        {isOwner ? (
+          <>
+            <RetroWindow title="Configuración de SMS" fullWidth>
+              <div className="space-y-3">
+                <div className="retro-stat-grid">
+                  <div className="retro-stat-card">
+                    <p className="retro-stat-card__label">Costo por SMS</p>
+                    <p className="retro-stat-card__value">
+                      {smsConfigurado && smsValor != null ? formatCurrency(smsValor) : 'Sin configurar'}
+                    </p>
+                  </div>
+                  <div className="retro-stat-card">
+                    <p className="retro-stat-card__label">Valor de venta por SMS</p>
+                    <p className="retro-stat-card__value">
+                      {smsConfigurado && smsValorVenta != null
+                        ? formatCurrency(smsValorVenta)
+                        : 'Sin configurar'}
+                    </p>
+                  </div>
                 </div>
-              ))}
-              <div className="retro-stat-card">
-                <p className="retro-stat-card__label">VIP</p>
-                <p className="retro-stat-card__value">{formatCop(vipPrice)}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="retro-manager-btn retro-manager-btn--primary"
-              onClick={openPricingModal}
-            >
-              Cambiar precios de {PRICING_APP_LABELS[pricingApp]}
-            </button>
-          </div>
-        </RetroWindow>
 
-        <RetroWindow title="FREE NOMBRES" fullWidth>
-          <div className="space-y-3">
-            <p className="text-sm opacity-80">
-              Si está activo, todos los usuarios pueden consultar nombres (Nequi, Bre-B, QR,
-              Bancolombia) sin VIP. Aplica IP Colombia, rate limit estricto y last_login ≤ 2h.
-            </p>
-            <RetroCheckbox
-              label={freeNames ? 'FREE NOMBRES activo' : 'FREE NOMBRES inactivo'}
-              checked={freeNames}
-              disabled={freeNamesSaving}
-              onChange={(e) => void toggleFreeNames(e.target.checked)}
-            />
-          </div>
-        </RetroWindow>
+                <button
+                  type="button"
+                  className="retro-manager-btn retro-manager-btn--primary"
+                  onClick={openModal}
+                >
+                  {smsConfigurado ? 'Cambiar valores del SMS' : 'Definir valores del SMS'}
+                </button>
+              </div>
+            </RetroWindow>
+
+            <RetroWindow title="Precios de recarga y VIP" fullWidth>
+              <div className="space-y-3">
+                <div className="retro-plantillas__tabs" role="tablist" aria-label="App de precios">
+                  {PRICING_APPS.map((app) => (
+                    <button
+                      key={app}
+                      type="button"
+                      role="tab"
+                      aria-selected={pricingApp === app}
+                      className={`retro-plantillas__tab${pricingApp === app ? ' retro-plantillas__tab--active' : ''}`}
+                      disabled={showPricingModal || savingPricing}
+                      onClick={() => setPricingApp(app)}
+                    >
+                      {PRICING_APP_LABELS[app]}
+                    </button>
+                  ))}
+                </div>
+                <div className="retro-stat-grid">
+                  {packages.map((pkg) => (
+                    <div key={pkg.credits} className="retro-stat-card">
+                      <p className="retro-stat-card__label">
+                        {pkg.tag_base} · {pkg.credits.toLocaleString('es-CO')} créditos
+                      </p>
+                      <p className="retro-stat-card__value">{formatCop(pkg.price_base)}</p>
+                    </div>
+                  ))}
+                  <div className="retro-stat-card">
+                    <p className="retro-stat-card__label">VIP</p>
+                    <p className="retro-stat-card__value">{formatCop(vipPrice)}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="retro-manager-btn retro-manager-btn--primary"
+                  onClick={openPricingModal}
+                >
+                  Cambiar precios de {PRICING_APP_LABELS[pricingApp]}
+                </button>
+              </div>
+            </RetroWindow>
+
+            <RetroWindow title="FREE NOMBRES" fullWidth>
+              <div className="space-y-3">
+                <p className="text-sm opacity-80">
+                  Si está activo, todos los usuarios pueden consultar nombres (Nequi, Bre-B, QR,
+                  Bancolombia) sin VIP. Aplica IP Colombia, rate limit estricto y last_login ≤ 2h.
+                </p>
+                <RetroCheckbox
+                  label={freeNames ? 'FREE NOMBRES activo' : 'FREE NOMBRES inactivo'}
+                  checked={freeNames}
+                  disabled={freeNamesSaving}
+                  onChange={(e) => void toggleFreeNames(e.target.checked)}
+                />
+              </div>
+            </RetroWindow>
+          </>
+        ) : null}
 
         <RetroWindow title="Lista digna" fullWidth>
           <div className="space-y-3">

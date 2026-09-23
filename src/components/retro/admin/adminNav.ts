@@ -33,7 +33,7 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
     href: adminHubHref('ajustes'),
     label: 'Ajustes',
     icon: 'system/settings_gear',
-    ownerOnly: true,
+    notForPartner: true,
     section: 'ajustes',
   },
   {

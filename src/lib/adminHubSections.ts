@@ -40,7 +40,7 @@ export const HUB_SECTION_META: Record<
     icon: 'office/bar_graph',
     ownerOnly: true,
   },
-  ajustes: { title: 'Ajustes del sistema', icon: 'system/settings_gear', ownerOnly: true },
+  ajustes: { title: 'Ajustes del sistema', icon: 'system/settings_gear', notForPartner: true },
   ofertas: { title: 'Ofertas y descuentos', icon: 'office/document', ownerOnly: true },
   'admin-gestion': { title: 'Gestionar administradores', icon: 'users/address_book_users', ownerOnly: true },
   'plantillas-notificaciones': {
