@@ -69,6 +69,12 @@ export function AjustesSectionContent() {
   const [freeNames, setFreeNames] = useState(false);
   const [freeNamesSaving, setFreeNamesSaving] = useState(false);
 
+  const [listaPhones, setListaPhones] = useState<string[]>([]);
+  const [listaKeys, setListaKeys] = useState<string[]>([]);
+  const [listaInputType, setListaInputType] = useState<'phone' | 'key'>('phone');
+  const [listaInputValue, setListaInputValue] = useState('');
+  const [listaSaving, setListaSaving] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [inputValor, setInputValor] = useState('');
   const [inputValorVenta, setInputValorVenta] = useState('');
@@ -95,10 +101,11 @@ export function AjustesSectionContent() {
         return;
       }
 
-      const [smsRes, freeRes, pricingRes] = await Promise.all([
+      const [smsRes, freeRes, pricingRes, listaRes] = await Promise.all([
         fetch(`${API_BASE_URL}/admin/configuraciones/sms`, { headers }),
         fetch(`${API_BASE_URL}/admin/configuraciones/free-names`, { headers }),
         fetch(`${API_BASE_URL}/admin/pricing`, { headers }),
+        fetch(`${API_BASE_URL}/admin/configuraciones/lista-digna`, { headers }),
       ]);
 
       if (!smsRes.ok) {
@@ -122,6 +129,15 @@ export function AjustesSectionContent() {
       if (pricingRes.ok) {
         const pricingData = (await pricingRes.json()) as AllAppsPricingSnapshot;
         setByApp(snapshotToAppPricing(pricingData));
+      }
+
+      if (listaRes.ok) {
+        const listaData = await listaRes.json();
+        setListaPhones(Array.isArray(listaData.phones) ? listaData.phones.map(String) : []);
+        setListaKeys(Array.isArray(listaData.keys) ? listaData.keys.map(String) : []);
+      } else {
+        const errorData = await listaRes.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Error al cargar lista digna');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error de conexión';
@@ -292,6 +308,89 @@ export function AjustesSectionContent() {
     }
   };
 
+  const applyListaPayload = (data: { phones?: unknown; keys?: unknown }) => {
+    setListaPhones(Array.isArray(data.phones) ? data.phones.map(String) : []);
+    setListaKeys(Array.isArray(data.keys) ? data.keys.map(String) : []);
+  };
+
+  const addListaItem = async () => {
+    const value = listaInputValue.trim();
+    if (!value) {
+      setErrorModalMessage(
+        listaInputType === 'phone' ? 'Ingresa un número Nequi.' : 'Ingresa una llave BRE-B.'
+      );
+      setShowErrorModal(true);
+      return;
+    }
+
+    setListaSaving(true);
+    try {
+      const headers = authHeaders();
+      if (!headers) {
+        router.push('/');
+        return;
+      }
+      const response = await fetch(`${API_BASE_URL}/admin/configuraciones/lista-digna`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ type: listaInputType, value }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'No se pudo agregar a la lista digna');
+      }
+      const data = await response.json();
+      applyListaPayload(data);
+      setListaInputValue('');
+      setSuccessMessage(
+        listaInputType === 'phone'
+          ? 'Número agregado a la lista digna.'
+          : 'Llave agregada a la lista digna.'
+      );
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error de conexión';
+      setErrorModalMessage(message);
+      setShowErrorModal(true);
+    } finally {
+      setListaSaving(false);
+    }
+  };
+
+  const removeListaItem = async (type: 'phone' | 'key', value: string) => {
+    setListaSaving(true);
+    try {
+      const headers = authHeaders();
+      if (!headers) {
+        router.push('/');
+        return;
+      }
+      const response = await fetch(`${API_BASE_URL}/admin/configuraciones/lista-digna`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ type, value }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'No se pudo eliminar de la lista digna');
+      }
+      const data = await response.json();
+      applyListaPayload(data);
+      setSuccessMessage(
+        type === 'phone'
+          ? 'Número eliminado de la lista digna.'
+          : 'Llave eliminada de la lista digna.'
+      );
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error de conexión';
+      setErrorModalMessage(message);
+      setShowErrorModal(true);
+    } finally {
+      setListaSaving(false);
+    }
+  };
+
   if (loading) {
     return <RetroLoadingOverlay message="Cargando ajustes..." />;
   }
@@ -383,6 +482,104 @@ export function AjustesSectionContent() {
               disabled={freeNamesSaving}
               onChange={(e) => void toggleFreeNames(e.target.checked)}
             />
+          </div>
+        </RetroWindow>
+
+        <RetroWindow title="Lista digna" fullWidth>
+          <div className="space-y-3">
+            <p className="text-sm opacity-80">
+              Números Nequi y llaves BRE-B prohibidos. Si un usuario intenta enviar a cualquiera
+              de estos destinos en Nequi Alpha o Bancolombia Alpha, su cuenta se banea con:
+              &quot;Incumpliste los terminos y condiciones de la app&quot;.
+            </p>
+
+            <div className="flex flex-wrap gap-2 items-end">
+              <label className="block">
+                <span className="retro-tarifas__simulator-field label">Tipo</span>
+                <select
+                  className="retro-manager-modal__input mt-1"
+                  value={listaInputType}
+                  disabled={listaSaving}
+                  onChange={(e) => setListaInputType(e.target.value === 'key' ? 'key' : 'phone')}
+                >
+                  <option value="phone">Número Nequi</option>
+                  <option value="key">Llave BRE-B</option>
+                </select>
+              </label>
+              <label className="block flex-1 min-w-[180px]">
+                <span className="retro-tarifas__simulator-field label">
+                  {listaInputType === 'phone' ? 'Número (10 dígitos)' : 'Llave'}
+                </span>
+                <input
+                  type="text"
+                  value={listaInputValue}
+                  disabled={listaSaving}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setListaInputValue(
+                      listaInputType === 'phone' ? raw.replace(/\D/g, '').slice(0, 10) : raw
+                    );
+                  }}
+                  className="retro-manager-modal__input w-full mt-1"
+                  placeholder={listaInputType === 'phone' ? 'Ej. 3001234567' : 'Ej. @mi_llave'}
+                />
+              </label>
+              <button
+                type="button"
+                className="retro-manager-btn retro-manager-btn--primary"
+                disabled={listaSaving || !listaInputValue.trim()}
+                onClick={() => void addListaItem()}
+              >
+                Agregar
+              </button>
+            </div>
+
+            <div className="retro-stat-grid">
+              <div className="retro-stat-card">
+                <p className="retro-stat-card__label">Números Nequi ({listaPhones.length})</p>
+                {listaPhones.length === 0 ? (
+                  <p className="text-sm opacity-70 mt-2">Sin números</p>
+                ) : (
+                  <ul className="mt-2 space-y-1">
+                    {listaPhones.map((phone) => (
+                      <li key={phone} className="flex items-center justify-between gap-2 text-sm">
+                        <span>{phone}</span>
+                        <button
+                          type="button"
+                          className="retro-manager-btn"
+                          disabled={listaSaving}
+                          onClick={() => void removeListaItem('phone', phone)}
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="retro-stat-card">
+                <p className="retro-stat-card__label">Llaves BRE-B ({listaKeys.length})</p>
+                {listaKeys.length === 0 ? (
+                  <p className="text-sm opacity-70 mt-2">Sin llaves</p>
+                ) : (
+                  <ul className="mt-2 space-y-1">
+                    {listaKeys.map((key) => (
+                      <li key={key} className="flex items-center justify-between gap-2 text-sm">
+                        <span>@{key}</span>
+                        <button
+                          type="button"
+                          className="retro-manager-btn"
+                          disabled={listaSaving}
+                          onClick={() => void removeListaItem('key', key)}
+                        >
+                          Quitar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
         </RetroWindow>
       </div>
