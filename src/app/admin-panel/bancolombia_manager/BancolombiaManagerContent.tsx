@@ -188,6 +188,12 @@ export function BancolombiaManagerContent({
   } | null>(null);
   const [showUpgradeVipConfirmModal, setShowUpgradeVipConfirmModal] = useState(false);
   const [showCancelVipConfirmModal, setShowCancelVipConfirmModal] = useState(false);
+  const [showBanDeviceConfirmModal, setShowBanDeviceConfirmModal] = useState(false);
+  const [banDeviceAccounts, setBanDeviceAccounts] = useState<
+    Array<{ usuario: string; username: string; numeroCel: string }>
+  >([]);
+  const [banDeviceAccountsLoading, setBanDeviceAccountsLoading] = useState(false);
+  const [banDeviceAccountsError, setBanDeviceAccountsError] = useState<string | null>(null);
   const [editUserData, setEditUserData] = useState<{
     username: string;
     pin: string;
@@ -994,7 +1000,65 @@ export function BancolombiaManagerContent({
     openSubtractModal();
   };
 
-  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'upgrade_vip' | 'cancel_vip' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
+  const openBanDeviceConfirmModal = async () => {
+    if (!userData?.device_linked) return;
+    const usuarioKey = (userData.usuarioLogin || userIdInput).trim();
+    if (!usuarioKey) return;
+
+    setShowBanDeviceConfirmModal(true);
+    setBanDeviceAccounts([]);
+    setBanDeviceAccountsError(null);
+    setBanDeviceAccountsLoading(true);
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        setBanDeviceAccountsError('Sesión expirada. Vuelva a iniciar sesión.');
+        return;
+      }
+      const response = await fetch(
+        `${API_BASE_URL}/bancolombia/user/${encodeURIComponent(usuarioKey)}/device-accounts`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        setBanDeviceAccountsError(errorData.detail || 'No se pudieron cargar las cuentas vinculadas');
+        return;
+      }
+      const result = await response.json();
+      setBanDeviceAccounts(
+        Array.isArray(result.accounts)
+          ? result.accounts.map(
+              (a: { usuario?: string; username?: string; numeroCel?: string }) => ({
+                usuario: String(a.usuario || ''),
+                username: String(a.username || a.usuario || 'Sin nombre'),
+                numeroCel: String(a.numeroCel || ''),
+              })
+            )
+          : []
+      );
+    } catch (error) {
+      console.error('Error cargando cuentas del dispositivo:', error);
+      setBanDeviceAccountsError('Error de conexión al cargar cuentas vinculadas');
+    } finally {
+      setBanDeviceAccountsLoading(false);
+    }
+  };
+
+  const goToLinkedDeviceAccount = (usuario: string) => {
+    if (!usuario) return;
+    setShowBanDeviceConfirmModal(false);
+    setBanDeviceAccounts([]);
+    setBanDeviceAccountsError(null);
+    void searchUserByPhone(usuario);
+  };
+
+  const handleUserAction = async (action: 'ban' | 'unban' | 'unlink' | 'ban_device' | 'upgrade_vip' | 'cancel_vip' | 'add_balance' | 'subtract_balance' | 'update_user' | 'add_sms' | 'subtract_sms', numeroCel: string, username: string, reason?: string, amount?: number, userUpdates?: any) => {
     const token = localStorage.getItem('admin_token');
     if (!token) {
       alert('Sesión expirada. Por favor inicie sesión nuevamente.');
@@ -1006,7 +1070,7 @@ export function BancolombiaManagerContent({
     setShowProgressBar(true);
 
     try {
-      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'upgrade_vip' ? 'upgrade-vip' : action === 'cancel_vip' ? 'cancel-vip' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : action === 'add_sms' ? 'add-sms' : action === 'subtract_sms' ? 'subtract-sms' : '';
+      let endpoint = action === 'unban' ? 'unban' : action === 'ban' ? 'ban' : action === 'unlink' ? 'unlink' : action === 'ban_device' ? 'ban-device' : action === 'upgrade_vip' ? 'upgrade-vip' : action === 'cancel_vip' ? 'cancel-vip' : action === 'add_balance' ? 'add-balance' : action === 'subtract_balance' ? 'subtract-balance' : action === 'add_sms' ? 'add-sms' : action === 'subtract_sms' ? 'subtract-sms' : '';
 
       if (action === 'update_user') {
         endpoint = '';
@@ -1017,6 +1081,7 @@ export function BancolombiaManagerContent({
         (action === 'ban' ||
           action === 'unban' ||
           action === 'unlink' ||
+          action === 'ban_device' ||
           action === 'upgrade_vip' ||
           action === 'cancel_vip' ||
           action === 'add_balance' ||
@@ -1054,6 +1119,7 @@ export function BancolombiaManagerContent({
           : action === 'ban' ||
               action === 'unban' ||
               action === 'unlink' ||
+              action === 'ban_device' ||
               action === 'upgrade_vip' ||
               action === 'cancel_vip' ||
               action === 'add_balance' ||
@@ -1767,6 +1833,17 @@ export function BancolombiaManagerContent({
                     actionTitle={isPartner ? undefined : 'Desvincular dispositivo'}
                     actionDisabled={showProgressBar}
                     actionVariant="danger"
+                    onSecondaryAction={
+                      !isPartner && userData.device_linked
+                        ? () => {
+                            void openBanDeviceConfirmModal();
+                          }
+                        : undefined
+                    }
+                    secondaryActionLabel={isPartner ? undefined : 'Banear'}
+                    secondaryActionTitle={isPartner ? undefined : 'Banear dispositivo'}
+                    secondaryActionDisabled={showProgressBar}
+                    secondaryActionVariant="danger"
                   >
                     {loading ? <Shimmer className="h-5 w-24" /> : userData.device_status}
                   </RetroUserDetailField>
@@ -2644,6 +2721,95 @@ export function BancolombiaManagerContent({
                   Cerrar
                 </button>
               </div>
+        </RetroModal>
+      )}
+
+      {/* Modal de confirmación al banear dispositivo */}
+      {showBanDeviceConfirmModal && userData && (
+        <RetroModal
+          open
+          title="Confirmar baneo de dispositivo"
+          onClose={() => {
+            setShowBanDeviceConfirmModal(false);
+            setBanDeviceAccounts([]);
+            setBanDeviceAccountsError(null);
+          }}
+          zIndex={110}
+          bodyClassName="retro-manager-modal__body"
+        >
+          <div className="retro-manager-modal__intro">
+            <p className="retro-manager-modal__text">
+              ¿Banear el dispositivo vinculado a
+            </p>
+            <p className="retro-manager-modal__highlight">
+              {userData.username || userData.usuarioLogin}
+            </p>
+            <p className="retro-manager-modal__text retro-manager-modal__text--muted">
+              Quedará en lista negra y no podrá usarse de nuevo en ninguna cuenta.
+            </p>
+          </div>
+
+          <div className="retro-manager-modal__device-accounts">
+            <p className="retro-manager-modal__device-accounts-title">
+              Otras cuentas con este dispositivo
+            </p>
+            {banDeviceAccountsLoading ? (
+              <p className="retro-manager-modal__device-accounts-empty">Buscando cuentas…</p>
+            ) : banDeviceAccountsError ? (
+              <p className="retro-manager-modal__device-accounts-empty">{banDeviceAccountsError}</p>
+            ) : banDeviceAccounts.length === 0 ? (
+              <p className="retro-manager-modal__device-accounts-empty">
+                No hay otras cuentas vinculadas a este dispositivo.
+              </p>
+            ) : (
+              <ul className="retro-manager-modal__device-accounts-list">
+                {banDeviceAccounts.map((account) => (
+                  <li key={account.usuario}>
+                    <button
+                      type="button"
+                      className="retro-manager-modal__device-account-btn"
+                      onClick={() => goToLinkedDeviceAccount(account.usuario)}
+                      title={`Gestionar ${account.usuario}`}
+                    >
+                      <span className="retro-manager-modal__device-account-name">
+                        {account.username}
+                      </span>
+                      <span className="retro-manager-modal__device-account-id">
+                        {account.usuario}
+                        {account.numeroCel ? ` · ${account.numeroCel}` : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="retro-manager-modal__actions">
+            <button
+              onClick={() => {
+                setShowBanDeviceConfirmModal(false);
+                setBanDeviceAccounts([]);
+                setBanDeviceAccountsError(null);
+              }}
+              className="retro-manager-btn retro-manager-btn--secondary retro-manager-btn--block"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                if (!userData) return;
+                setShowBanDeviceConfirmModal(false);
+                setBanDeviceAccounts([]);
+                setBanDeviceAccountsError(null);
+                handleUserAction('ban_device', userData.numeroCel, userData.username);
+              }}
+              className="retro-manager-btn retro-manager-btn--danger retro-manager-btn--block"
+              disabled={banDeviceAccountsLoading || showProgressBar}
+            >
+              Sí, banear dispositivo
+            </button>
+          </div>
         </RetroModal>
       )}
 

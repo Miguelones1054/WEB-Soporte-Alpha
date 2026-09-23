@@ -21,6 +21,11 @@ export interface RetroUserDetailFieldProps {
   actionTitle?: string;
   actionDisabled?: boolean;
   actionVariant?: 'default' | 'danger';
+  onSecondaryAction?: () => void;
+  secondaryActionLabel?: string;
+  secondaryActionTitle?: string;
+  secondaryActionDisabled?: boolean;
+  secondaryActionVariant?: 'default' | 'danger';
 }
 
 export function RetroUserDetailField({
@@ -40,8 +45,13 @@ export function RetroUserDetailField({
   actionTitle,
   actionDisabled = false,
   actionVariant = 'default',
+  onSecondaryAction,
+  secondaryActionLabel,
+  secondaryActionTitle,
+  secondaryActionDisabled = false,
+  secondaryActionVariant = 'default',
 }: RetroUserDetailFieldProps) {
-  const hasActions = Boolean(onAdd || onSubtract || onAction);
+  const hasActions = Boolean(onAdd || onSubtract || onAction || onSecondaryAction);
 
   return (
     <div className="retro-user-field">
@@ -93,6 +103,18 @@ export function RetroUserDetailField({
                 disabled={actionDisabled}
               >
                 {actionLabel}
+              </button>
+            )}
+            {onSecondaryAction && secondaryActionLabel && (
+              <button
+                type="button"
+                className={`retro-user-field__action-btn retro-user-field__action-btn--text retro-user-field__action-btn--${secondaryActionVariant}`}
+                onClick={onSecondaryAction}
+                title={secondaryActionTitle ?? secondaryActionLabel}
+                aria-label={secondaryActionTitle ?? secondaryActionLabel}
+                disabled={secondaryActionDisabled}
+              >
+                {secondaryActionLabel}
               </button>
             )}
           </div>

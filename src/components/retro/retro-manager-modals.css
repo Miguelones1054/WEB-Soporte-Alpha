@@ -252,6 +252,77 @@
   border-color: #6666cc #000080 #000080 #6666cc;
 }
 
+/* Cuentas vinculadas al mismo dispositivo */
+.retro-manager-modal__device-accounts {
+  margin: 12px 0 4px;
+  padding: 10px;
+  border: 2px solid;
+  border-color: var(--retro-border-dark) var(--retro-border-light) var(--retro-border-light)
+    var(--retro-border-dark);
+  background: #f8f8f0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.retro-manager-modal__device-accounts-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #800000;
+}
+
+.retro-manager-modal__device-accounts-empty {
+  margin: 0;
+  font-size: 11px;
+  color: #555;
+}
+
+.retro-manager-modal__device-accounts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.retro-manager-modal__device-account-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  font-family: var(--retro-font);
+  font-size: 12px;
+  color: var(--retro-text);
+  background: var(--retro-surface);
+  border: 2px solid;
+  border-color: var(--retro-border-light) var(--retro-border-darker) var(--retro-border-darker)
+    var(--retro-border-light);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.retro-manager-modal__device-account-btn:hover {
+  background: #e8f0ff;
+}
+
+.retro-manager-modal__device-account-btn:active {
+  border-color: var(--retro-border-darker) var(--retro-border-light) var(--retro-border-light)
+    var(--retro-border-darker);
+  transform: translate(1px, 1px);
+}
+
+.retro-manager-modal__device-account-name {
+  display: block;
+  font-weight: 700;
+}
+
+.retro-manager-modal__device-account-id {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #444;
+}
+
 /* Caja de mensaje para compartir */
 .retro-manager-modal__message-wrap {
   position: relative;
