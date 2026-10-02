@@ -238,6 +238,53 @@
   font-weight: 600;
 }
 
+.retro-webhooks__param-pill--by-op {
+  background: #f5f3ff;
+  border-color: #7c3aed;
+  color: #5b21b6;
+  font-weight: 600;
+}
+
+.retro-webhooks__by-op-box {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #fbfbfe;
+  border: 1px dashed #7c3aed;
+}
+
+.retro-webhooks__by-op-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4c1d95;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.retro-webhooks__by-op-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.retro-webhooks__by-op-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.retro-webhooks__by-op-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+}
+
+.retro-webhooks__by-op-hint {
+  font-size: 9px;
+  color: #666;
+}
+
 .retro-webhooks__card-footer {
   display: flex;
   flex-wrap: wrap;

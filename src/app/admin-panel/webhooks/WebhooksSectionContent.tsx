@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../../lib/constants';
 import { getAdminToken } from '../../../lib/sessionStorage';
 import { copyTextToClipboard } from '../../../lib/copyToClipboard';
@@ -19,9 +19,27 @@ export interface WebhookHeader {
 
 export interface WebhookParam {
   key: string;
-  value_type: 'static' | 'dynamic';
+  value_type: 'static' | 'dynamic' | 'by_operation';
   value: string;
+  operation_values?: {
+    recargas?: string;
+    vips?: string;
+    sms?: string;
+    paquetes?: string;
+    crear_usuario?: string;
+    otras?: string;
+    [key: string]: string | undefined;
+  };
 }
+
+export const DEFAULT_OP_TEXTS: Record<string, string> = {
+  recargas: 'Recarga de saldo',
+  vips: 'Actualización VIP',
+  sms: 'Créditos SMS',
+  paquetes: 'Paquetes y promociones',
+  crear_usuario: 'Creación de usuario',
+  otras: 'Operación administrativa',
+};
 
 export interface WebhookOperations {
   recargas: boolean;
@@ -135,6 +153,7 @@ export function WebhooksSectionContent() {
   // Modal de Prueba (Test)
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [testWebhookTarget, setTestWebhookTarget] = useState<WebhookItem | null>(null);
+  const [testSimulatedCategory, setTestSimulatedCategory] = useState<string>('recargas');
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
 
@@ -211,7 +230,12 @@ export function WebhooksSectionContent() {
       { key: 'monto', value_type: 'dynamic', value: 'ganancia' },
       { key: 'telefono', value_type: 'dynamic', value: 'target_user' },
       { key: 'app', value_type: 'dynamic', value: 'app' },
-      { key: 'operacion', value_type: 'dynamic', value: 'operation_label' },
+      {
+        key: 'description',
+        value_type: 'by_operation',
+        value: '',
+        operation_values: { ...DEFAULT_OP_TEXTS },
+      },
     ]);
     setIsModalOpen(true);
   };
@@ -232,8 +256,15 @@ export function WebhooksSectionContent() {
       crear_usuario: wh.operations?.crear_usuario ?? true,
       otras: wh.operations?.otras ?? false,
     });
-    setFormHeaders(wh.headers ? [...wh.headers] : []);
-    setFormParameters(wh.parameters ? [...wh.parameters] : []);
+    setFormHeaders(wh.headers && wh.headers.length > 0 ? [...wh.headers] : []);
+    setFormParameters(
+      (wh.parameters || []).map((p) => ({
+        key: p.key,
+        value_type: (p.value_type || 'static') as any,
+        value: p.value || '',
+        operation_values: p.operation_values || { ...DEFAULT_OP_TEXTS },
+      }))
+    );
     setIsModalOpen(true);
   };
 
@@ -261,7 +292,14 @@ export function WebhooksSectionContent() {
         app: formApp,
         operations: formOperations,
         headers: formHeaders.filter((h) => h.key.trim() !== ''),
-        parameters: formParameters.filter((p) => p.key.trim() !== ''),
+        parameters: formParameters
+          .filter((p) => p.key.trim() !== '')
+          .map((p) => ({
+            key: p.key.trim(),
+            value_type: p.value_type,
+            value: p.value,
+            operation_values: p.operation_values || {},
+          })),
       };
 
       const url = editingId
@@ -398,15 +436,61 @@ export function WebhooksSectionContent() {
       const token = getAdminToken();
       if (!token) throw new Error('No hay sesión.');
 
+      const sample_context: Record<string, any> = {
+        category: testSimulatedCategory,
+      };
+      if (testSimulatedCategory === 'vips') {
+        sample_context.operation_type = 'UPGRADE_VIP';
+        sample_context.operation_label = 'Actualización VIP';
+        sample_context.monto_operacion = 25000;
+        sample_context.ganancia = 12000;
+      } else if (testSimulatedCategory === 'sms') {
+        sample_context.operation_type = 'ADD_SMS';
+        sample_context.operation_label = 'Créditos SMS';
+        sample_context.monto_operacion = 15000;
+        sample_context.ganancia = 8000;
+      } else if (testSimulatedCategory === 'paquetes') {
+        sample_context.operation_type = 'ASSIGN_PROMO';
+        sample_context.operation_label = 'Paquetes y promociones';
+        sample_context.monto_operacion = 30000;
+        sample_context.ganancia = 15000;
+      } else if (testSimulatedCategory === 'crear_usuario') {
+        sample_context.operation_type = 'CREATE_USER';
+        sample_context.operation_label = 'Creación de usuario';
+        sample_context.monto_operacion = 50000;
+        sample_context.ganancia = 20000;
+      } else if (testSimulatedCategory === 'otras') {
+        sample_context.operation_type = 'BLOQUEO_USUARIO';
+        sample_context.operation_label = 'Bloqueo de usuario';
+        sample_context.monto_operacion = 0;
+        sample_context.ganancia = 0;
+      } else {
+        sample_context.operation_type = 'ADD_BALANCE';
+        sample_context.operation_label = 'Recarga Nequi';
+        sample_context.monto_operacion = 50000;
+        sample_context.ganancia = 19500;
+      }
+
       let body: any = {};
       if (testWebhookTarget) {
-        body = { webhook_id: testWebhookTarget.id };
+        body = {
+          webhook_id: testWebhookTarget.id,
+          sample_context,
+        };
       } else {
         body = {
           url: formUrl,
           method: formMethod,
           headers: formHeaders.filter((h) => h.key.trim() !== ''),
-          parameters: formParameters.filter((p) => p.key.trim() !== ''),
+          parameters: formParameters
+            .filter((p) => p.key.trim() !== '')
+            .map((p) => ({
+              key: p.key.trim(),
+              value_type: p.value_type,
+              value: p.value,
+              operation_values: p.operation_values || {},
+            })),
+          sample_context,
         };
       }
 
@@ -464,7 +548,12 @@ export function WebhooksSectionContent() {
       { key: 'saldo_recargado', value_type: 'dynamic', value: 'monto_operacion' },
       { key: 'telefono_cliente', value_type: 'dynamic', value: 'target_user' },
       { key: 'app', value_type: 'dynamic', value: 'app' },
-      { key: 'tipo_operacion', value_type: 'dynamic', value: 'operation_label' },
+      {
+        key: 'description',
+        value_type: 'by_operation',
+        value: '',
+        operation_values: { ...DEFAULT_OP_TEXTS },
+      },
       { key: 'admin', value_type: 'dynamic', value: 'admin_email' },
       { key: 'id_operacion', value_type: 'dynamic', value: 'operation_id' },
       { key: 'fecha', value_type: 'dynamic', value: 'timestamp' },
@@ -681,17 +770,27 @@ export function WebhooksSectionContent() {
                           <span
                             key={idx}
                             className={`retro-webhooks__param-pill ${
-                              p.value_type === 'dynamic' ? 'retro-webhooks__param-pill--dynamic' : ''
+                              p.value_type === 'dynamic'
+                                ? 'retro-webhooks__param-pill--dynamic'
+                                : p.value_type === 'by_operation'
+                                ? 'retro-webhooks__param-pill--by-op'
+                                : ''
                             }`}
                             title={
                               p.value_type === 'dynamic'
                                 ? `Parámetro dinámico asignado a variable "${p.value}"`
-                                : `Parámetro con valor estático "${p.value}"`
+                                : p.value_type === 'by_operation'
+                                ? 'Parámetro con texto personalizado según la operación (Recargas, VIP, SMS, etc.)'
+                                : `Parámetro con valor fijo "${p.value}"`
                             }
                           >
                             <strong>{p.key}</strong>
                             <span className="text-[#666]">
-                              : {p.value_type === 'dynamic' ? `{${p.value}}` : `"${p.value}"`}
+                              : {p.value_type === 'dynamic'
+                                  ? `{${p.value}}`
+                                  : p.value_type === 'by_operation'
+                                  ? '{por operación}'
+                                  : `"${p.value}"`}
                             </span>
                           </span>
                         ))
@@ -969,104 +1068,169 @@ export function WebhooksSectionContent() {
             </div>
 
             <p className="text-[11px] text-[#555] m-0 mb-2">
-              Configura las claves que recibirá tu API. Puedes elegir entre un <strong>Valor Estático</strong> (texto fijo) o un <strong>Valor Dinámico</strong> (por ejemplo, el campo <em>monto</em> asignado a la <strong>ganancia</strong> generada en la operación).
+              Configura las claves que recibirá tu API. Puedes elegir entre un <strong>Valor Dinámico</strong> (variables como ganancia o monto), un <strong>Texto Fijo</strong>, o <strong>Personalizado por Operación</strong> (para definir un texto específico según si es recarga, VIP, SMS, etc.).
             </p>
 
             <table className="retro-webhooks-table">
               <thead>
                 <tr>
                   <th style={{ width: '28%' }}>Nombre Parámetro</th>
-                  <th style={{ width: '24%' }}>Tipo de Valor</th>
+                  <th style={{ width: '28%' }}>Tipo de Valor</th>
                   <th>Valor / Variable Asignada</th>
                   <th style={{ width: '36px', textAlign: 'center' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {formParameters.map((p, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <input
-                        type="text"
-                        className="retro-input w-full font-mono text-[11px]"
-                        placeholder="Ej: monto, ganancia, id"
-                        value={p.key}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFormParameters((prev) =>
-                            prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
-                          );
-                        }}
-                      />
-                    </td>
-                    <td>
-                      <select
-                        className="retro-input w-full text-[11px]"
-                        value={p.value_type}
-                        onChange={(e) => {
-                          const newType = e.target.value as 'static' | 'dynamic';
-                          setFormParameters((prev) =>
-                            prev.map((item, i) =>
-                              i === idx
-                                ? {
-                                    ...item,
-                                    value_type: newType,
-                                    value: newType === 'dynamic' ? 'ganancia' : '',
-                                  }
-                                : item
-                            )
-                          );
-                        }}
-                      >
-                        <option value="dynamic">⚡ Valor Dinámico</option>
-                        <option value="static">🔤 Valor Estático</option>
-                      </select>
-                    </td>
-                    <td>
-                      {p.value_type === 'dynamic' ? (
-                        <select
-                          className="retro-input w-full text-[11px] font-semibold text-blue-900"
-                          value={p.value}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setFormParameters((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
-                            );
-                          }}
-                        >
-                          {dynamicVars.map((v) => (
-                            <option key={v.key} value={v.key}>
-                              {v.label} (ej: {String(v.example)})
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
+                  <Fragment key={idx}>
+                    <tr>
+                      <td>
                         <input
                           type="text"
-                          className="retro-input w-full text-[11px]"
-                          placeholder="Texto fijo (ej: token_123, true, etc.)"
-                          value={p.value}
+                          className="retro-input w-full font-mono text-[11px]"
+                          placeholder="Ej: description, monto, id"
+                          value={p.key}
                           onChange={(e) => {
                             const val = e.target.value;
                             setFormParameters((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
+                              prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
                             );
                           }}
                         />
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        type="button"
-                        className="retro-btn text-[11px] py-0 px-1.5 text-red-700"
-                        onClick={() =>
-                          setFormParameters((prev) => prev.filter((_, i) => i !== idx))
-                        }
-                        title="Eliminar parámetro"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <select
+                          className="retro-input w-full text-[11px]"
+                          value={p.value_type}
+                          onChange={(e) => {
+                            const newType = e.target.value as 'static' | 'dynamic' | 'by_operation';
+                            setFormParameters((prev) =>
+                              prev.map((item, i) =>
+                                i === idx
+                                  ? {
+                                      ...item,
+                                      value_type: newType,
+                                      value: newType === 'dynamic' ? 'ganancia' : '',
+                                      operation_values: item.operation_values || { ...DEFAULT_OP_TEXTS },
+                                    }
+                                  : item
+                              )
+                            );
+                          }}
+                        >
+                          <option value="dynamic">⚡ Valor Dinámico</option>
+                          <option value="static">🔤 Texto Fijo</option>
+                          <option value="by_operation">🎯 Personalizado por Operación</option>
+                        </select>
+                      </td>
+                      <td>
+                        {p.value_type === 'dynamic' ? (
+                          <select
+                            className="retro-input w-full text-[11px] font-semibold text-blue-900"
+                            value={p.value}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormParameters((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
+                              );
+                            }}
+                          >
+                            {dynamicVars.map((v) => (
+                              <option key={v.key} value={v.key}>
+                                {v.label} (ej: {String(v.example)})
+                              </option>
+                            ))}
+                          </select>
+                        ) : p.value_type === 'by_operation' ? (
+                          <div className="text-[11px] text-[#581c87] font-semibold flex items-center gap-1 py-1">
+                            <span>🎯 Textos configurados por cada operación abajo ↓</span>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            className="retro-input w-full text-[11px]"
+                            placeholder="Texto fijo (ej: ingreso, token_123, etc.)"
+                            value={p.value}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setFormParameters((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
+                              );
+                            }}
+                          />
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="retro-btn text-[11px] py-0 px-1.5 text-red-700"
+                          onClick={() =>
+                            setFormParameters((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                          title="Eliminar parámetro"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+
+                    {p.value_type === 'by_operation' && (
+                      <tr>
+                        <td colSpan={4} className="p-0 border-0">
+                          <div className="retro-webhooks__by-op-box mb-2">
+                            <div className="retro-webhooks__by-op-title">
+                              <span>
+                                🎯 Texto personalizado para <strong>"{p.key || 'este parámetro'}"</strong> según la operación:
+                              </span>
+                              <span className="text-[9px] text-[#555] font-normal">
+                                (Escribe lo que quieras o usa etiquetas como <code>&#123;target_user&#125;</code>, <code>&#123;monto_operacion&#125;</code>, <code>&#123;ganancia&#125;</code>)
+                              </span>
+                            </div>
+
+                            <div className="retro-webhooks__by-op-grid">
+                              {[
+                                { key: 'recargas', label: '💳 Recargas de Saldo', defaultText: 'Recarga de saldo' },
+                                { key: 'vips', label: '⭐ Actualizaciones VIP', defaultText: 'Actualización VIP' },
+                                { key: 'sms', label: '💬 Créditos SMS', defaultText: 'Créditos SMS' },
+                                { key: 'paquetes', label: '📦 Paquetes / Promos', defaultText: 'Paquetes y promociones' },
+                                { key: 'crear_usuario', label: '👤 Creación de Usuario', defaultText: 'Creación de usuario' },
+                                { key: 'otras', label: '⚙️ Otras Operaciones', defaultText: 'Operación administrativa' },
+                              ].map((op) => {
+                                const currentVal = p.operation_values?.[op.key] ?? op.defaultText;
+                                return (
+                                  <div key={op.key} className="retro-webhooks__by-op-item">
+                                    <label className="retro-webhooks__by-op-label">{op.label}:</label>
+                                    <input
+                                      type="text"
+                                      className="retro-input w-full text-[11px]"
+                                      placeholder={op.defaultText}
+                                      value={currentVal}
+                                      onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        setFormParameters((prev) =>
+                                          prev.map((item, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...item,
+                                                  operation_values: {
+                                                    ...(item.operation_values || {}),
+                                                    [op.key]: newVal,
+                                                  },
+                                                }
+                                              : item
+                                          )
+                                        );
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -1198,6 +1362,25 @@ export function WebhooksSectionContent() {
           <p className="retro-webhooks__intro">
             Se enviará una llamada HTTP real hacia la URL configurada con valores simulados de una operación (ej. ganancia: $19.500, monto: $50.000, target_user: 3001234567, etc.) para comprobar que tu servidor responda correctamente.
           </p>
+
+          <div className="flex flex-wrap items-center gap-2 p-2 border border-gray-400 bg-[#f8f9fa] text-[11px]">
+            <span className="font-bold">Simular Operación:</span>
+            <select
+              className="retro-input text-[11px] font-semibold"
+              value={testSimulatedCategory}
+              onChange={(e) => setTestSimulatedCategory(e.target.value)}
+            >
+              <option value="recargas">💳 Recargas de Saldo (recargas)</option>
+              <option value="vips">⭐ Actualización VIP (vips)</option>
+              <option value="sms">💬 Créditos SMS (sms)</option>
+              <option value="paquetes">📦 Paquetes / Promos (paquetes)</option>
+              <option value="crear_usuario">👤 Creación de Usuario (crear_usuario)</option>
+              <option value="otras">⚙️ Otras Operaciones (otras)</option>
+            </select>
+            <span className="text-[10px] text-[#666]">
+              (Permite probar cómo se resuelve el texto personalizado de esa operación)
+            </span>
+          </div>
 
           <div className="p-2 border border-gray-400 bg-white">
             <div className="text-[11px] font-bold mb-1">Petición a enviar:</div>
