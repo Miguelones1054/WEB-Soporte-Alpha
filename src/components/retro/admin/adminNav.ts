@@ -78,6 +78,12 @@ export const HUB_SIDEBAR_NAV: RetroNavItem[] = [
     section: 'api',
     notForPartner: true,
   },
+  {
+    href: adminHubHref('webhooks'),
+    label: 'Webhooks',
+    icon: 'network/frame_web',
+    section: 'webhooks',
+  },
 ];
 
 /** @deprecated Usar HUB_SIDEBAR_NAV */

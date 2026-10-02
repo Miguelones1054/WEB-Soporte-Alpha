@@ -122,6 +122,16 @@ export function AppHubHome({ adminInfo: adminInfoProp }: AppHubHomeProps) {
           </span>
           <span className="retro-hub-app-card__label">Paquetes</span>
         </button>
+        <button
+          type="button"
+          className="retro-hub-app-card retro-hub-app-card--secondary"
+          onClick={() => router.push(adminHubHref('webhooks'))}
+        >
+          <span className="retro-hub-app-card__logo-wrap retro-hub-app-card__logo-wrap--icon">
+            <RetroIcon name="network/frame_web" size={32} className="retro-hub-app-card__logo" alt="" />
+          </span>
+          <span className="retro-hub-app-card__label">Webhooks</span>
+        </button>
       </div>
 
       <p className="text-center text-[11px] m-0 mt-2" style={{ color: 'var(--retro-muted)' }}>

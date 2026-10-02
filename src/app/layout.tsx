@@ -12,6 +12,7 @@ import "../components/retro/retro-user-movements.css";
 import "../components/retro/retro-select.css";
 import "../components/retro/retro-manager-modals.css";
 import "../components/retro/retro-api.css";
+import "../components/retro/retro-webhooks.css";
 
 export const metadata: Metadata = {
   title: "Administración Alpha",

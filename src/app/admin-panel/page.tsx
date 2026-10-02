@@ -22,6 +22,7 @@ import { PlantillasNotificacionesSectionView } from './views/PlantillasNotificac
 import { EventosSectionView } from './views/EventosSectionView';
 import { AlertasSectionView } from './views/AlertasSectionView';
 import { ApiSectionView } from './views/ApiSectionView';
+import { WebhooksSectionView } from './views/WebhooksSectionView';
 
 function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
   const router = useRouter();
@@ -83,6 +84,8 @@ function AdminPanelRouter({ adminInfo }: { adminInfo: AdminInfo | null }) {
         return <AlertasSectionView onClose={goHome} />;
       case 'api':
         return <ApiSectionView onClose={goHome} />;
+      case 'webhooks':
+        return <WebhooksSectionView onClose={goHome} />;
       default:
         break;
     }

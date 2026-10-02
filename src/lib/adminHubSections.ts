@@ -18,6 +18,7 @@ export const ADMIN_HUB_SECTIONS = [
   'eventos',
   'alertas',
   'api',
+  'webhooks',
 ] as const;
 
 export type AdminHubSection = (typeof ADMIN_HUB_SECTIONS)[number];
@@ -63,6 +64,10 @@ export const HUB_SECTION_META: Record<
     icon: 'security/key_world',
     notForPartner: true,
   },
+  webhooks: {
+    title: 'Webhooks — Notificaciones y APIs externas',
+    icon: 'network/frame_web',
+  },
 };
 
 /** Rutas legacy → sección del hub */
@@ -84,6 +89,7 @@ export const LEGACY_HUB_PATHS: Record<string, AdminHubSection> = {
   '/admin-panel/eventos': 'eventos',
   '/admin-panel/alertas': 'alertas',
   '/admin-panel/api': 'api',
+  '/admin-panel/webhooks': 'webhooks',
 };
 
 export function isAdminHubSection(value: string | null | undefined): value is AdminHubSection {
