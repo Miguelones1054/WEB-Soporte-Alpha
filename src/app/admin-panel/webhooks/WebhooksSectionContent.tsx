@@ -766,7 +766,7 @@ export function WebhooksSectionContent() {
                       Editar
                     </RetroButton>
                     <RetroButton variant="danger" onClick={() => void handleDeleteWebhook(wh)}>
-                      <RetroIcon name="actions/ban-user" size={14} alt="" />
+                      <RetroIcon name="files/recycle_bin_empty" size={14} alt="" />
                       Eliminar
                     </RetroButton>
                   </div>

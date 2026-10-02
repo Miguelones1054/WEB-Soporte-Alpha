@@ -11,9 +11,11 @@ export interface RetroModalProps {
   title?: string;
   onClose?: () => void;
   children: ReactNode;
+  footer?: ReactNode;
+  maxWidth?: string;
   zIndex?: number;
   showClose?: boolean;
-  width?: 'sm' | 'md' | 'lg';
+  width?: 'sm' | 'md' | 'lg' | 'xl';
   bodyClassName?: string;
   closeOnBackdrop?: boolean;
   role?: string;
@@ -26,6 +28,8 @@ export function RetroModal({
   title,
   onClose,
   children,
+  footer,
+  maxWidth,
   zIndex = 100,
   showClose = true,
   width = 'md',
@@ -66,7 +70,10 @@ export function RetroModal({
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-label="Cerrar"
       />
-      <div className={`retro-modal retro-modal--${width}`}>
+      <div
+        className={`retro-modal retro-modal--${width}`}
+        style={maxWidth ? { maxWidth } : undefined}
+      >
         {(title || showClose) && (
           <div className="retro-titlebar retro-modal__titlebar">
             <RetroIcon name={icon} size={14} className="retro-titlebar__icon-img" alt="" />
@@ -86,6 +93,7 @@ export function RetroModal({
           </div>
         )}
         <div className={bodyClass}>{children}</div>
+        {footer && <div className="p-2 border-t border-t-[var(--retro-border-light,#dfdfdf)] bg-[var(--retro-bg,#c0c0c0)]">{footer}</div>}
       </div>
     </div>,
     document.body

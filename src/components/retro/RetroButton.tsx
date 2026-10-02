@@ -5,11 +5,13 @@ import { ButtonHTMLAttributes, useState } from 'react';
 export interface RetroButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
   pressed?: boolean;
+  variant?: 'primary' | 'secondary' | 'danger' | string;
 }
 
 export function RetroButton({
   fullWidth = false,
   pressed = false,
+  variant,
   className = '',
   children,
   disabled,
@@ -27,6 +29,7 @@ export function RetroButton({
 
   const classes = [
     'retro-btn',
+    variant ? `retro-btn--${variant}` : '',
     fullWidth ? 'retro-btn--full' : '',
     showPressed ? 'retro-btn--pressed' : '',
     className,
